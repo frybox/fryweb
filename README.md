@@ -28,7 +28,9 @@ from flask import Flask
 app = Flask(__name__)
 
 def App(props):
-    return <h1>Hello FryHCS!</h1>
+    return <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
+             Hello FryHCS!
+           </h1>
 
 @app.get('/')
 def index():
@@ -41,7 +43,9 @@ in the same directory as app.pyx, run command:
 fry run --debug
 ```
 
-open browser, access `http://127.0.0.1:5000`
+Open browser, access `http://127.0.0.1:5000` to browse the page.
+
+Change the app.pyx file, save, check the browser auto reload.
 
 ## License
 MIT License

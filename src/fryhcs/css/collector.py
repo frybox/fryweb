@@ -87,7 +87,7 @@ class CssVisitor(NodeVisitor):
                 self.collect_kv(key, value)
 
     def generic_visit(self, node, children):
-        return None
+        return children or node
 
     def visit_single_quote(self, node, children):
         return node.text
@@ -180,7 +180,7 @@ class CssVisitor(NodeVisitor):
 
     def visit_client_embed_value(self, node, children):
         _l, literal, _r, _, client_embed = children
-        return ('client_embed', literal, client_embed)
+        return ('client_embed', literal.text, client_embed)
 
     def visit_client_embed(self, node, children):
         return '' 
