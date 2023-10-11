@@ -1,7 +1,4 @@
-# pyx语法的几个约束：
-# <del>1. 组件元素（pyx_element_name以大写字母开头的pyx_element）不支持子元素，组件元素只能是pyx_self_closing_element </del>
-# <del>2. 组件元素不支持客户端嵌入（client_embed），组件元素属性值不能是client_embed </del>
-# 3. 除了web_component_script，不允许其他类型的<script>元素。
+
 script = script_item*
 
 inner_script = inner_script_item*
