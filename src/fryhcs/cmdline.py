@@ -917,6 +917,39 @@ def x2y_command(pyxfile):
     print(pyx_to_py(data))
 
 
+@click.command("x2js", short_help="Convert specified .pyx file into .js file(s).")
+@click.argument("pyxfile")
+@click.argument("jsdir")
+def x2js_command(pyxfile, jsdir):
+    """Convert specified .pyx file into .js file(s)."""
+    from fryhcs.js.generator import JSGenerator
+    path = Path(pyxfile)
+    if not path.is_file():
+        print("Error: can't open file '{pyxfile}'.")
+        sys.exit(1)
+    generator = JSGenerator([pyxfile], jsdir)
+    count = generator.generate()
+    if count == 0:
+        print(f"No js information in '{pyxfile}'.")
+    else:
+        print(f"{count} js files from '{pyxfile}' are generated into directory '{jsdir}'")
+
+
+@click.command("x2css", short_help="Convert specified .pyx file into style.css file.")
+@click.argument("pyxfile")
+@click.argument("cssfile")
+def x2css_command(pyxfile, cssfile):
+    """Convert specified .pyx file into style.css file."""
+    from fryhcs.css.generator import CSSGenerator
+    path = Path(pyxfile)
+    if not path.is_file():
+        print("Error: can't open file '{pyxfile}'.")
+        sys.exit(1)
+    generator = CSSGenerator([pyxfile], cssfile)
+    generator.generate()
+    print(f"styles from '{pyxfile}' are generated into file '{cssfile}'.")
+
+
 class FryhcsGroup(FlaskGroup):
     def __init__(self, **extra):
         extra.pop('add_default_commands', None)
@@ -924,6 +957,8 @@ class FryhcsGroup(FlaskGroup):
         self.add_command(run_command)
         self.add_command(build_command)
         self.add_command(x2y_command)
+        self.add_command(x2js_command)
+        self.add_command(x2css_command)
         self.add_command(shell_command)
         self.add_command(routes_command)
 

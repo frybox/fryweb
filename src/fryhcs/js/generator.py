@@ -46,9 +46,11 @@ class JSGenerator(BaseGenerator):
             pattern = '[0-9a-f]'*40+'.js'
             for f in self.output_dir.glob(pattern):
                 f.unlink(missing_ok=True)
+        count = 0
         for file in input_files:
             with file.open('r') as f:
-                self.generate_one(f.read())
+                count += self.generate_one(f.read())
+        return count
                 
     def generate_one(self, source):
         tree = grammar.parse(source)
@@ -65,6 +67,7 @@ class JSGenerator(BaseGenerator):
             jspath = self.output_dir / f'{name}.js'
             with jspath.open('w') as f:
                 f.write(compose_js(args, script, embeds))
+        return len(self.web_components)
 
     def generic_visit(self, node, children):
         return children or node

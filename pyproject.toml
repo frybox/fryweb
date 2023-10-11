@@ -1,8 +1,15 @@
 [project]
 name = "fryhcs"
 version = "0.1.0"
+keywords = [
+    "fryhcs",
+    "pyx",
+    "django",
+    "flask",
+]
 authors = [{name="Zenk Ju", email="juzejian@gmail.com"},]
 description = "A python library to generate HTML, Javascript and CSS, based on pyx file"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -16,8 +23,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/frybox/fryhcs"
+Homepage = "https://github.com/frybox/fryhcs"
 "Bug Tracker" = "https://github.com/frybox/fryhcs/issues"
+Source = "https://github.com/frybox/fryhcs"
 
 [project.scripts]
 fry = "fryhcs.cmdline:main"
@@ -25,5 +33,4 @@ fry = "fryhcs.cmdline:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
 
