@@ -16,8 +16,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/zenkj/fryhcs"
-"Bug Tracker" = "https://github.com/zenkj/fryhcs/issues"
+"Homepage" = "https://github.com/frybox/fryhcs"
+"Bug Tracker" = "https://github.com/frybox/fryhcs/issues"
 
 [project.scripts]
 fry = "fryhcs.cmdline:main"
