@@ -14,7 +14,7 @@ All features are implemented in python, no node ecosystem is required.
 ## Installation
 
 ```bash
-pip install fryhcs
+$ pip install fryhcs
 ```
 
 ## Usage
@@ -40,7 +40,30 @@ def index():
 in the same directory as app.pyx, run command:
 
 ```bash
-fry run --debug
+$ fry x2y app.pyx
+```
+
+check the generated python content:
+
+```python
+from fryhcs import html, Element
+from flask import Flask
+
+app = Flask(__name__)
+
+def App(props):
+    return Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]})
+
+@app.get('/')
+def index():
+    return html(App, "Hello")
+
+```
+
+To serve this app, run command:
+
+```bash
+$ fry run --debug
 ```
 
 Open browser, access `http://127.0.0.1:5000` to browse the page.
