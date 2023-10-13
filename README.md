@@ -2,12 +2,12 @@
 A python library to generate HTML, Javascript and CSS, based on pyx file.
 
 ## Features
-* Support pyx extension to normal py file, similar to jsx, html tags can be written directly in py files.
-* Provide a pyx file loader for python import machanism, pyx files can be loaded and executed by CPython directly.
-* Provide a utility first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS
-* Can be used with django/flask framework.
-* Provide a command line tool `fry` based on flask. 
-* Provide development server which support server auto reload and browser auto reload when file saved.
+* Support pyx extension to normal python file, similar to jsx, write html tags in python file.
+* Provide a pyx loader for python import machanism, load and execute pyx files directly.
+* Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
+* Support django/flask framework.
+* Provide development server which supports server/browser auto reloading when file saved.
+* Provide a command line tool `fry`, build css/js and run development server. 
 
 All features are implemented in python, no node ecosystem is required.
 
