@@ -19,7 +19,7 @@ $ pip install fryhcs
 
 ## Usage
 
-### Basic
+### 1. Basic
 create app.pyx file:
 
 ```python
@@ -94,7 +94,7 @@ Open browser, access `http://127.0.0.1:5000` to browse the page.
 
 Change the app.pyx file, save, check the browser auto reloading.
 
-### Using python variable in html markup:
+### 2. Using python variable in html markup:
 
 ```python
 from fryhcs import html, Element
@@ -134,7 +134,7 @@ def index():
 
 ```
 
-### Add js login and reactive variable:
+### 3. Add js login and reactive variable:
 
 ```python
 from fryhcs import html, Element
@@ -215,6 +215,56 @@ window.fryfunctions$$.push([document.currentScript, async function (script$$) {
     hydrate$$(rootElement$$, componentId$$, embeds$$);
 }]);
 
+```
+
+Generated HTML:
+
+```html
+<!DOCTYPE html>
+<html lang=en>
+    <head>
+        <meta charset="utf-8">
+        <title>Hello</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/static/css/styles.css">
+        <script type="importmap">
+
+      {
+        "imports": {
+          "fryhcs": "/static/js/fryhcs.js",
+          "components/": "/static/js/components/",
+          "@/": "/static/"
+        }
+      }
+
+        </script>
+    </head>
+    <body>
+        <div data-fryclass="app:App" data-fryid="1">
+            <script src="/static/js/components/db9292e32031f3a02ee988097c493ef49696927e.js" data-fryid="1" data-initial="10"></script>
+            <h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px">Hello FryHCS!</h1>
+            <p class="text-indigo-600 text-center mt-9">
+                Count:
+                <span class="text-red-600">
+                    <span data-fryembed="1/0-text">10</span>
+                </span>
+            </p>
+            <div class="flex w-full justify-center">
+                <button type="button" class="mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600" data-fryembed="1/1-event-click">Increment</button>
+            </div>
+        </div>
+        <script>
+            (async function() {
+                if ('fryfunctions$$'in window) {
+                    for (const [script,fn] of window.fryfunctions$$) {
+                        await fn(script);
+                    }
+                }
+            }
+            )();
+        </script>
+    </body>
+</html>
 ```
 
 ## License
