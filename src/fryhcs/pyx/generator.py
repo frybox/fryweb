@@ -183,7 +183,7 @@ def check_html_element(name, attrs):
         if value[0] in '\'"':
             value = value[1:-1]
         if value:
-            class_attr[2] = '"{value} {classes}"'
+            class_attr[2] = f'"{value} {classes}"'
         else:
             class_attr[2] = f'"{classes}"'
 

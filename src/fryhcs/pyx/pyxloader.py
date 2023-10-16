@@ -11,7 +11,6 @@ PYXSOURCE_SUFFIXES = ['.pyx']
 class PyxSourceFileLoader(SourceFileLoader):
     def source_to_code(self, data, path, *, _optimize=-1):
         data = pyx_to_py(data.decode())
-        print(data)
         return super(SourceFileLoader, self).source_to_code(data, path, _optimize=_optimize)
 
 def install_path_hook():

@@ -106,7 +106,7 @@ class Element(object):
             return self
 
         if inspect.isfunction(self.name):
-            # function component
+            # 渲染函数组件元素流程：
             # 1. 执行组件函数，返回未渲染的原始组件元素树
             #    元素树中的js嵌入值以ClientEmbed对象表示，元素树中
             #    的ClientEmbed对象有两类，一类是从组件函数参数中传进来
@@ -119,6 +119,8 @@ class Element(object):
             #    * 元素树中子组件元素属性中的js嵌入值，将被当做
             #      props值传入子组件函数中
             result = self.name(self.props)
+            if not isinstance(result, Element):
+                raise RuntimeError(f"Function '{self.name.__name__}' should return Element")
 
             # 2. 生成页面内组件实例唯一编号
             #    组件函数每执行一次，返回该组件的一个实例。页面中

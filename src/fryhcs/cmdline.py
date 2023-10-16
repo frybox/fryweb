@@ -776,7 +776,7 @@ class SeparatedPathType(click.Path):
         return [super_convert(item, param, ctx) for item in items]
 
 
-@click.command("run", short_help="Run a development server.")
+@click.command("serve", short_help="Run a development server.")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
 @click.option("--port", "-p", default=5000, help="The port to bind to.")
 @click.option(
@@ -829,7 +829,7 @@ class SeparatedPathType(click.Path):
     ),
 )
 @pass_script_info
-def run_command(
+def serve_command(
     info,
     host,
     port,
@@ -887,7 +887,7 @@ def run_command(
         exclude_patterns=exclude_patterns,
     )
 
-run_command.params.insert(0, _debug_option)
+serve_command.params.insert(0, _debug_option)
 
 
 @click.command("build", short_help="Build js files and css style file for all .pyx files.")
@@ -950,15 +950,45 @@ def x2css_command(pyxfile, cssfile):
     print(f"styles from '{pyxfile}' are generated into file '{cssfile}'.")
 
 
+@click.command("run", short_help="Convert specified .pyx file into .py file and execute it.")
+@click.option("-m", "module", default=None, help="Specify a module to be run")
+@click.argument("pyxfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
+def run_command(module, pyxfile):
+    """Convert specified .pyx file into .py file and execute it."""
+    from runpy import run_module
+    if module and pyxfile:
+        click.echo("ONLY ONE of -m MODULE and PYXFILE can be specified.")
+        return
+    if module:
+        sys.path.insert(0, '')
+    elif pyxfile:
+        path = Path(pyxfile)
+        if path.is_dir():
+            sys.path.insert(0, str(path))
+            module = '__main__'
+        elif path.suffix in ('.py', '.pyc', '.pyx'):
+            dir = path.parent
+            sys.path.insert(0, str(dir))
+            module = path.stem
+        else:
+            click.echo("PYXFILE should be .py, .pyc or .pyx file.")
+            return
+    else:
+        click.echo("one of -m MODULE and PYXFILE should be specified.")
+        return
+    _m = run_module(module, run_name='__main__')
+
+
 class FryhcsGroup(FlaskGroup):
     def __init__(self, **extra):
         extra.pop('add_default_commands', None)
         super().__init__(add_default_commands=False, **extra) 
-        self.add_command(run_command)
+        self.add_command(serve_command)
         self.add_command(build_command)
         self.add_command(x2y_command)
         self.add_command(x2js_command)
         self.add_command(x2css_command)
+        self.add_command(run_command)
         self.add_command(shell_command)
         self.add_command(routes_command)
 

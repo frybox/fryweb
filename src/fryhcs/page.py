@@ -11,15 +11,20 @@ class Page(object):
         return self.component_count
 
 
+def render(element):
+    if isinstance(element, Element):
+        page = Page()
+        element = element.render(page)
+    elif callable(element) and getattr(element, '__name__', 'anonym')[0].isupper():
+        page = Page()
+        element = Element(element).render(page)
+    return element
+
+
 def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewport="width=device-width, initial-scale=1.0", metas={}, properties={}, equivs={}):
     sep = '\n    '
 
-    if isinstance(content, Element):
-        page = Page()
-        content = content.render(page)
-    elif callable(content) and getattr(content, '__name__', 'anonym')[0].isupper():
-        page = Page()
-        content = Element(content).render(page)
+    content = render(content)
 
     metas = sep.join(f'<meta name="{name}" content="{value}">'
                        for name, value in metas.items())

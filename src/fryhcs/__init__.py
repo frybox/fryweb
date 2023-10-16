@@ -1,2 +1,2 @@
 from .element import Element
-from .page import html
+from .page import html, render

@@ -1,5 +1,7 @@
-# fryhcs
+# Fryhcs
 A python library to generate HTML, Javascript and CSS, based on pyx file.
+
+Fryhcs is inspired heavily by React jsx, TailwindCSS, WindiCSS in JS ecosystem.
 
 ## Features
 * Support pyx extension to normal python file, similar to jsx, write html tags in python file.
@@ -61,7 +63,12 @@ def index():
 
 ```
 
-Generated CSS file `static/css/styles.css`:
+To generated CSS file `static/css/styles.css`, run command:
+```bash
+$ fry x2css app.pyx
+```
+
+Generated CSS:
 
 ```css
 ....
@@ -87,12 +94,35 @@ Generated CSS file `static/css/styles.css`:
 To serve this app, run command:
 
 ```bash
-$ fry run --debug
+$ fry serve --debug
 ```
 
 Open browser, access `http://127.0.0.1:5000` to browse the page.
 
 Change the app.pyx file, save, check the browser auto reloading.
+
+`fryhcs.render` can be used to render component directly.
+
+Create components.pyx and input following code:
+
+```python
+from fryhcs import Element
+
+def Component(props):
+    return <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
+             Hello FryHCS!
+           </h1>
+
+if __name__ == '__main__':
+    from fryhcs import render
+    print(render(Component))
+```
+
+Run command to see the generated html fragment:
+```bash
+$ fry run component.pyx
+```
+
 
 ### 2. Using python variable in html markup:
 
