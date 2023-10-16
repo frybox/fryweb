@@ -20,17 +20,16 @@ def App(props):
                  Increment
                </button>
              </div>
-
-             <script initial={initial_count}>
-                import {signal} from "fryhcs"
-
-                count = signal(initial)
-
-                function increment() {
-                    count.value ++
-                }
-             </script>
            </div>
+           <script initial={initial_count}>
+              import {signal} from "fryhcs"
+
+              count = signal(initial)
+
+              function increment() {
+                  count.value ++
+              }
+           </script>
 
 @app.get('/')
 def index():

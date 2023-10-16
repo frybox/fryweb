@@ -3,7 +3,7 @@ script = script_item*
 
 inner_script = inner_script_item*
 
-script_item = comment / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_root_element / less_than_char / normal_code
+script_item = comment / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element_with_web_script / less_than_char / normal_code
 
 inner_script_item = comment / brace / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element / less_than_char / inner_normal_code
 
@@ -28,6 +28,8 @@ less_than_char = '<'
 normal_code = ~"[^#'\"<]+"
 
 inner_normal_code = ~"[^#'\"<{}]+"
+
+pyx_element_with_web_script = pyx_root_element maybe_web_script
 
 pyx_root_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
 
@@ -92,7 +94,9 @@ maybe_css_literal = pyx_css_literal?
 
 pyx_children = pyx_child*
 
-pyx_child = embed_value / client_embed_value / web_component_script / html_comment / pyx_element / pyx_text / no_embed_char
+# 将<script>从root_element内部挪到root_element之后
+#pyx_child = embed_value / client_embed_value / web_component_script / html_comment / pyx_element / pyx_text / no_embed_char
+pyx_child = embed_value / client_embed_value / html_comment / pyx_element / pyx_text / no_embed_char
 
 embed_value = embed maybe_space maybe_client_embed
 
@@ -103,7 +107,10 @@ pyx_text = ~r"[^<>{}[\]]+"
 
 no_embed_char = ~r"[{}[\]]"
 
-web_component_script = '<script' pyx_attributes maybe_space '>' client_script "</script>"
+maybe_web_script =  web_script?
+
+web_script = maybe_space ~",?" maybe_space '<script' pyx_attributes maybe_space '>' client_script "</script>"
+#web_component_script = '<script' pyx_attributes maybe_space '>' client_script "</script>"
 
 html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 

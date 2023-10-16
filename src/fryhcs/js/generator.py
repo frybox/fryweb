@@ -81,7 +81,7 @@ class JSGenerator(BaseGenerator):
     def visit_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_root_element(self, node, children):
+    def visit_pyx_element_with_web_script(self, node, children):
         if self.script or self.embeds:
             uuid = self.get_uuid(node)
             self.web_components.append({
@@ -113,8 +113,8 @@ class JSGenerator(BaseGenerator):
     def visit_pyx_attribute_value(self, node, children):
         return children[0]
 
-    def visit_web_component_script(self, node, children):
-        _begin, attributes, _, _lessthan, script, _end = children
+    def visit_web_script(self, node, children):
+        _, _sep, _, _begin, attributes, _, _lessthan, script, _end = children
         self.args = [k for k in attributes if k]
         self.script = script
 

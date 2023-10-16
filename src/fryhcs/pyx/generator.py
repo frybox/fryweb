@@ -288,10 +288,9 @@ class PyGenerator(BaseGenerator):
     def visit_inner_normal_code(self, node, children):
         return node.text
 
-    def visit_pyx_root_element(self, node, children):
-        name, attrs = children[0]
-        if name == 'script':
-            raise BadGrammar("'script' can't be used as the root element name") 
+    def visit_pyx_element_with_web_script(self, node, children):
+        element, _webscript = children
+        name, attrs = element
         if self.web_component_script:
             uuid = self.get_uuid(node)
             args = [(k,v) for k,v in self.client_script_args.items()]
@@ -302,10 +301,16 @@ class PyGenerator(BaseGenerator):
         attrs = concat_kv(attrs)
         return f'Element({name}, {{{", ".join(attrs)}}})'
 
+    def visit_pyx_root_element(self, node, children):
+        name, attrs = children[0]
+        if name == 'script':
+            raise BadGrammar("'script' can't be used as the normal element name") 
+        return name, attrs
+
     def visit_pyx_element(self, node, children):
         name, attrs = children[0]
         if name == 'script':
-            raise BadGrammar(f"Something is wrong in script: {node.text}") 
+            raise BadGrammar("'script' can't be used as the normal element name") 
         attrs = concat_kv(attrs)
         return ('element', f'Element({name}, {{{", ".join(attrs)}}})')
 
@@ -530,9 +535,9 @@ class PyGenerator(BaseGenerator):
     #                           服务端：`data-fryembed=[ClientEmbed]`，ClientEmbed值
     #                           浏览器：`data-fryembed="4/3-object-foo"`，父组件js值
     # name不能以'fry'开头
-    def visit_web_component_script(self, node, children):
+    def visit_web_script(self, node, children):
         self.web_component_script = True
-        _begin, attributes, _, _lessthan, _script, _end = children
+        _, _sep, _, _begin, attributes, _, _lessthan, _script, _end = children
         for attr in attributes:
             if attr[0] not in (literal_attr, py_attr, jsop_attr):
                 raise BadGrammar("script attributes can only be literal_attr, py_attr or jsop_attr")

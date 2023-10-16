@@ -115,16 +115,16 @@ def FunctionComponent(props):
       </div>
       <!-- script的属性可以在js中以变量的形式直接使用，但所有属性值都是字符串，需要的话做一定转换,
            如下面的initage。-->
-      <script initage={a}>
-        import {signal} from 'fryhcs';
+    </div>
+    <script initage={a}>
+      import {signal} from 'fryhcs';
 
-        const age = signal(parseInt(initage));
+      const age = signal(parseInt(initage));
 
-        function increment() {
-            age.value ++;
-        }
-      </script>
-    </div>)
+      function increment() {
+          age.value ++;
+      }
+    </script>)
 
 def FunctionComponent2(props):
     mylist = ('disabled', 'hidden', 'text-cyan-50')
@@ -138,17 +138,16 @@ def FunctionComponent2(props):
 
 def FunctionComponent3(props):
     return (
-     <div>
-       <div>[初始值](value)</div>
-       <script>
-         let value = 10;
+      <div>
+        <div>[初始值](value)</div>
+      </div>
+      <script>
+        let value = 10;
 
-         function increment() {
-             value ++;
-         }
-       </script>
-     </div>
-    )
+        function increment() {
+            value ++;
+        }
+      </script>)
 
 if __name__ == '__main__':
     from fryhcs import render

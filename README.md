@@ -9,7 +9,7 @@ Fryhcs is inspired heavily by React jsx, TailwindCSS, WindiCSS in JS ecosystem.
 * Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
 * Support django/flask framework.
 * Provide development server which supports server/browser auto reloading when file saved.
-* Provide a command line tool `fry`, build css/js and run development server. 
+* Provide a command line tool `fry`, build css/js, run pyx file and run development server. 
 
 All features are implemented in python, no node ecosystem is required.
 
@@ -296,6 +296,8 @@ Generated HTML:
     </body>
 </html>
 ```
+
+## Command Line Tool `fry`
 
 ## Configuration
 
