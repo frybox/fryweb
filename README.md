@@ -63,7 +63,7 @@ def index():
 
 ```
 
-To generated CSS file `static/css/styles.css`, run command:
+To generate CSS file `static/css/styles.css`, run command:
 ```bash
 $ fry x2css app.pyx
 ```
@@ -164,7 +164,7 @@ def index():
 
 ```
 
-### 3. Add js login and reactive variable:
+### 3. Add js logic and reactive variable(signal):
 
 ```python
 from fryhcs import html, Element
@@ -296,6 +296,12 @@ Generated HTML:
     </body>
 </html>
 ```
+
+## Configuration
+
+## Working with Django
+
+## Working with Flask
 
 ## License
 MIT License
