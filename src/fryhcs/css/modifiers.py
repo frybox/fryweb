@@ -77,6 +77,7 @@ selector_modifiers = set(selector_modifier_templates.keys())
 re_selector_modifier_templates = {
     f'aria-(.+)':          r'{selector}[aria-{group1}]',       # &[aria-xxx]
     f'data-(.+)':          r'{selector}[data-{group1}]',       # &[data-xxx]
+    f'nth-(\d+)':          r'{selector}:nth-child({group1})',  # &:nth-child(ddd)
     f'group-([^@]+)':      r'.group:{group1} {selector}, [group=""]:{group1} {selector}',
     f'group-([^@]+)@(.+)': r'.group\@{group2}:{group1} {selector}, [group\@{group2}=""]:{group1} {selector}',
     f'peer-([^@]+)':       r'.peer:{group1} ~ {selector}, [peer=""]:{group1} ~ {selector}',
