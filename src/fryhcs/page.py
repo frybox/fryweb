@@ -47,24 +47,34 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     if fryconfig.debug:
         script = """
   <script type="module">
-    let serverId = undefined
-    async function checkAutoReload() {
-        let reload = false
-        try {
-            let resp = await fetch("{{autoReloadPath}}")
-            let data = await resp.json()
-            if (serverId === undefined) {
-                serverId = data.serverId
+    let serverId = null;
+    let eventSource = null;
+    let timeoutId = null;
+    function checkAutoReload() {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+        timeoutId = setTimeout(checkAutoReload, 1000);
+        if (eventSource !== null) eventSource.close();
+        eventSource = new EventSource("{{autoReloadPath}}");
+        eventSource.addEventListener('open', () => {
+            console.log(new Date(), "Auto reload connected.");
+            if (timeoutId !== null) clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkAutoReload, 1000);
+        });
+        eventSource.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            if (serverId === null) {
+                serverId = data.serverId;
             } else if (serverId !== data.serverId) {
-                reload = true
-                location.reload()
+                if (eventSource !== null) eventSource.close();
+                if (timeoutId !== null) clearTimeout(timeoutId);
+                location.reload();
+                return;
             }
-        } catch(err) { }
-        if (!reload) {
-            setTimeout(checkAutoReload, 1000)
-        }
+            if (timeoutId !== null) clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkAutoReload, 1000);
+        });
     }
-    checkAutoReload()
+    checkAutoReload();
   </script>
 """
         autoreload = script.replace('{{autoReloadPath}}', fryconfig.check_reload_url)

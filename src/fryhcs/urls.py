@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import path
 
-from .views import components, hotreload
+from .views import components, check_hotreload
 
 app_name = 'fryhcs'
 
