@@ -11,5 +11,5 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += [
-        path('_hotreload', hotreload, name="hotreload"),
+        path('_check_hotreload', hotreload, name="check_hotreload"),
     ]

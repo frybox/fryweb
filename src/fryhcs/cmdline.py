@@ -637,11 +637,12 @@ def run(
         js_generator = create_js_generator()
 
     if use_reloader:
-        from uuid import uuid4
-        server_id = uuid4().hex
-        @app.get('/_hotreload')
-        def fryhcs_hotreload():
-            return f'{{"serverId": "{server_id}"}}'
+        from fryhcs.reload import event_stream, mime_type
+        from flask import Response
+
+        @app.get('/_check_hotreload')
+        def fryhcs_check_hotreload():
+            return Response(event_stream(), mimetype=mime_type)
 
     static_files = static_files if static_files else {}
 

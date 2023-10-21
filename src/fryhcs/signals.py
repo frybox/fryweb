@@ -88,7 +88,7 @@ def template_changed(sender, file_path, **kwargs):
 
     # 当有html、js或css文件发生变更时，不需要服务端reoad，但浏览器需要reload
     if file_path.suffix in ('.html', '.js', '.css'):
-        from .views import update_serverid
+        from fryhcs.reload import update_serverid
         update_serverid()
         return True
     # 其他情况，可能要服务端reload

@@ -56,9 +56,9 @@ class FryConfig():
             return ''
         if self.django_ok:
             from django.urls import reverse
-            return reverse('fryhcs:hotreload')
+            return reverse('fryhcs:check_hotreload')
         if self.flask_ok:
-            return flask_app.url_for('fryhcs_hotreload')
+            return flask_app.url_for('fryhcs_check_hotreload')
         return ''
 
     @property
