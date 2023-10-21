@@ -5,6 +5,7 @@ import re
 
 from fryhcs.fileiter import FileIter
 from fryhcs.pyx.grammar import grammar
+from fryhcs.spec import is_valid_html_attribute
 
 class BaseCollector():
     ignored_tags = ('head', 'title', 'meta', 'style', 'link', 'script', 'template')
@@ -106,6 +107,8 @@ class CssVisitor(NodeVisitor):
             if isinstance(attr, str):
                 self.collect_literal(attr)
             elif isinstance(attr, tuple):
+                if is_valid_html_attribute(name, attr[0]):
+                    continue
                 self.collect_kv(attr[0], attr[1])
 
     def visit_pyx_start_tag(self, node, children):
@@ -116,6 +119,8 @@ class CssVisitor(NodeVisitor):
             if isinstance(attr, str):
                 self.collect_literal(attr)
             elif isinstance(attr, tuple):
+                if is_valid_html_attribute(start_name, attr[0]):
+                    continue
                 self.collect_kv(attr[0], attr[1])
 
     def visit_pyx_element_name(self, node, children):
