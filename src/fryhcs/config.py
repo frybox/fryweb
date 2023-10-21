@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 try:
     from django.conf import settings as django_settings
@@ -29,20 +30,25 @@ class FryConfig():
                 pass
         return False
 
-    def item(self, django_name, flask_name, default):
+    def item(self, name, default):
         if self.django_ok:
-            return getattr(django_settings, django_name, default)
+            return getattr(django_settings, name, default)
         if self.flask_ok:
-            return flask_app.config.get(flask_name, default)
+            return flask_app.config.get(name, default)
+        if name in os.environ:
+            value = os.environ[name]
+            if isinstance(default, (list, tuple)):
+                value = value.split(':')
+            return value
         return default
 
     @property
     def js_url(self):
-        return self.item('FRYHCS_JS_URL', 'FRYHCS_JS_URL', 'js/components/')
+        return self.item('FRYHCS_JS_URL', 'js/components/')
 
     @property
     def css_url(self):
-        return self.item('FRYHCS_CSS_URL', 'FRYHCS_CSS_URL', 'css/styles.css')
+        return self.item('FRYHCS_CSS_URL', 'css/styles.css')
 
     @property
     def check_reload_url(self):
@@ -57,7 +63,7 @@ class FryConfig():
 
     @property
     def debug(self):
-        return self.item('DEBUG', 'DEBUG', True)
+        return self.item('DEBUG', True)
 
     @property
     def static_root(self):
@@ -72,6 +78,10 @@ class FryConfig():
         if self.flask_ok:
             return Path(flask_app.static_folder)
         return Path('.')
+
+    @property
+    def plugins(self):
+        return self.item('FRYHCS_PLUGINS', [])
 
     @property
     def static_url(self, default='/static'):

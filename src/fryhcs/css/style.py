@@ -11,14 +11,50 @@ def quote_selector(value):
 
 
 class CSS():
-    DEFAULT_ORDER          = -100000
-    DEFAULT_MODIFIER_ORDER = -10000
-    def __init__(self, key='', value='', toclass=True):
+    def __init__(self, key='', value='', toclass=True, generate=True):
         self.key = key
         self.value = value
         self.toclass = toclass
+        self.wrappers = []
+        self.modifiers = []
+        self.utility_args = []
+        self.selector = ''
+        self.selector_template = '{selector}'
+        self.styles = []
+        self.addons = []
+        self.plugin_order = 1000
+        self.level_order = 0
+        self.screen_order = []
+        self.valid = True
         self.parse()
-        self.generate()
+        if generate:
+            self.generate()
+
+    def clone(self):
+        css = CSS(generate=False)
+        css.key = self.key
+        css.value = self.value
+        css.toclass = self.toclass
+        css.modifiers = self.modifiers[:]
+        css.utility_args = self.utility_args[:]
+        css.selector = self.selector
+        css.selector_template = self.selector_template
+        css.styles = self.styles[:]
+        css.addons = [addon.clone() for addon in self.addons]
+        css.plugin_order = self.plugin_order
+        css.level_order = self.level_order
+        css.screen_order = self.screen_order
+        css.valid = self.valid
+        return css
+
+    def update_values(self, args):
+        self.styles = [(k, v.format_map(args)) for k,v in self.styles]
+        for addon in self.addons:
+            addon.update_values(args)
+
+    @property
+    def order(self):
+        return (self.plugin_order, self.level_order, *self.screen_order)
 
     @classmethod
     def union(cls, csses):
@@ -47,14 +83,23 @@ class CSS():
         """
         for class, key = '';
         for no-value attribute, value = ''
+        from:
+            self.key
+            self.value
         generate:
-          selector: css selector based on the value of key and value
-          modifiers: all modifiers
-          utility_args: utility and its args
+            self.selector: css selector based on the value of key and value
+            self.modifiers: all modifiers
+            self.utility_args: utility and its args
         如果utility中的大小为负值，则utility_args[0]以'-'开头
         """
         key = self.key
         value = self.value
+
+        if not key and not value:
+            self.modifiers = []
+            self.utility_args = []
+            self.selector = ''
+            return
 
         if not key:
             # class的css匹配方式: .classname
@@ -103,11 +148,16 @@ class CSS():
             self.selector = '.' + quote_selector(self.to_class())
 
     def generate(self):
-        self.wrappers = []
-        self.styles = []
-        self.addons = []
-        self.order = self.DEFAULT_ORDER
-        self.valid = True
+        """
+        from:
+            self.modifiers
+            self.utility_args
+        generate:
+            self.wrappers
+            self.selector_template
+            self.styles
+            self.addons
+        """
         for modifier in self.modifiers:
             if not add_modifier(self, modifier):
                 self.valid = False
@@ -115,13 +165,27 @@ class CSS():
         self.utility = Utility(self)
         self.valid = self.utility()
     
-    def new_addon(self):
-        addon = CSS()
+    def add_style(self, key, value):
+        style = (key, value)
+        self.styles.append(style)
+
+    def new_addon(self, key='', value='', generate=False):
+        addon = CSS(key, value, generate)
         self.addons.append(addon)
         return addon
 
+    def add_addon(self, addon):
+        self.addons.append(addon)
+
     def quote(self, value):
         return quote_selector(value)
+
+    def has_styles(self):
+        if not self.valid:
+            return False
+        if len(self.styles) > 0:
+            return True
+        return any(addon.has_styles() for addon in self.addons)
 
     def lines(self, new_selector=''):
         if not self.valid:
@@ -129,16 +193,21 @@ class CSS():
         twospace = '  '
         indent = ''
         lines = []
+        if not self.has_styles():
+            return lines
         for wrapper in self.wrappers:
             lines.append(indent + wrapper + ' {')
             indent += twospace
-        selector = self.selector or new_selector
-        lines.append(indent + selector + ' {')
-        indent += twospace
-        for style in self.styles:
-            lines.append(indent + style)
-        indent = indent[:-2]
-        lines.append(indent + '}')
+        selector = new_selector or self.selector
+        selector = self.selector_template.format(selector=selector)
+        if len(self.styles) > 0:
+            lines.append(indent + selector + ' {')
+            indent += twospace
+            for k, v in dict(self.styles).items():
+                style = f'{k}: {v};'
+                lines.append(indent + style)
+            indent = indent[:-2]
+            lines.append(indent + '}')
         for addon in self.addons:
             lines.append('')
             for line in addon.lines(selector):

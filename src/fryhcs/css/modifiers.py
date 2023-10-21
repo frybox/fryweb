@@ -106,13 +106,17 @@ wrapper_modifier_templates = {
     'contrast-more': '@media (prefers-contrast: more)',                 # @media (prefers-contrast: more) { ... }
     'contrast-less': '@media (prefers-contrast: less)',                 # @media (prefers-contrast: less) { ... }
     'print':         '@media print',                                    # @media print { ... }
+
+    # add for support plugin
+    'hover-hover':   '@media (hover: hover)',                           # @media (hover: hover) { ... }
+    'hover-none':    '@media (hover: none)',                            # @media (hover: none) { ... }
 }
 wrapper_modifiers = set(wrapper_modifier_templates.keys())
 
 re_wrapper_modifier_templates = {
-    f'min-([0-9]+)px':         ('@media (min-width: {group1}px)', '{group1}'),    # @media (min-width: xxx) { ... }
-    f'max-([0-9]+)px':         ('@media (max-width: {group1}px)', '-{group1}'),   # @media (max-width: xxx) { ... }
-    f'supports-(.+)': '@supports ({group1})',                            # @supports (xxx) { ... }
+    f'min-([0-9]+)px': ('@media (min-width: {group1}px)', '{group1}'),  # @media (min-width: xxx) { ... }
+    f'max-([0-9]+)px': ('@media (max-width: {group1}px)', '-{group1}'), # @media (max-width: xxx) { ... }
+    f'supports-(.+)':  '@supports ({group1})',                          # @supports (xxx) { ... }
 }
 re_wrapper_modifiers = set(re_wrapper_modifier_templates.keys())
 
@@ -132,26 +136,21 @@ def is_modifiers(value):
 
 
 def add_modifier(css, modifier):
-    css.order = css.DEFAULT_MODIFIER_ORDER
-
     def convert_template(template):
         if isinstance(template, tuple):
-            template, order = template
-            if order > css.order:
-                css.order = order
+            template, screen_order = template
+            self.screen_order.append(screen_order)
         return template
 
     def convert_re_template(template, group1, group2):
         if isinstance(template, tuple):
-            template, order = template
-            order = int(order.format(group1=group1, group2=group2))
-            if order > css.order:
-                css.order = order
+            template, screen_order = template
+            self.screen_order.append(screen_order)
         return template
 
     if modifier in selector_modifiers:
         template = convert_template(selector_modifier_templates[modifier])
-        css.selector = template.format(selector=css.selector, modifier=modifier)
+        css.selector_template = template.format(selector=css.selector_template, modifier=modifier)
         return True
     elif modifier in wrapper_modifiers:
         template = convert_template(wrapper_modifier_templates[modifier])
@@ -168,7 +167,7 @@ def add_modifier(css, modifier):
                 if ngroup > 1:
                     group2 = css.quote(match.group(2))
                 template = convert_re_template(re_selector_modifier_templates[pattern], group1, group2)
-                css.selector = template.format(selector=css.selector, group1=group1, group2=group2)
+                css.selector_template = template.format(selector=css.selector_template, group1=group1, group2=group2)
                 return True
 
         for pattern in re_wrapper_modifiers:

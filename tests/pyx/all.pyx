@@ -14,7 +14,7 @@ from fryhcs import Element
 
 def FunctionComponent(props):
     # 可以直接将html赋值给变量
-    content1 = <span text-cyan-500 hover:text="cyan-400"  dark="text-cyan-600">你好</span>
+    content1 = <span text-cyan-500 hover:text="cyan-400"  hover:container dark="text-cyan-600">你好</span>
 
     # 多行html赋值的时候可以加括号:
     content2 = (

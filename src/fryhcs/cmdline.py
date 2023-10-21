@@ -680,7 +680,8 @@ def run(
 
     if not is_running_from_reloader():
         srv.log_startup()
-        generate_static()
+        with app.app_context():
+            generate_static()
         logger.info(_ansi_style("Press CTRL+C to quit", "yellow"))
 
     if use_reloader:
@@ -936,10 +937,15 @@ def x2js_command(pyxfile, jsdir):
 
 
 @click.command("x2css", short_help="Convert specified .pyx file into style.css file.")
+@click.option("-p", "--plugin", multiple=True, help="Specify a plugin to be loaded")
 @click.argument("pyxfile")
 @click.argument("cssfile")
-def x2css_command(pyxfile, cssfile):
+def x2css_command(plugin, pyxfile, cssfile):
     """Convert specified .pyx file into style.css file."""
+    if plugin:
+        sys.path.insert(0, '')
+        plugins = ':'.join(plugin)
+        os.environ['FRYHCS_PLUGINS'] = plugins
     from fryhcs.css.generator import CSSGenerator
     path = Path(pyxfile)
     if not path.is_file():

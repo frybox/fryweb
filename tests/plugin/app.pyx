@@ -2,6 +2,7 @@ from fryhcs import html, Element
 from flask import Flask
 
 app = Flask(__name__)
+app.config['FRYHCS_PLUGINS'] = ['daisyui']
 
 def App(props):
     initial_count = 20
@@ -14,9 +15,8 @@ def App(props):
                <span text-red-600>{initial_count}(count)</span>
              </p>
              <div flex w-full justify-center>
-               <button
-                 @click=(increment)
-                 class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none">
+               <button btn btn-success
+                 @click=(increment)>
                  Increment
                </button>
              </div>
@@ -34,3 +34,4 @@ def App(props):
 @app.get('/')
 def index():
     return html(App, "Hello")
+
