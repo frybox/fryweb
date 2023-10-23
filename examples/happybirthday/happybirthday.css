@@ -22,7 +22,7 @@ h1, h2, span {
 
     body {
         background: linear-gradient(to right, #e2b8f7, #d4bafa, #c7bcfb, #b9befb, #acbff9);
-        cursor: crosshair;
+        /*cursor: crosshair;*/
         perspective: 1000px;
         transform-style: preserve-3d;
         font-family: "Pacifico",cursive;
@@ -43,12 +43,19 @@ h1, h2, span {
         letter-spacing: 6px;
     }
 
-    span {
+    span.baozhu {
         position: fixed;
         text-align: center;
         width: 100%;
-        top: 70px;
-        font-size: 70px;
+        top: 20px;
+        font-size: 90px;
+    }
+
+    span.red {
+        display: inline;
+        background: -webkit-linear-gradient(90deg, #e9e6ff 0%, red  100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     h2 {
@@ -813,6 +820,27 @@ h1, h2, span {
         transform: translateZ(80px);
     }
 
+    .caizhehan {
+        position: fixed;
+        text-align: center;
+        width: 100%;
+        top: 450px;
+        font-size: 60px;
+        background: -webkit-linear-gradient(0deg, #ceadfc 0%, #a3bbfb 100%);
+        background: -webkit-linear-gradient(90deg, #e9e6ff 0%, white 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-family: 'Concert One', cursive;
+        font-weight: 400;
+        z-index: -1;
+        letter-spacing: 6px;
+    }
+
+    .cpoem {
+        font-size: 40px;
+    }
+
+
     .candle {
         position: relative;
         height: 50px;
@@ -1120,4 +1148,21 @@ h1, h2, span {
     }
 }
 
+html, body: {
+    display: block;
+}
 
+#fireworks {
+    background-color: black;
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+#happy-birthday {
+    opacity: 0;
+}

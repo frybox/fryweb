@@ -3,6 +3,9 @@ import re
 def is_digit(value):
     return value.isdigit()
 
+def is_digit_range(value, minv, maxv):
+    return value.isdigit() and minv <= int(value) <= maxv
+
 def is_float(value):
     vs = value.split('.')
     return len(vs) == 2 and all((v=='' or v.isdigit()) for v in vs)
@@ -71,6 +74,11 @@ def convert_color(args):
         is_hex(args[1]) and
         len(args[1]) in (3, 4, 6, 8)):
         return '#' + args[1]
+    if (len(args) == 1 and
+        args[0][0] == '#' and
+        is_hex(args[0][1:]) and
+        len(args[0]) in (4, 5, 7, 9)):
+        return args[0]
 
     # tailwind风格的颜色，支持透明度
     values = {
@@ -1772,9 +1780,13 @@ class Utility():
             return False
 
         # from position
+        if self.argc == 2 and is_digit_range(self.args[1], 0, 100):
+            self.add_style('--fry-gradient-from-position', f'{self.args[1]}%')
+            return True
         if self.argc == 2 and is_percent(self.args[1]):
             self.add_style('--fry-gradient-from-position', self.args[1])
             return True
+
 
         # from color
         color = convert_color(self.args[1:])
@@ -1792,6 +1804,9 @@ class Utility():
             return False
 
         # via position
+        if self.argc == 2 and is_digit_range(self.args[1], 0, 100):
+            self.add_style('--fry-gradient-via-position', f'{self.args[1]}%')
+            return True
         if self.argc == 2 and is_percent(self.args[1]):
             self.add_style('--fry-gradient-via-position', self.args[1])
             return True
@@ -1810,6 +1825,9 @@ class Utility():
             return False
 
         # to position
+        if self.argc == 2 and is_digit_range(self.args[1], 0, 100):
+            self.add_style('--fry-gradient-to-position', f'{self.args[1]}%')
+            return True
         if self.argc == 2 and is_percent(self.args[1]):
             self.add_style('--fry-gradient-to-position', self.args[1])
             return True

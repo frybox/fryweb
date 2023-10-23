@@ -451,4 +451,7 @@ video {
   --fry-backdrop-opacity:  ;
   --fry-backdrop-saturate:  ;
   --fry-backdrop-sepia:  ;
+  --fry-gradient-from-position: 0%;
+  --fry-gradient-via-position: 50%;
+  --fry-gradient-to-position: 100%;
 }

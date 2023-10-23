@@ -9,8 +9,7 @@ def index():
 
 def HappyBirthday(props):
     return (
-      <div bg-gradient-to-r from-fuchsia-200 to-indigo-200
-        w-full h-full>
-        Hello world
+      <div bg-gradient-to-r from-fuchsia-200 via-hex-371 to-indigo-200
+        w-full h-100vh>
       </div>
     )
