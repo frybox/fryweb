@@ -83,13 +83,13 @@ utilities = {
 # css时才能转样式，而这个utility所依赖的utility又会依赖其他utility，这个链条
 # 会非常长。
 # 不支持引用变量后，插件加载时其中定义的utility直接编译到样式，pyx中的utility转css会加快很多。
-#        '&-<color:brand-color>': {
+#        '@utility:&-<color:brand-color>': {
 #            '@apply': 'border-<color> bg-<color> text-<color>-content outline-<color>',
 #            'hover-hover:hover:&, active:&': {
 #                '@apply': 'border-<color>-focus bg-<color>-focus',
 #            },
 #        },
-#        '&-<color:state-color>': {
+#        '@utility: &-<color:state-color>': {
 #            '@apply': 'border-<color> bg-<color> text-<color>-content outline-<color>',
 #            'hover-hover:hover:&, active:&': {
 #                '@apply': 'border-<color> bg-<color>',
@@ -97,49 +97,49 @@ utilities = {
 #        },
 
 # 不支持引用变量后，如上两条定义将扩展为如下8条定义：
-        '&-primary': {
+        '@utility: &-primary': {
             '@apply': 'border-primary bg-primary text-primary-content outline-primary',
             'hover-hover:hover:&': {
                 '@apply': 'border-primary-focus bg-primary-focus',
             },
         },
-        '&-secondary': {
+        '@utility: &-secondary': {
             '@apply': 'border-secondary bg-secondary text-secondary-content outline-secondary',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-secondary-focus bg-secondary-focus',
             },
         },
-        '&-accent': {
+        '@utility: &-accent': {
             '@apply': 'border-accent bg-accent text-accent-content outline-accent',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-accent-focus bg-accent-focus',
             },
         },
-        '&-neutral': {
+        '@utility: &-neutral': {
             '@apply': 'border-neutral bg-neutral text-neutral-content outline-neutral',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-neutral-focus bg-neutral-focus',
             },
         },
-        '&-info': {
+        '@utility: &-info': {
             '@apply': 'border-info bg-info text-info-content outline-info',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-info bg-info',
             },
         },
-        '&-success': {
+        '@utility: &-success': {
             '@apply': 'border-success bg-success text-success-content outline-success',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-success bg-success',
             },
         },
-        '&-warning': {
+        '@utility: &-warning': {
             '@apply': 'border-warning bg-warning text-warning-content outline-warning',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-warning bg-warning',
             },
         },
-        '&-error': {
+        '@utility: &-error': {
             '@apply': 'border-error bg-error text-error-content outline-error',
             'hover-hover:hover:&, active:&': {
                 '@apply': 'border-error bg-error',

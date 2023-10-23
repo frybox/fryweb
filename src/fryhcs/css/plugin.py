@@ -105,15 +105,16 @@ def load_utility(name, content, types, pid, level):
                 raise PluginError(f"@apply can only have string value, not '{value}'.")
             subutils = value.split()
             subcsses += [CSS(value=v) for v in subutils]
+        elif key.startswith('@utility:'):
+            if not isinstance(value, dict):
+                raise PluginError(f"New sub-utility '{key}' should have dict value.")
+            key = key.split(':',1)[1].strip()
+            key = key.replace('&', name)
+            load_utility(key, value, types, pid, level+1)
         elif key.endswith(':&'):
             if '&' in key[:-2]:
                 raise PluginError(f"Invalid format for '{key}'.")
             subcsses += load_subutilities(key[:-2], value)
-        elif '&' in key:
-            if not isinstance(value, dict):
-                raise PluginError(f"New sub-utility '{name}' should have dict value.")
-            key = key.replace('&', name)
-            load_utility(key, value, types, pid, level+1)
         elif isinstance(value, str):
             defaultcss.add_style(key, value)
         else:

@@ -5,6 +5,7 @@ import hashlib
 from fryhcs.pyx.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
+from fryhcs.element import children_attr_name, call_client_script_attr_name
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -29,8 +30,6 @@ class BaseGenerator(NodeVisitor):
 
 
 #client_embed_attr_name = 'data-fryembed'
-children_attr_name = 'children'
-call_client_script_attr_name = 'call-client-script'
 
 no_attr = 'no_attr'                   # ('no_attr', ...)
 spread_attr = 'spread_attr'           # ('spread_attr', script): {script}
@@ -128,6 +127,8 @@ def concat_kv(attrs):
 #   * `@event={py_value}`                  : ClientEmbed类型的python值，父组件的事件处理函数
 #                                            服务端：data-fry-script一项
 #                                            浏览器：data-fry-script一项
+#   * `$name={py_value}`                   : python值在服务端渲染为常量赋值给属性name，传给浏览器引擎
+#                                            目前支持的name只有"style"($style)
 #   * `name={py_value}`                    : python值在服务端渲染为常量传给浏览器引擎，不可以为ClientEmbed
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
@@ -150,6 +151,11 @@ def check_html_element(name, attrs):
             raise BadGrammar(f"Invalid attribute type '{atype}' in html element '{name}'")
         if attr[1][0] == '@' and atype not in (js_attr, py_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
+        if attr[1][0] == '$':
+            if attr[1] != '$style':
+                raise BadGrammar("unsupported attribute name: '$style'")
+            if atype != py_attr:
+                raise BadGrammar(f"invalid attribute type '{atype}' for '{attr[1]}' in html element '{name}': '{py_attr}' needed.")
         if atype == js_attr:
             if attr[1][0] != '@':
                 raise BadGrammar(f"js_attr type can only be specified for event handler, not '{attr[1]}'")
@@ -202,7 +208,7 @@ def check_html_element(name, attrs):
 #                             元素值转化为Element实例传给子组件
 #                             服务端：Element实例
 #                             浏览器：不可见
-#   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，不包括ClientEmbed
+#   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，包括ClientEmbed
 #                             服务端：python数据
 #                             浏览器：不可见
 #   * `name=(js_value)`     : 本组件js值在客户端运行时传给子组件

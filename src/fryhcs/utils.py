@@ -1,8 +1,6 @@
 from pathlib import Path
 
 from fryhcs.config import fryconfig
-from fryhcs.css.generator import CSSGenerator
-from fryhcs.js.generator import JSGenerator
 
 import os
 import inspect
@@ -48,9 +46,11 @@ def pyx_files():
 
 def create_css_generator():
     # input_files = [(dir, '**/*.html') for dir in template_directories()]
+    from fryhcs.css.generator import CSSGenerator
     return CSSGenerator(pyx_files(), fryconfig.css_file)
 
 def create_js_generator():
+    from fryhcs.js.generator import JSGenerator
     return JSGenerator(pyx_files(), fryconfig.js_root)
 
 

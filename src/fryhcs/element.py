@@ -1,7 +1,7 @@
 import inspect
 from fryhcs.utils import static_url, component_name
 from fryhcs.config import fryconfig
-from fryhcs.pyx.generator import call_client_script_attr_name
+from fryhcs.css.style import CSS
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -22,6 +22,34 @@ def render_children(children, page):
             chs.append(ch)
     return chs
 
+def combine_style(style1, style2):
+    if isinstance(style1, dict) and isinstance(style2, dict):
+        result = {}
+        result.update(style1)
+        result.update(style2)
+        return result
+    elif isinstance(style1, dict) and isinstance(style2, str):
+        result = ' '.join(f'{k}: {v};' for k,v in style1)
+        return result + style2.strip()
+    elif isinstance(style1, str) and isinstance(style2, dict):
+        result = ' '.join(f'{k}: {v};' for k,v in style2)
+        return result + style1.strip()
+    elif isinstance(style1, str) and isinstance(style2, str):
+        style1 = style1.strip()
+        style2 = style2.strip()
+        if len(style1) > 0 and style1[-1] != ';':
+            style1 += ';'
+        return style1 + style2
+
+
+def convert_utilities(utilities):
+    result = {}
+    csses = [CSS(value=utility) for utility in utilities.split()]
+    for css in csses:
+        if css.valid:
+            result.update(css.styles)
+    return result
+
 
 class ClientEmbed(object):
     def __init__(self, embed_id):
@@ -38,11 +66,15 @@ class ClientEmbed(object):
         else:
             return f'{self.component}/{self.embed_id}'
 
+component_attr_name = 'data-fryclass'
+component_id_attr_name = 'data-fryid'
+client_embed_attr_name = 'data-fryembed'
+children_attr_name = 'children'
+call_client_script_attr_name = 'call-client-script'
+style_attr_name = 'style'
+utility_attr_name = '$style'
 
 class Element(object):
-    component_attr_name = 'data-fryclass'
-    component_id_attr_name = 'data-fryid'
-    client_embed_attr_name = 'data-fryembed'
 
     def __init__(self, name, props={}, rendered=False):
         self.name = name
@@ -51,7 +83,7 @@ class Element(object):
 
     def is_component(self):
         if self.rendered:
-            return self.component_attr_name in self.props
+            return component_attr_name in self.props
         else:
             return inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
@@ -71,13 +103,13 @@ class Element(object):
 
     def collect_client_embed(self, component):
         def collect(e):
-            children = e.props.get('children', [])
+            children = e.props.get(children_attr_name, [])
             for ch in children:
                 if isinstance(ch, Element):
                     collect(ch)
-            embeds = e.props.get(self.client_embed_attr_name, [])
+            embeds = e.props.get(client_embed_attr_name, [])
             for key in list(e.props.keys()):
-                if key in (self.client_embed_attr_name, 'children'):
+                if key in (client_embed_attr_name, children_attr_name):
                     continue
                 value = e.props.get(key)
                 if isinstance(value, ClientEmbed) and value.component == component:
@@ -94,7 +126,7 @@ class Element(object):
                     embeds.append(value)
                     e.props.pop(key)
             if embeds:
-                e.props[self.client_embed_attr_name] = embeds
+                e.props[client_embed_attr_name] = embeds
         collect(self)
 
     def render(self, page):
@@ -139,15 +171,15 @@ class Element(object):
             element = result.render(page)
 
             # 6. 此时已hook到组件实例的js嵌入值已挂载到html元素树上的合适
-            #    位置，将这些js嵌入值收集到`self.client_embed_attr_name('data-fryembed')`属性上
+            #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`属性上
             element.collect_client_embed(cnumber)
             
             # 7. 将组件名和组件实例ID附加到html元素树的树根元素上
-            inner = element.props.get(self.component_attr_name, '')
-            inner_id = element.props.get(self.component_id_attr_name, '')
+            inner = element.props.get(component_attr_name, '')
+            inner_id = element.props.get(component_id_attr_name, '')
             cname = component_name(self.name)
-            element.props[self.component_attr_name] = f'{cname} {inner}' if inner else cname
-            element.props[self.component_id_attr_name] = f'{cnumber} {inner_id}' if inner_id else str(cnumber)
+            element.props[component_attr_name] = f'{cname} {inner}' if inner else cname
+            element.props[component_id_attr_name] = f'{cnumber} {inner_id}' if inner_id else str(cnumber)
 
             # 8. 如果当前组件存在js代码，将script脚本元素添加为树根元素的第一个子元素
             if calljs:
@@ -155,8 +187,8 @@ class Element(object):
                 scriptprops = {
                     'src': static_url(fryconfig.js_url) + uuid + '.js',
                     #'defer': True,
-                    self.component_id_attr_name: cnumber,
-                    'children': [],
+                    component_id_attr_name: cnumber,
+                    children_attr_name: [],
                 }
                 for k,v in args:
                     # 父组件实例传过来的js嵌入值
@@ -164,17 +196,29 @@ class Element(object):
                         scriptprops[k] = v
                     else:
                         scriptprops[f'data-{k}'] = v
-                children = element.props['children']
+                children = element.props[children_attr_name]
                 children.insert(0, Element('script', scriptprops, True))
         elif isinstance(self.name, str):
             props = {}
-            for k, v in self.props.items():
-                if k == 'children':
+            style = {} 
+            for k in list(self.props.keys()):
+                v = self.props[k]
+                if k == children_attr_name:
                     props[k] = render_children(v, page)
                 elif isinstance(v, Element):
                     props[k] = v.render(page)
+                elif k == utility_attr_name:
+                    if isinstance(v, (list, tuple)):
+                        v = ' '.join(v)
+                    elif not isinstance(v, str):
+                        raise RenderException(f"Invalid $style value: '{v}'")
+                    style = combine_style(style, convert_utilities(v))
+                elif k == style_attr_name:
+                    style = combine_style(style, v)
                 else:
                     props[k] = v
+            if style:
+                props[style_attr_name] = style
             element = Element(self.name, props, True)
         else:
             raise RenderException(f"invalid element name '{self.name}'")
@@ -186,7 +230,7 @@ class Element(object):
         if not self.rendered:
             return '<Element(not rendered)>'
 
-        children = self.props.pop('children', None)
+        children = self.props.pop(children_attr_name, None)
         attrs = []
         for k, v in self.props.items():
             if isinstance(v, dict):
