@@ -164,8 +164,10 @@ def plugin_basecss():
     output = []
     def lines(base, indent):
         for key, value in base.items():
-            if isinstance(value, str):
+            if isinstance(value, (str, int)):
                 output.append(f'{indent}{key}: {value};')
+            elif isinstance(value, (list, tuple)):
+                output.append(f'{indent}{key}: {" ".join(str(x) for x in value)};')
             elif isinstance(value, dict):
                 output.append(f'{indent}{key} {{')
                 lines(value, indent+'  ')

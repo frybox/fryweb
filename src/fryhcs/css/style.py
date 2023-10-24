@@ -11,6 +11,7 @@ def quote_selector(value):
 
 
 class CSS():
+    default_selector_template = '{selector}'
     def __init__(self, key='', value='', toclass=True, generate=True):
         self.key = key
         self.value = value
@@ -19,10 +20,10 @@ class CSS():
         self.modifiers = []
         self.utility_args = []
         self.selector = ''
-        self.selector_template = '{selector}'
+        self.selector_template = self.default_selector_template
         self.styles = []
         self.addons = []
-        self.plugin_order = 1000
+        self.plugin_order = 1000 # 默认最大，优先级最高
         self.level_order = 0
         self.screen_order = []
         self.valid = True

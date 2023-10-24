@@ -2,6 +2,7 @@ import inspect
 from fryhcs.utils import static_url, component_name
 from fryhcs.config import fryconfig
 from fryhcs.css.style import CSS
+import types
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -14,7 +15,7 @@ class RenderException(Exception):
 def render_children(children, page):
     chs = []
     for ch in children:
-        if isinstance(ch, (list, tuple)):
+        if isinstance(ch, (list, tuple, types.GeneratorType)):
             chs += render_children(ch, page)
         elif isinstance(ch, Element):
             chs.append(ch.render(page))
@@ -46,8 +47,11 @@ def convert_utilities(utilities):
     result = {}
     csses = [CSS(value=utility) for utility in utilities.split()]
     for css in csses:
-        if css.valid:
-            result.update(css.styles)
+        if not css.valid:
+            raise RenderException(f"Invalid utility '{css.value}' in '@apply'")
+        if css.wrappers or css.selector_template != css.default_selector_template:
+            raise RenderException(f"Modifier is not allowed in '@apply': '{css.value}'")
+        result.update(css.styles)
     return result
 
 
@@ -208,7 +212,7 @@ class Element(object):
                 elif isinstance(v, Element):
                     props[k] = v.render(page)
                 elif k == utility_attr_name:
-                    if isinstance(v, (list, tuple)):
+                    if isinstance(v, (list, tuple, types.GeneratorType)):
                         v = ' '.join(v)
                     elif not isinstance(v, str):
                         raise RenderException(f"Invalid $style value: '{v}'")
@@ -238,7 +242,7 @@ class Element(object):
                 for k1, v1 in v.items():
                     values.append(f"{k1}: {v1};")
                 value = ' '.join(values)
-            elif isinstance(v, (list, tuple)):
+            elif isinstance(v, (list, tuple, types.GeneratorType)):
                 value = ' '.join(str(x) for x in v)
             elif v is True:
                 value = ''

@@ -1,4 +1,5 @@
 import re
+from random import randint
 
 def is_digit(value):
     return value.isdigit()
@@ -23,6 +24,27 @@ def is_percent(value):
 def is_hex(value):
     return all('0'<=x<='9' or 'a'<=x<='f' or 'A'<=x<='F'
                for x in value)
+
+def random_color(r=(0,255), g=(0,255), b=(0,255), a=255):
+    def check(x):
+        if (isinstance(r, (list, tuple)) and
+            len(r) == 2 and
+            0 <= r[0] <= r[1]):
+            min = r[0]
+            max = r[1] if r[1] <= 255 else 255
+            return (min, max)
+        elif isinstance(r, int):
+            min = r if r >= 0 else 0
+            min = min if min <= 255 else 255
+            max = 255
+            return (min, max)
+        raise RuntimeError(f"Invalid argument '{x}'")
+    r = randint(*check(r))
+    g = randint(*check(g))
+    b = randint(*check(b))
+    a = randint(*check(a))
+    return f'#{r:02x}{g:02x}{b:02x}{a:02x}'
+    
 
 def convert_size(value, negative=False):
     values = {
@@ -79,6 +101,10 @@ def convert_color(args):
         is_hex(args[0][1:]) and
         len(args[0]) in (4, 5, 7, 9)):
         return args[0]
+    if (len(args) == 1 and
+        is_hex(args[0]) and
+        len(args[0]) in (3, 4, 6, 8)):
+        return '#' + args[0]
 
     # tailwind风格的颜色，支持透明度
     values = {
@@ -1767,6 +1793,7 @@ class Utility():
             'bg-gradient-to-bl': ('background-image','linear-gradient(to bottom left, var(--fry-gradient-stops))'),
             'bg-gradient-to-l':  ('background-image','linear-gradient(to left, var(--fry-gradient-stops))'),
             'bg-gradient-to-tl': ('background-image','linear-gradient(to top left, var(--fry-gradient-stops))'),
+            'bg-radial':         ('background-image','radial-gradient(var(--fry-gradient-stops))'),
         }
         if self.joined_args(values):
             return True
@@ -2498,17 +2525,62 @@ class Utility():
         if self.argc == 1:
             return False
         values = {
-            'animate-none':   ('animation','none'),
-            'animate-spin':   ('animation','spin 1s linear infinite'),
-            'animate-ping':   ('animation','ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'),
-            'animate-pulse':  ('animation','pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'),
-            'animate-bounce': ('animation','bounce 1s infinite'),
+            'animate-none':              ('animation','none'),
+            'animate-spin':              ('animation','spin 1s linear infinite'),
+            'animate-ping':              ('animation','ping 1s cubic-bezier(0, 0, 0.2, 1) infinite'),
+            'animate-pulse':             ('animation','pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'),
+            'animate-bounce':            ('animation','bounce 1s infinite'),
+            'animate-normal':            ('animation-direction', 'normal'),
+            'animate-reverse':           ('animation-direction', 'reverse'),
+            'animate-alternate':         ('animation-direction', 'alternate'),
+            'animate-alternate-reverse': ('animation-direction', 'alternate-reverse'),
+            'animate-forwards':          ('animation-fill-mode', 'forwards'),
+            'animate-backwards':         ('animation-fill-mode', 'backwards'),
+            'animate-infinite':          ('animation-iteration-count', 'infinite'),
+            'animate-paused':            ('animation-play-state', 'paused'),
+            'animate-running':           ('animation-play-state', 'running'),
+            'animate-ease':              ('animation-timing-function', 'ease'),
+            'animate-ease-in':           ('animation-timing-function', 'ease-in'),
+            'animate-ease-out':          ('animation-timing-function', 'ease-out'),
+            'animate-ease-in-out':       ('animation-timing-function', 'ease-in-out'),
+            'animate-linear':            ('animation-timing-function', 'linear'),
         }
 
         if self.joined_args(values):
             return True
-        animation = merge_value(self.args[1:])
-        self.add_style('animation', animation)
+
+        if self.argc > 2:
+            # 支持多个animation的情况，需要逗号隔开
+            sub = self.args[1]
+            if sub == 'name':
+                key = 'animation-name'
+            elif sub == 'duration':
+                key = 'animation-duration'
+            elif sub == 'delay':
+                key = 'animation-delay'
+            elif sub == 'dir':
+                key = 'animation-direction'
+            elif sub == 'fill':
+                key = 'animation-fill-mode'
+            elif sub == 'count':
+                key = 'animation-iteration-count'
+            elif sub == 'state':
+                key = 'animation-play-state'
+            elif sub == 'ease':
+                key = 'animation-timing-function'
+                if self.argc == 6 and all(is_digit(v) or is_float(v) for v in self.args[2:]):
+                    args = self.args[2:]
+                    self.add_style(key, f'cubic-bezier({args[0]}, {args[1]}, {args[2]}, {args[3]})')
+                    return True
+            else:
+                animation = merge_value(self.args[1:])
+                self.add_style('animation', animation)
+                return True
+            value = merge_value(self.args[2:], self.neg)
+            self.add_style(key, value)
+        else:
+            animation = merge_value(self.args[1:])
+            self.add_style('animation', animation)
         return True
     
     transform_vars = 'translate(var(--fry-translate-x), var(--fry-translate-y)) rotate(var(--fry-rotate)) skewX(var(--fry-skew-x)) skewY(var(--fry-skew-y)) scaleX(var(--fry-scale-x)) scaleY(var(--fry-scale-y))'

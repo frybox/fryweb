@@ -54,7 +54,8 @@ class CSSGenerator():
                 with open(preflight, 'r') as pf:
                     f.write(pf.read())
                 from fryhcs.css.plugin import plugin_basecss
-                f.write(plugin_basecss())
+                basecss = plugin_basecss()
+                f.write(basecss)
             csses = []
             for key, value in collector.all_attrs():
                 css = CSS(key, value)
