@@ -79,7 +79,7 @@ def HappyBirthday(props):
         <div id="fireworks" absolute z-100 bg-black w-full h-100vh></div>
       </div>
       <script>
-        import { Fireworks } from "@/fireworks-js/dist/index.es.js";
+        import { Fireworks } from "@/fireworks-js/index.es.js";
         const container = document.getElementById('fireworks');
         const option = {
             autoresize: false,
