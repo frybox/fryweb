@@ -82,12 +82,13 @@ def FunctionComponent(props):
     <div>
       <div @click=(increment) @keydown=(increment)
            class="class1"
-           keyvalue=[foo bar](age):"foo bar foobar"
+           keyvalue=[foo {a} bar](age)
            hidden mt-8
            id="special-div"
-           {*list1}: 'color-white color-blue'
+           {*list1}
            {**dict1}
-           data-value={props['value']}(age): "value1 value2 value3">
+           data-value={props['value']}(age)
+           $class="foo bar foobar color-white color-blue value1 value2 value3">
 
         html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}(age)
 
@@ -103,7 +104,7 @@ def FunctionComponent(props):
         上述例子演示了html中嵌套python代码，python代码中又嵌套html，html中又
         嵌套python代码...其中嵌入的python代码以大括号括起来
 
-        也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初始值](age)
+        也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初{a}始值: {b}](age)
         
 
         "pyx中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
@@ -133,7 +134,7 @@ def FunctionComponent2(props):
       <div>
         <!--这是html注释，不会生成到最终前端组件中 -->
         <!--下面组件引用了另一个组件，其中使用了对dict和list的扩展语法-->
-        <FunctionComponent value="from FunctionComponent2" a='1' b={1+2} {**myprops} {*mylist}:"text-cyan-50"/>
+        <FunctionComponent value="from FunctionComponent2" a='1' b={1+2} {**myprops} {*mylist}/>
       </div>)
 
 def FunctionComponent3(props):

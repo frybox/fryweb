@@ -121,12 +121,12 @@ class Element(object):
                         value.embed_id = f'{value.embed_id}-object-{key}'
                     elif key[0] == '@':
                         value.embed_id = f'{value.embed_id}-event-{key[1:]}'
-                    elif key[0] == '$':
-                        value.embed_id = f'{value.embed_id}-attr-{key[1:]}'
+                    elif key.startswith('$$'):
+                        value.embed_id = f'{value.embed_id}-attr-{key[2:]}'
                     elif key == '*':
                         value.embed_id = f'{value.embed_id}-text'
                     else:
-                        raise RenderException
+                        raise RenderException(f"Invalid client embed key '{key}' for element '{e.name}'")
                     embeds.append(value)
                     e.props.pop(key)
             if embeds:

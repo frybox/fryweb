@@ -99,6 +99,9 @@ class CssVisitor(NodeVisitor):
     def visit_simple_quote(self, node, children):
         return children[0]
 
+    def visit_pyx_element(self, node, children):
+        return None
+
     def visit_pyx_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
         if not name[0].islower():
@@ -127,7 +130,7 @@ class CssVisitor(NodeVisitor):
         return node.text
 
     def visit_pyx_attributes(self, node, children):
-        return children
+        return [ch for ch in children if ch]
 
     def visit_pyx_spaced_attribute(self, node, children):
         _, attr = children
@@ -137,8 +140,7 @@ class CssVisitor(NodeVisitor):
         return children[0]
 
     def visit_pyx_embed_spread_attribute(self, node, children):
-        _lbrace, _, _stars, _, _script, _rbrace, _, css_literal = children
-        return css_literal
+        return None
 
     #def visit_pyx_client_embed_attribute(self, node, children):
     #    _value, _, css_literal = children
@@ -146,6 +148,10 @@ class CssVisitor(NodeVisitor):
 
     def visit_pyx_kv_attribute(self, node, children):
         name, _, _, _, value = children
+        if name in ('$class', 'class'):
+            # 将class名字设置为空字符串，is_valid_html_attribute返回false
+            # 否则不会收集相关utilities。
+            name = ''
         if isinstance(value, str):
             return (name, value)
 
@@ -159,40 +165,14 @@ class CssVisitor(NodeVisitor):
     def visit_pyx_attribute_value(self, node, children):
         return children[0]
 
-    def visit_pyx_attr_value_embed(self, node, children):
-        _embed, _, _client_embed, _, css_literal = children
-        return css_literal
-
-    def visit_pyx_attr_value_client_embed(self, node, children):
-        value, _, css_literal = children
-        _name, literal, _client_embed = value
-        if isinstance(css_literal, str):
-            if len(css_literal) > 0 and css_literal[0] in '"\'':
-                css_literal = css_literal[1:-1]
-            value = literal + ' ' + css_literal
-        else:
-            value = literal
-        return value
-
-    def visit_pyx_css_literal(self, node, children):
-        _colon, _, value = children
-        return value
-
-    def visit_maybe_css_literal(self, node, children):
-        if not children:
-            return None
-        return children[0]
+    def visit_embed_value(self, node, children):
+        return None
 
     def visit_client_embed_value(self, node, children):
-        _l, literal, _r, _, client_embed = children
-        return ('client_embed', literal.text, client_embed)
+        return None
 
     def visit_client_embed(self, node, children):
-        return '' 
-
-    def visit_maybe_client_embed(self, node, children):
-        return ''
-
+        return None
 
 class ParserCollector(BaseCollector):
     def collect_from_content(self, data):

@@ -35,7 +35,6 @@ def Candle(props):
                 relative -top-35px
                 origin-bottom
                 animate="name-flicker duration-1s ease-in-out alternate infinite">
-            
            </div>
          </div>)
 

@@ -10,6 +10,15 @@ from fryhcs.element import children_attr_name, call_client_script_attr_name
 def escape(s):
     return s.replace('"', '\\"')
 
+def quote_f_string(s):
+    if not '"""' in s:
+        quote = '"""'
+    elif not "'''" in s:
+        quote = "'''"
+    else:
+        raise BadGrammar(f"F-string '{s}' should not have both \"'''\" and '\"\"\"'")
+    return f"f{quote}{s}{quote}"
+
 
 class BaseGenerator(NodeVisitor):
     def __init__(self):
@@ -75,19 +84,19 @@ def concat_kv(attrs):
             elif atype == pyjs_attr:
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
-                ats.append(f'"${name}": Element.ClientEmbed({jscount})')
+                ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
             elif atype == pyjsop_attr:
                 _, name, value, jsvalue = attr
                 ats.append(f'"{name}": {value}')
-                ats.append(f'"${name}": {jsvalue}')
+                ats.append(f'"$${name}": {jsvalue}')
             elif atype == literaljs_attr:
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
-                ats.append(f'"${name}": Element.ClientEmbed({jscount})')
+                ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
             elif atype == literaljsop_attr:
                 _, name, value, jsvalue = attr
                 ats.append(f'"{name}": {value}')
-                ats.append(f'"${name}": {jsvalue}')
+                ats.append(f'"$${name}": {jsvalue}')
             elif atype == children_attr:
                 ats.append(f'"{children_attr_name}": [{", ".join(attr[1])}]')
             elif atype == jstext_attr:
@@ -128,7 +137,12 @@ def concat_kv(attrs):
 #                                            服务端：data-fry-script一项
 #                                            浏览器：data-fry-script一项
 #   * `$name={py_value}`                   : python值在服务端渲染为常量赋值给属性name，传给浏览器引擎
-#                                            目前支持的name只有"style"($style)
+#                                            目前支持的name只有"style"($style), 用于使用utility指定元素内置style，
+#   * `$name='literal_value'`              : utility列表值在服务端转化为CSS，传给浏览器引擎
+#   * `$name="literal_value"`              : utility列表值在服务端转化为CSS，传给浏览器引擎
+#                                            目前支持的name只有"class"($class), 用于向CSSGenerator传递一些动态生成的、
+#                                            运行期间才能看到的utility, 实际渲染中$class被忽略
+#                                            注：$class不会出现在这里，在解析过程中就过滤掉了(see `visit_pyx_kv_attribute`)
 #   * `name={py_value}`                    : python值在服务端渲染为常量传给浏览器引擎，不可以为ClientEmbed
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
@@ -152,10 +166,10 @@ def check_html_element(name, attrs):
         if attr[1][0] == '@' and atype not in (js_attr, py_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
         if attr[1][0] == '$':
-            if attr[1] != '$style':
-                raise BadGrammar("unsupported attribute name: '$style'")
-            if atype != py_attr:
-                raise BadGrammar(f"invalid attribute type '{atype}' for '{attr[1]}' in html element '{name}': '{py_attr}' needed.")
+            if attr[1] not in ('$style',):
+                raise BadGrammar("unsupported attribute name: '{attr[1]}'")
+            if attr[1] == '$style' and atype != py_attr:
+                raise BadGrammar(f"invalid attribute type '{atype}' for '$style' in html element '{name}': '{py_attr}' needed.")
         if atype == js_attr:
             if attr[1][0] != '@':
                 raise BadGrammar(f"js_attr type can only be specified for event handler, not '{attr[1]}'")
@@ -260,9 +274,9 @@ class PyGenerator(BaseGenerator):
     def visit_comment(self, node, children):
         return node.text
 
-    def visit_brace(self, node, children):
+    def visit_inner_brace(self, node, children):
         _, script, _ = children
-        # brace是正常的python脚本，需要原样输出
+        # inner_brace是正常的python脚本，需要原样输出
         return '{' + script + '}'
 
     def visit_embed(self, node, children):
@@ -373,7 +387,8 @@ class PyGenerator(BaseGenerator):
         return node.text
 
     def visit_pyx_attributes(self, node, children):
-        return children
+        # 过滤掉$class="xxx"
+        return [ch for ch in children if ch]
 
     def visit_pyx_spaced_attribute(self, node, children):
         _, attr = children
@@ -383,7 +398,7 @@ class PyGenerator(BaseGenerator):
         return children[0]
 
     def visit_pyx_embed_spread_attribute(self, node, children):
-        _lbrace, _, stars, _, script, _rbrace, _, _css_literal = children
+        _lbrace, _, stars, _, script, _rbrace = children
         if stars.text == '*':
             return [spread_attr, "**{ key: True for key in (" + script + ")}"]
         return [spread_attr, '**(' + script + ')']
@@ -402,16 +417,20 @@ class PyGenerator(BaseGenerator):
 
     def visit_pyx_kv_attribute(self, node, children):
         name, _, _, _, value = children
+        if name == '$class':
+            if not isinstance(value, str):
+                raise BadGrammar("'$class' can only have literal value")
+            return None 
         if isinstance(value, str):
             return [literal_attr, name, value]
         elif isinstance(value, tuple):
             if value[0] == 'client_embed_value':
-                _, literal, client_embed = value
+                _, quoted_literal, client_embed = value
                 if client_embed[0] == 'js_client_embed':
                     count = self.inc_client_embed()
-                    return [literaljs_attr, name, f'"{literal}"', str(count)]
+                    return [literaljs_attr, name, quoted_literal, str(count)]
                 elif client_embed[0] == 'jsop_client_embed':
-                    return [literaljsop_attr, name, f'"{literal}"', client_embed[1]]
+                    return [literaljsop_attr, name, quoted_literal, client_embed[1]]
                 else:
                     raise BadGrammar
             elif value[0] == 'embed_value':
@@ -448,22 +467,22 @@ class PyGenerator(BaseGenerator):
     def visit_pyx_attribute_value(self, node, children):
         return children[0]
 
-    def visit_pyx_attr_value_embed(self, node, children):
-        embed, _, client_embed, _, _css_literal = children
-        return ('embed_value', embed, client_embed)
+    #def visit_pyx_attr_value_embed(self, node, children):
+    #    embed, _, client_embed, _, _css_literal = children
+    #    return ('embed_value', embed, client_embed)
 
-    def visit_pyx_attr_value_client_embed(self, node, children):
-        value, _, _css_literal = children
-        return value #('client_embed', literal, client_embed)
+    #def visit_pyx_attr_value_client_embed(self, node, children):
+    #    value, _, _css_literal = children
+    #    return value #('client_embed', literal, client_embed)
 
-    def visit_pyx_css_literal(self, node, children):
-        _colon, _, value = children
-        return value
+    #def visit_pyx_css_literal(self, node, children):
+    #    _colon, _, value = children
+    #    return value
 
-    def visit_maybe_css_literal(self, node, children):
-        if not children:
-            return ''
-        return children[0]
+    #def visit_maybe_css_literal(self, node, children):
+    #    if not children:
+    #        return ''
+    #    return children[0]
 
     def visit_pyx_children(self, node, children):
         return [ch for ch in children if ch]
@@ -490,7 +509,7 @@ class PyGenerator(BaseGenerator):
                 attrs = concat_kv(attrs)
                 return f'Element("span", {{{", ".join(attrs)}}})'
             elif pyxchild[0] == 'client_embed_value':
-                _, literal, client_embed = pyxchild
+                _, quoted_literal, client_embed = pyxchild
                 if client_embed[0] == 'js_client_embed':
                     attr = jstext_attr
                     value = str(self.inc_client_embed())
@@ -500,7 +519,7 @@ class PyGenerator(BaseGenerator):
                 else:
                     raise BadGrammar
                 attrs = [[attr, value],
-                         [children_attr, [f'"{literal}"']]]
+                         [children_attr, [quoted_literal]]]
                 attrs = concat_kv(attrs)
                 return f'Element("span", {{{", ".join(attrs)}}})'
             elif pyxchild[0] == 'element':
@@ -513,8 +532,11 @@ class PyGenerator(BaseGenerator):
         return ('embed_value', embed, client_embed)
 
     def visit_client_embed_value(self, node, children):
-        _l, literal, _r, _, client_embed = children
-        return ('client_embed_value', literal.text, client_embed)
+        _l, quoted_literal, _r, _, client_embed = children
+        return ('client_embed_value', quoted_literal, client_embed)
+
+    def visit_f_string(self, node, children):
+        return quote_f_string(node.text)
 
     def visit_pyx_text(self, node, children):
         value = re.sub(r'(\s+)', lambda m: ' ', node.text).strip()

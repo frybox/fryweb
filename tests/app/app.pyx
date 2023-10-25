@@ -24,7 +24,7 @@ def App(props):
            <script initial={initial_count}>
               import {signal} from "fryhcs"
 
-              count = signal(initial)
+              let count = signal(initial)
 
               function increment() {
                   count.value ++

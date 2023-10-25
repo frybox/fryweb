@@ -1,15 +1,17 @@
 
+# top level pyx script
 script = script_item*
 
+# pyx script in html element definition
 inner_script = inner_script_item*
 
 script_item = comment / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element_with_web_script / less_than_char / normal_code
 
-inner_script_item = comment / brace / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element / less_than_char / inner_normal_code
+inner_script_item = comment / inner_brace / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element / less_than_char / inner_normal_code
 
 comment = ~r"#[^\r\n]*"
 
-brace = '{' inner_script '}'
+inner_brace = '{' inner_script '}'
 
 embed = '{' inner_script '}'
 
@@ -27,6 +29,7 @@ less_than_char = '<'
 
 normal_code = ~"[^#'\"<]+"
 
+# inner_normal_code不能匹配到embedding中的右大括号
 inner_normal_code = ~"[^#'\"<{}]+"
 
 pyx_element_with_web_script = pyx_root_element maybe_web_script
@@ -60,7 +63,7 @@ pyx_spaced_attribute = maybe_space pyx_attribute
 #pyx_attribute = pyx_embed_spread_attribute / pyx_client_embed_attribute / pyx_event_attribute / pyx_kv_attribute / pyx_novalue_attribute
 pyx_attribute = pyx_embed_spread_attribute / pyx_kv_attribute / pyx_novalue_attribute
 
-pyx_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_script '}'  maybe_space maybe_css_literal
+pyx_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_script '}'  #maybe_space maybe_css_literal
 
 #pyx_client_embed_attribute = client_embed_value maybe_space maybe_css_literal
 
@@ -75,19 +78,19 @@ pyx_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of pyx, and do not support unquoted attribute value
 # simple_quote: 正常的单双引号属性值
-# pyx_attr_value_embed: python嵌入属性值，可选后跟js嵌入属性值，以及可能的css字符串
-# pyx_attr_value_client_embed: js嵌入属性值，以及可能的css字符串
+# embed_value: python嵌入属性值，可选后跟js嵌入属性值
+# client_embed_value: python f-string + js嵌入属性值
 # client_embed: js嵌入属性值
 # pyx_element: html基础元素或组件元素
-pyx_attribute_value = simple_quote / pyx_attr_value_embed / pyx_attr_value_client_embed / client_embed / pyx_element 
+pyx_attribute_value = simple_quote / embed_value / client_embed_value / client_embed / pyx_element 
 
-pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
+#pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
-pyx_attr_value_client_embed = client_embed_value maybe_space maybe_css_literal
+#pyx_attr_value_client_embed = client_embed_value maybe_space maybe_css_literal
 
-pyx_css_literal = ':' maybe_space simple_quote
+#pyx_css_literal = ':' maybe_space simple_quote
 
-maybe_css_literal = pyx_css_literal?
+#maybe_css_literal = pyx_css_literal?
 
 # 暂不支持没有引号的属性值
 #pyx_unquoted_attribute_value = ~"[^\\s\"'=<>{}`]+"
@@ -100,7 +103,13 @@ pyx_child = embed_value / client_embed_value / html_comment / pyx_element / pyx_
 
 embed_value = embed maybe_space maybe_client_embed
 
-client_embed_value = '[' ~r"(\\.|[^\]\\])*" ']' maybe_space client_embed
+client_embed_value = '[' f_string ']' maybe_space client_embed
+
+f_string = f_string_item*
+
+f_string_item = simple_f_string / '{{' / '}}' / embed
+
+simple_f_string = ~r"(\\.|[^\]{}\\])+"
 
 # 多个空格缩减为1个，丢弃只有空格的字符串，单双引号是正常字符
 pyx_text = ~r"[^<>{}[\]]+"
