@@ -34,9 +34,15 @@ inner_normal_code = ~"[^#'\"<{}]+"
 
 pyx_element_with_web_script = pyx_root_element maybe_web_script
 
-pyx_root_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
+pyx_root_element = pyx_fragment / pyx_void_element / pyx_self_closing_element / pyx_paired_element
 
-pyx_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
+pyx_element = pyx_fragment / pyx_void_element / pyx_self_closing_element / pyx_paired_element
+
+# 根据html规范，void元素即使不self-closing，也不能有end_tag，
+pyx_void_element = '<' void_element_name pyx_attributes maybe_space  ~'/?>'
+
+#规范规定有如下void元素：(https://html.spec.whatwg.org/#void-elements)
+void_element_name = ~"(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)"
 
 pyx_fragment = '<>' pyx_children '</>'
 
@@ -81,7 +87,7 @@ pyx_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
 # embed_value: python嵌入属性值，可选后跟js嵌入属性值
 # client_embed_value: python f-string + js嵌入属性值
 # client_embed: js嵌入属性值
-# pyx_element: html基础元素或组件元素
+# pyx_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
 pyx_attribute_value = simple_quote / embed_value / client_embed_value / client_embed / pyx_element 
 
 #pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal

@@ -341,6 +341,16 @@ class PyGenerator(BaseGenerator):
         attrs = concat_kv(attrs)
         return ('element', f'Element({name}, {{{", ".join(attrs)}}})')
 
+    def visit_pyx_void_element(self, node, children):
+        _l, name, attrs, _, _r = children
+        check_html_element(name, attrs)
+        name = f'"{name}"'
+        attrs.append([children_attr,[]])
+        return (name, attrs)
+
+    def visit_void_element_name(self, node, children):
+        return node.text
+
     def visit_pyx_fragment(self, node, children):
         _, pyx_children, _ = children
         return ('"div"', [[children_attr, pyx_children]])
