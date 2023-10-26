@@ -190,17 +190,16 @@ def App(props):
                  Increment
                </button>
              </div>
-
-             <script initial={initial_count}>
-                import {signal} from "fryhcs"
-
-                count = signal(initial)
-
-                function increment() {
-                    count.value ++
-                }
-             </script>
            </div>
+           <script initial={initial_count}>
+              import {signal} from "fryhcs"
+
+              count = signal(initial)
+
+              function increment() {
+                  count.value ++
+              }
+           </script>
 
 @app.get('/')
 def index():
@@ -229,6 +228,10 @@ Generated js script `static/js/components/db9292e32031f3a02ee988097c493ef4969692
 ```js
 'fryfunctions$$' in window || (window.fryfunctions$$ = []);
 window.fryfunctions$$.push([document.currentScript, async function (script$$) {
+    const {hydrate: hydrate$$, collectrefs: collectrefs$$} = await import("fryhcs");
+    const rootElement$$ = script$$.parentElement;
+    const componentId$$ = script$$.dataset.fryid;
+    collectrefs$$(rootElement$$, script$$, componentId$$);
     const initial = ("frydata" in script$$ && "initial" in script$$.frydata) ? script$$.frydata.initial : script$$.dataset.initial;
 
                 const {signal} = await import("fryhcs")
@@ -239,9 +242,6 @@ window.fryfunctions$$.push([document.currentScript, async function (script$$) {
                     count.value ++
                 }
 
-    const {hydrate: hydrate$$} = await import("fryhcs");
-    const rootElement$$ = script$$.parentElement;
-    const componentId$$ = script$$.dataset.fryid;
     let embeds$$ = [count, increment];
     hydrate$$(rootElement$$, componentId$$, embeds$$);
 }]);
@@ -302,9 +302,9 @@ Generated HTML:
 
 ## Configuration
 
-## Working with Django
+## Django Integration
 
-## Working with Flask
+## Flask Integration
 
 ## License
 MIT License
