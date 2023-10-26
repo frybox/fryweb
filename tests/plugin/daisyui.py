@@ -148,10 +148,6 @@ utilities = {
     },
 }
 
-# generate the following utilities:
-# 1. btn
-#
-
 types = {
     # default type
     "DEFAULT": {

@@ -21,11 +21,12 @@ def compose_js(args, script, embeds):
     return f"""\
 'fryfunctions$$' in window || (window.fryfunctions$$ = []);
 window.fryfunctions$$.push([document.currentScript, async function (script$$) {{
-    {args}
-    {script}
-    const {{hydrate: hydrate$$}} = await import("fryhcs");
+    const {{hydrate: hydrate$$, collectrefs: collectrefs$$}} = await import("fryhcs");
     const rootElement$$ = script$$.parentElement;
     const componentId$$ = script$$.dataset.fryid;
+    collectrefs$$(rootElement$$, script$$, componentId$$);
+    {args}
+    {script}
     let embeds$$ = [{embeds}];
     hydrate$$(rootElement$$, componentId$$, embeds$$);
 }}]);
@@ -94,7 +95,7 @@ class JSGenerator(BaseGenerator):
         self.embeds = []
 
     def visit_pyx_attributes(self, node, children):
-        return children
+        return [ch for ch in children if ch]
 
     def visit_pyx_spaced_attribute(self, node, children):
         _, attr = children
@@ -103,9 +104,15 @@ class JSGenerator(BaseGenerator):
     def visit_pyx_attribute(self, node, children):
         return children[0]
 
+    def visit_pyx_embed_spread_attribute(self, node, children):
+        return None
+
     def visit_pyx_kv_attribute(self, node, children):
         name, _, _, _, _value = children
         return name
+
+    def visit_pyx_novalue_attribute(self, node, children):
+        return children[0]
 
     def visit_pyx_attribute_name(self, node, children):
         return node.text

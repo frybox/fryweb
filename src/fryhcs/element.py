@@ -77,6 +77,8 @@ children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 style_attr_name = 'style'
 utility_attr_name = '$style'
+ref_attr_name = 'ref'
+ref_attr_name_prefix = 'ref:'
 
 class Element(object):
 
@@ -125,6 +127,9 @@ class Element(object):
                         value.embed_id = f'{value.embed_id}-attr-{key[2:]}'
                     elif key == '*':
                         value.embed_id = f'{value.embed_id}-text'
+                    elif key.startswith(ref_attr_name_prefix):
+                        name = key.split(':', 1)[1]
+                        value.embed_id = f"{value.embed_id}-ref-{name}"
                     else:
                         raise RenderException(f"Invalid client embed key '{key}' for element '{e.name}'")
                     embeds.append(value)
@@ -195,8 +200,8 @@ class Element(object):
                     children_attr_name: [],
                 }
                 for k,v in args:
-                    # 父组件实例传过来的js嵌入值
                     if isinstance(v, ClientEmbed):
+                        # 父组件实例传过来的js嵌入值
                         scriptprops[k] = v
                     else:
                         scriptprops[f'data-{k}'] = v

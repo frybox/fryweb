@@ -162,8 +162,38 @@ function hydrate(rootElement, componentId, embedValues) {
                         element.frydata = {};
                     }
                     element.frydata[arg] = value;
+                } else if (atype === 'ref') {
+                    // 这是定义ref的地方，已经在collectrefs中为ref变量赋值，所以：
+                    // assert element === value
                 } else {
                     console.log("invalid attribute type: ", atype);
+                }
+            }
+        }
+        for (const child of element.children) {
+            handle(child);
+        }
+    }
+    handle(rootElement);
+}
+
+
+function collectrefs(rootElement, scriptElement, componentId) {
+    const prefix = '' + componentId + '/';
+    function handle(element) {
+        if ('fryembed' in element.dataset) {
+            const embeds = element.dataset.fryembed;
+            for (const embed of embeds.split(' ')) {
+                if (!embed.startsWith(prefix)) {
+                    continue;
+                }
+                const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
+                const arg = args.join('-')
+                if (atype === 'ref') {
+                    if (!('frydata' in scriptElement)) {
+                        scriptElement.frydata = {};
+                    }
+                    scriptElement.frydata[arg] = element;
                 }
             }
         }
@@ -214,4 +244,4 @@ function event(component, type, options) {
 }
 
 
-export {signal, effect, hydrate, update, event}
+export {signal, effect, hydrate, collectrefs, update, event}
