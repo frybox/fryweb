@@ -47,7 +47,8 @@ novalue_attr = 'novalue_attr'         # ('novalue_attr', name): name
 py_attr = 'py_attr'                   # ('py_attr', name, pyscript): name={pyscript}
 js_attr = 'js_attr'                   # ('js_attr', name, jscount): name=(jsscript)
 jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
-element_attr = 'element_attr'         # ('element_attr', name, element): name=<element></element>
+#2023.10.27 不再支持元素作为属性值，参考语法文件说明
+#element_attr = 'element_attr'         # ('element_attr', name, element): name=<element></element>
 pyjs_attr = 'pyjs_attr'               # ('pyjs_attr', name, pyscript, jscount): name={pyscript}(jsscript)
 pyjsop_attr = 'pyjsop_attr'           # ('pyjsop_attr', name, pyscript, pyscript): name={pyscript1}({pyscript2})
 literaljs_attr = 'literaljs_attr'     # ('literaljs_attr', name, value, jscount): name=[value](jsscript)
@@ -79,9 +80,9 @@ def concat_kv(attrs):
             elif atype == jsop_attr:
                 _, name, value = attr
                 ats.append(f'"{name}": {value}')
-            elif atype == element_attr:
-                _, name, value = attr
-                ats.append(f'"{name}": {value}')
+            #elif atype == element_attr:
+            #    _, name, value = attr
+            #    ats.append(f'"{name}": {value}')
             elif atype == pyjs_attr:
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
@@ -238,8 +239,8 @@ def check_html_element(name, attrs):
 def check_component_element(name, attrs):
     for attr in attrs:
         atype = attr[0]
-        if atype not in (spread_attr, literal_attr, element_attr, py_attr, js_attr):
-            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, element_attr, py_attr, js_attr")
+        if atype not in (spread_attr, literal_attr, py_attr, js_attr):
+            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr")
         if atype != spread_attr and attr[1][0] == '@':
             raise BadGrammar(f"Can't set event handler '{attr[1]}' on Component element '{name}'")
         if atype == js_attr:
@@ -302,7 +303,13 @@ class PyGenerator(BaseGenerator):
     def visit_double_quote(self, node, children):
         return node.text
 
-    def visit_simple_quote(self, node, children):
+    def visit_py_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_pyx_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_js_simple_quote(self, node, children):
         return children[0]
 
     def visit_less_than_char(self, node, children):
@@ -340,16 +347,6 @@ class PyGenerator(BaseGenerator):
             raise BadGrammar("'script' can't be used as the normal element name") 
         attrs = concat_kv(attrs)
         return ('element', f'Element({name}, {{{", ".join(attrs)}}})')
-
-    def visit_pyx_void_element(self, node, children):
-        _l, name, attrs, _, _r = children
-        check_html_element(name, attrs)
-        name = f'"{name}"'
-        attrs.append([children_attr,[]])
-        return (name, attrs)
-
-    def visit_void_element_name(self, node, children):
-        return node.text
 
     def visit_pyx_fragment(self, node, children):
         _, pyx_children, _ = children
@@ -476,8 +473,8 @@ class PyGenerator(BaseGenerator):
                 return [js_attr, name, str(count)]
             elif value[0] == 'jsop_client_embed':
                 return [jsop_attr, name, value[1]]
-            elif value[0] == 'element':
-                return [element_attr, name, value[1]]
+            #elif value[0] == 'element':
+            #    return [element_attr, name, value[1]]
             else:
                 raise BadGrammar(f'Invalid attribute value: {value[0]}')
         else:

@@ -5,9 +5,9 @@ script = script_item*
 # pyx script in html element definition
 inner_script = inner_script_item*
 
-script_item = comment / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element_with_web_script / less_than_char / normal_code
+script_item = comment / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element_with_web_script / less_than_char / normal_code
 
-inner_script_item = comment / inner_brace / triple_single_quote / triple_double_quote / single_quote / double_quote / pyx_element / less_than_char / inner_normal_code
+inner_script_item = comment / inner_brace / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element / less_than_char / inner_normal_code
 
 comment = ~r"#[^\r\n]*"
 
@@ -23,7 +23,9 @@ single_quote = ~r"'(\\.|[^'\\])*'"
 
 double_quote = ~r'"(\\.|[^"\\])*"'
 
-simple_quote = single_quote / double_quote
+py_simple_quote = single_quote / double_quote
+pyx_simple_quote = single_quote / double_quote
+js_simple_quote = single_quote / double_quote
 
 less_than_char = '<'
 
@@ -34,15 +36,11 @@ inner_normal_code = ~"[^#'\"<{}]+"
 
 pyx_element_with_web_script = pyx_root_element maybe_web_script
 
-pyx_root_element = pyx_fragment / pyx_void_element / pyx_self_closing_element / pyx_paired_element
+# 所有元素要么是自闭合，要么是标签成对，不支持不自闭合的空元素，这点和html规范不同
+# https://html.spec.whatwg.org/#void-elements
+pyx_root_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
 
-pyx_element = pyx_fragment / pyx_void_element / pyx_self_closing_element / pyx_paired_element
-
-# 根据html规范，void元素即使不self-closing，也不能有end_tag，
-pyx_void_element = '<' void_element_name pyx_attributes maybe_space  ~'/?>'
-
-#规范规定有如下void元素：(https://html.spec.whatwg.org/#void-elements)
-void_element_name = ~"(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)"
+pyx_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
 
 pyx_fragment = '<>' pyx_children '</>'
 
@@ -55,7 +53,7 @@ pyx_start_tag = '<' pyx_element_name pyx_attributes maybe_space '>'
 # https://html.spec.whatwg.org/#end-tags
 pyx_end_tag = '</' pyx_element_name maybe_space '>'
 
-pyx_element_name = ~r'[-0-9a-zA-Z_.]+'
+pyx_element_name = ~r'[\w.-]+'
 
 space = ~r'\s+'
 
@@ -63,7 +61,7 @@ maybe_space = ~r'\s*'
 
 pyx_attributes = pyx_spaced_attribute*
 
-pyx_spaced_attribute = maybe_space pyx_attribute
+pyx_spaced_attribute = space pyx_attribute
 
 # 去掉对client_embed_attribute的支持，event_attribute是kv_attribute的一种
 #pyx_attribute = pyx_embed_spread_attribute / pyx_client_embed_attribute / pyx_event_attribute / pyx_kv_attribute / pyx_novalue_attribute
@@ -83,18 +81,21 @@ pyx_novalue_attribute = pyx_attribute_name !(maybe_space '=')
 pyx_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of pyx, and do not support unquoted attribute value
-# simple_quote: 正常的单双引号属性值
+# pyx_simple_quote: 正常的单双引号属性值
 # embed_value: python嵌入属性值，可选后跟js嵌入属性值
 # client_embed_value: python f-string + js嵌入属性值
 # client_embed: js嵌入属性值
 # pyx_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
-pyx_attribute_value = simple_quote / embed_value / client_embed_value / client_embed / pyx_element 
+# 2023.10.27:
+# 属性值去掉对pyx_element的支持，不再完全跟随jsx，属性值支持pyx_element后，html看起来很复杂。
+# 要支持将元素作为属性值的话，可以将pyx_element赋值给一个python变量，使用embed_value属性值
+pyx_attribute_value = pyx_simple_quote / embed_value / client_embed_value / client_embed 
 
 #pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
 #pyx_attr_value_client_embed = client_embed_value maybe_space maybe_css_literal
 
-#pyx_css_literal = ':' maybe_space simple_quote
+#pyx_css_literal = ':' maybe_space pyx_simple_quote
 
 #maybe_css_literal = pyx_css_literal?
 
@@ -131,7 +132,7 @@ html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 
 client_script = client_script_item*
 
-client_script_item = client_single_line_comment / client_multi_line_comment / simple_quote / template_simple / template_normal / client_parenthesis / client_brace / static_import / client_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
+client_script_item = client_single_line_comment / client_multi_line_comment / js_simple_quote / template_simple / template_normal / client_parenthesis / client_brace / static_import / client_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
 
 client_single_line_comment = ~r"//[^\r\n]*"
 
@@ -165,9 +166,9 @@ client_brace = '{' client_script '}'
 
 static_import = simple_static_import / normal_static_import
 
-simple_static_import = 'import' space simple_quote
+simple_static_import = 'import' space js_simple_quote
 
-normal_static_import = 'import' space import_identifiers space 'from' space simple_quote
+normal_static_import = 'import' space import_identifiers space 'from' space js_simple_quote
 
 import_identifiers = import_identifier other_import_identifiers
 

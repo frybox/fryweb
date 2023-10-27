@@ -79,7 +79,13 @@ class JSGenerator(BaseGenerator):
     def visit_double_quote(self, node, children):
         return node.text
 
-    def visit_simple_quote(self, node, children):
+    def visit_py_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_pyx_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_js_simple_quote(self, node, children):
         return children[0]
 
     def visit_pyx_element_with_web_script(self, node, children):

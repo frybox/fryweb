@@ -1,4 +1,4 @@
-from parsimonious import NodeVisitor, VisitationError
+from parsimonious import NodeVisitor, BadGrammar
 from collections import defaultdict
 
 import re
@@ -96,48 +96,39 @@ class CssVisitor(NodeVisitor):
     def visit_double_quote(self, node, children):
         return node.text
 
-    def visit_simple_quote(self, node, children):
+    def visit_py_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_pyx_simple_quote(self, node, children):
+        return children[0]
+
+    def visit_js_simple_quote(self, node, children):
         return children[0]
 
     def visit_pyx_element(self, node, children):
         return None
-
-    def visit_pyx_void_element(self, node, children):
-        _l, name, attrs, _, _r = children
-        for attr in attrs:
-            if isinstance(attr, str):
-                self.collect_literal(attr)
-            elif isinstance(attr, tuple):
-                if is_valid_html_attribute(name, attr[0]):
-                    continue
-                self.collect_kv(attr[0], attr[1])
-
-    def visit_void_element_name(self, node, children):
-        return node.text
 
     def visit_pyx_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
         if not name[0].islower():
             return
         for attr in attrs:
-            if isinstance(attr, str):
-                self.collect_literal(attr)
-            elif isinstance(attr, tuple):
-                if is_valid_html_attribute(name, attr[0]):
-                    continue
-                self.collect_kv(attr[0], attr[1])
+            if not isinstance(attr, tuple):
+                raise BadGrammar
+            if is_valid_html_attribute(name, attr[0]):
+                continue
+            self.collect_kv(attr[0], attr[1])
 
     def visit_pyx_start_tag(self, node, children):
         _, start_name, attrs, _, _ = children
         if not start_name[0].islower():
             return
         for attr in attrs:
-            if isinstance(attr, str):
-                self.collect_literal(attr)
-            elif isinstance(attr, tuple):
-                if is_valid_html_attribute(start_name, attr[0]):
-                    continue
-                self.collect_kv(attr[0], attr[1])
+            if not isinstance(attr, tuple):
+                raise BadGrammar
+            if is_valid_html_attribute(start_name, attr[0]):
+                continue
+            self.collect_kv(attr[0], attr[1])
 
     def visit_pyx_element_name(self, node, children):
         return node.text
