@@ -132,6 +132,18 @@ html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 
 client_script = client_script_item*
 
+client_embed = jsop_client_embed / js_client_embed
+js_client_embed = '(' client_script ')'
+# JS Over Py client embed
+jsop_client_embed = '({' inner_script '})'
+
+maybe_client_embed = client_embed?
+
+client_parenthesis = '(' client_script ')'
+
+# 为了处理template string中内嵌的js代码，需要加上client_brace
+client_brace = '{' client_script '}'
+
 client_script_item = client_single_line_comment / client_multi_line_comment / js_simple_quote / template_simple / template_normal / client_parenthesis / client_brace / static_import / client_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
 
 client_single_line_comment = ~r"//[^\r\n]*"
@@ -151,18 +163,6 @@ template_middle_script = template_middle client_script
 template_middle = ~r"[}](\\.|[^`$\\])*[$][{]"
 
 template_tail = ~r"[}](\\.|[^`$\\])*`"
-
-client_embed = jsop_client_embed / js_client_embed
-js_client_embed = '(' client_script ')'
-# JS Over Py client embed
-jsop_client_embed = '({' inner_script '})'
-
-maybe_client_embed = client_embed?
-
-client_parenthesis = '(' client_script ')'
-
-# 为了处理template string中内嵌的js代码，需要加上client_brace
-client_brace = '{' client_script '}'
 
 static_import = simple_static_import / normal_static_import
 
