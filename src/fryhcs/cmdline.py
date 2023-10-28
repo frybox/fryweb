@@ -850,6 +850,10 @@ def serve_command(
     The reloader and debugger are enabled by default with the '--debug'
     option.
     """
+
+    if 'FLASK_DEBUG' not in os.environ:
+        os.environ['FLASK_DEBUG'] = '1'
+
     try:
         app = info.load_app()
     except Exception as e:

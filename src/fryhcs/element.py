@@ -159,7 +159,7 @@ class Element(object):
             #      所在元素的data-fryembed属性值列表中；
             #    * 元素树中子组件元素属性中的js嵌入值，将被当做
             #      props值传入子组件函数中
-            result = self.name(self.props)
+            result = self.name(**self.props)
             if not isinstance(result, Element):
                 raise RuntimeError(f"Function '{self.name.__name__}' should return Element")
 

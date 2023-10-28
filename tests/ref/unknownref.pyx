@@ -1,6 +1,6 @@
 from fryhcs import Element
 
-def RefApp(props):
+def RefApp(**props):
     return (
     <div>
       <p ref=(foo)>

@@ -10,7 +10,7 @@ app.config['FRYHCS_PLUGINS'] = ['happybirthday']
 def index():
     return html(HappyBirthday, title="生日快乐~")
 
-def Bokeh(props):
+def Bokeh(**props):
     bg = random_color((200,250), (50,150), (50,150))
     x = randint(1, 99)
     y = randint(10, 90)
@@ -24,7 +24,7 @@ def Bokeh(props):
       </div>
     )
 
-def Candle(props):
+def Candle(**props):
     return (
          <div absolute bottom-150px h-50px w-12px
               bg-gradient-to-t from-b7f4a7 to-white>
@@ -38,7 +38,7 @@ def Candle(props):
            </div>
          </div>)
 
-def Cake(props):
+def Cake(**props):
     def yc():
         for i in range(4, 84, 4):
             yield i, random_color((100, 255), (200, 255))
@@ -51,21 +51,21 @@ def Cake(props):
                 style={styles}>
            </div>
 
-def Plate(props):
+def Plate(**props):
     return <div h-90px w-300px rounded-100%
                 bg-radial from-#08c7fe via-#04d7f2 via-71 to-#02ffd0 to-100
                 absolute bottom-10px
                 shadow-nm shadow-00e2e1>
            </div>
 
-def SettledCake(props):
+def SettledCake(**props):
     return <div absolute bottom-0 flex justify-center w-60%>
              <div relative flex justify-center z-10> <Candle/> </div>
              <div relative flex justify-center z-5>  <Cake/>   </div>
              <div relative flex justify-center z-1>  <Plate/>  </div>
            </div>
 
-def HappyBirthday(props):
+def HappyBirthday(**props):
     return (
       <div flex bg-gradient-to-r from-fuchsia-200 to-indigo-200 w-full h-100vh>
         {<Bokeh/> for i in range(20)}

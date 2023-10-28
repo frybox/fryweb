@@ -222,10 +222,6 @@ def check_html_element(name, attrs):
 #   * `name='literal_value'`: 常量字符串在服务端传给子组件
 #                             服务端：常量字符串
 #                             浏览器：不可见
-#   * `name=<tagname a="b">xxx</tagname>`:
-#                             元素值转化为Element实例传给子组件
-#                             服务端：Element实例
-#                             浏览器：不可见
 #   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，包括ClientEmbed
 #                             服务端：python数据
 #                             浏览器：不可见
@@ -242,11 +238,12 @@ def check_html_element(name, attrs):
 def check_component_element(name, attrs):
     for attr in attrs:
         atype = attr[0]
-        if atype not in (spread_attr, literal_attr, py_attr, js_attr):
-            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr")
-        if atype != spread_attr and attr[1][0] == '@':
-            raise BadGrammar(f"Can't set event handler '{attr[1]}' on Component element '{name}'")
+        if atype not in (spread_attr, literal_attr, py_attr, js_attr, jsop_attr):
+            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr, jsop_attr")
+        if atype != spread_attr and not attr[1].isidentifier():
+            raise BadGrammar(f"Invalid attibute name '{attr[1]}' on Component element '{name}', identifier needed.")
         if atype == js_attr:
+            # TODO 检查如下设置是否合理
             if attr[1].startswith(ref_attr_name_prefix):
                 raise BadGrammar(f"Can't ref to component element yet now, only DOM element can be REFed.")
             attr[0] = py_attr
@@ -599,12 +596,9 @@ class PyGenerator(BaseGenerator):
         self.web_component_script = True
         _, _sep, _, _begin, attributes, _, _lessthan, _script, _end = children
         for attr in attributes:
+            # TODO spread_attr是不是也可以用在这里？
             if attr[0] not in (novalue_attr, literal_attr, py_attr, jsop_attr):
                 raise BadGrammar("script attributes can only be novalue_attr, literal_attr, py_attr or jsop_attr")
-            if attr[1][0] == '@':
-                raise BadGrammar(f"can't set event handler '{attr[1]}' on SCRIPT element")
-            elif attr[1][0] == '$':
-                raise BadGrammar(f"Can't define inline style using '{attr[1]}' on SCRIPT element")
             name = attr[1]
             if not name.isidentifier():
                 raise BadGrammar(f"Script argument name '{name}' is not valid identifier.")

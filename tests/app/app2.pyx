@@ -3,7 +3,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(props):
+def App(**props):
     initial_count = 10
     return <div>
              <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
