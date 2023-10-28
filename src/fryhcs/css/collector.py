@@ -105,9 +105,6 @@ class CssVisitor(NodeVisitor):
     def visit_js_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_element(self, node, children):
-        return None
-
     def visit_pyx_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
         if not name[0].islower():
@@ -169,13 +166,16 @@ class CssVisitor(NodeVisitor):
     def visit_pyx_attribute_value(self, node, children):
         return children[0]
 
-    def visit_embed_value(self, node, children):
+    def visit_pyx_js_embed(self, node, children):
         return None
 
-    def visit_client_embed_value(self, node, children):
+    def visit_fs_js_embed(self, node, children):
         return None
 
-    def visit_client_embed(self, node, children):
+    def visit_pyx_embed(self, node, children):
+        return None
+
+    def visit_js_embed(self, node, children):
         return None
 
 class ParserCollector(BaseCollector):

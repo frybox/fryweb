@@ -45,10 +45,11 @@ def FunctionComponent(props):
          </span>
          """
 
+    # 2023.10.27: 属性值不支持元素了
     # 属性值也可以是元素，但只有组件元素的属性值可以是元素，html元素的属性值不行
-    content8 = <FunctionComponent2 base=<span class="hello">hello</span>>
+    content8 = """<FunctionComponent2 base=<span class="hello">hello</span>>
                 属性值是html元素的div
-               </FunctionComponent2>
+               </FunctionComponent2>"""
 
     # self-closing的变量
     br1 = <br />
@@ -94,19 +95,18 @@ def FunctionComponent(props):
 
         这是一个支持<span text-red>frycss</span>语法的div。下面是列表内容：
         <ul>
-        { [<li name={k}>
-             {f"{k}: {v}"}
-           </li>
-           for k, v in props.items()
-           if len(k) > 5] }
+        {<li name={k}> {f"{k}: {v}"} </li>
+         for k, v in props.items() if len(k) > 5 }
         </ul>
 
         上述例子演示了html中嵌套python代码，python代码中又嵌套html，html中又
-        嵌套python代码...其中嵌入的python代码以大括号括起来
+        嵌套python代码...其中嵌入的python代码以大括号括起来。
 
-        也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初{a}始值: {b}](age)
+        另外还可以看到，嵌入的代码可以是一个generator，嵌入python代码在编译时会自动加上一个小括号，
+        所以大括号中没必要再加一层小括号或中括号，可以直接写generator，非常方便。
+
+        也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初始值: {b}](age)
         
-
         "pyx中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
         还可以有正常的html：
 
@@ -132,7 +132,7 @@ def FunctionComponent2(props):
     myprops = {k:v for k,v in props.items() if k != 'children'}
     return (
       <div>
-        <!--这是html注释，不会生成到最终前端组件中 -->
+        <!--这是注释，不会生成到最终前端组件中 -->
         <!--下面组件引用了另一个组件，其中使用了对dict和list的扩展语法-->
         <FunctionComponent value="from FunctionComponent2" a='1' b={1+2} {**myprops} {*mylist}/>
       </div>)

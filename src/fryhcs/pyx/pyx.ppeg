@@ -1,19 +1,19 @@
 
 # top level pyx script
-script = script_item*
+pyx_script = pyx_script_item*
 
 # pyx script in html element definition
-inner_script = inner_script_item*
+inner_pyx_script = inner_pyx_script_item*
 
-script_item = comment / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element_with_web_script / less_than_char / normal_code
+pyx_script_item = py_comment / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element_with_web_script / less_than_char / py_normal_code
 
-inner_script_item = comment / inner_brace / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element / less_than_char / inner_normal_code
+inner_pyx_script_item = py_comment / inner_pyx_brace / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element / less_than_char / inner_py_normal_code
 
-comment = ~r"#[^\r\n]*"
+py_comment = ~r"#[^\r\n]*"
 
-inner_brace = '{' inner_script '}'
+inner_pyx_brace = '{' inner_pyx_script '}'
 
-embed = '{' inner_script '}'
+pyx_embed = '{' inner_pyx_script '}'
 
 triple_single_quote = ~r"'''(\\.|[^'\\]|'(?!''))*'''"
 
@@ -29,10 +29,10 @@ js_simple_quote = single_quote / double_quote
 
 less_than_char = '<'
 
-normal_code = ~"[^#'\"<]+"
+py_normal_code = ~"[^#'\"<]+"
 
-# inner_normal_code不能匹配到embedding中的右大括号
-inner_normal_code = ~"[^#'\"<{}]+"
+# inner_py_normal_code不能匹配到embedding中的右大括号
+inner_py_normal_code = ~"[^#'\"<{}]+"
 
 pyx_element_with_web_script = pyx_root_element maybe_web_script
 
@@ -67,7 +67,7 @@ pyx_spaced_attribute = space pyx_attribute
 #pyx_attribute = pyx_embed_spread_attribute / pyx_client_embed_attribute / pyx_event_attribute / pyx_kv_attribute / pyx_novalue_attribute
 pyx_attribute = pyx_embed_spread_attribute / pyx_kv_attribute / pyx_novalue_attribute
 
-pyx_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_script '}'  #maybe_space maybe_css_literal
+pyx_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_pyx_script '}'  #maybe_space maybe_css_literal
 
 #pyx_client_embed_attribute = client_embed_value maybe_space maybe_css_literal
 
@@ -82,14 +82,15 @@ pyx_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of pyx, and do not support unquoted attribute value
 # pyx_simple_quote: 正常的单双引号属性值
-# embed_value: python嵌入属性值，可选后跟js嵌入属性值
-# client_embed_value: python f-string + js嵌入属性值
-# client_embed: js嵌入属性值
-# pyx_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
+# pyx_js_embed: python嵌入属性值 + js嵌入属性值
+# fs_js_embed: python f-string + js嵌入属性值
+# pyx_embed: python嵌入属性值
+# js_embed: js嵌入属性值
+# --pyx_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
 # 2023.10.27:
 # 属性值去掉对pyx_element的支持，不再完全跟随jsx，属性值支持pyx_element后，html看起来很复杂。
-# 要支持将元素作为属性值的话，可以将pyx_element赋值给一个python变量，使用embed_value属性值
-pyx_attribute_value = pyx_simple_quote / embed_value / client_embed_value / client_embed 
+# 要支持将元素作为属性值的话，可以将pyx_element赋值给一个python变量，使用pyx_embed属性值
+pyx_attribute_value = pyx_simple_quote / pyx_js_embed / fs_js_embed / pyx_embed / js_embed 
 
 #pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
@@ -106,15 +107,15 @@ pyx_children = pyx_child*
 
 # 将<script>从root_element内部挪到root_element之后
 #pyx_child = embed_value / client_embed_value / web_component_script / html_comment / pyx_element / pyx_text / no_embed_char
-pyx_child = embed_value / client_embed_value / html_comment / pyx_element / pyx_text / no_embed_char
+pyx_child = pyx_js_embed / fs_js_embed / pyx_embed / html_comment / pyx_element / pyx_text / no_embed_char
 
-embed_value = embed maybe_space maybe_client_embed
+pyx_js_embed = pyx_embed maybe_space js_embed
 
-client_embed_value = '[' f_string ']' maybe_space client_embed
+fs_js_embed = '[' f_string ']' maybe_space js_embed
 
 f_string = f_string_item*
 
-f_string_item = simple_f_string / '{{' / '}}' / embed
+f_string_item = simple_f_string / '{{' / '}}' / pyx_embed
 
 simple_f_string = ~r"(\\.|[^\]{}\\])+"
 
@@ -125,72 +126,73 @@ no_embed_char = ~r"[{}[\]]"
 
 maybe_web_script =  web_script?
 
-web_script = maybe_space ~",?" maybe_space '<script' pyx_attributes maybe_space '>' client_script "</script>"
-#web_component_script = '<script' pyx_attributes maybe_space '>' client_script "</script>"
+web_script = maybe_space ~",?" maybe_space '<script' pyx_attributes maybe_space '>' js_script "</script>"
+#web_component_script = '<script' pyx_attributes maybe_space '>' js_script "</script>"
 
 html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 
-client_script = client_script_item*
+js_script = js_script_item*
 
-client_embed = jsop_client_embed / js_client_embed
-js_client_embed = '(' client_script ')'
-# JS Over Py client embed
-jsop_client_embed = '({' inner_script '})'
+js_embed = jsop_embed / local_js_embed
 
-maybe_client_embed = client_embed?
+# 本组件内js嵌入值
+local_js_embed = '(' js_script ')'
 
-client_parenthesis = '(' client_script ')'
+# JS Over Py embed，是父组件传过来的js嵌入值
+jsop_embed = '({' inner_pyx_script '})'
 
-# 为了处理template string中内嵌的js代码，需要加上client_brace
-client_brace = '{' client_script '}'
+js_parenthesis = '(' js_script ')'
 
-client_script_item = client_single_line_comment / client_multi_line_comment / js_simple_quote / template_simple / template_normal / client_parenthesis / client_brace / static_import / client_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
+# 为了处理template string中内嵌的js代码，需要加上js_brace
+js_brace = '{' js_script '}'
 
-client_single_line_comment = ~r"//[^\r\n]*"
+js_script_item = js_single_line_comment / js_multi_line_comment / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
 
-client_multi_line_comment = '/*' ~"[*](?!/)|[^*]*" '*/'
+js_single_line_comment = ~r"//[^\r\n]*"
 
-template_simple = ~r"`(\\.|[^`$\\])*`"
+js_multi_line_comment = '/*' ~"[*](?!/)|[^*]*" '*/'
 
-template_normal = template_head client_script template_middle_scripts template_tail
+js_template_simple = ~r"`(\\.|[^`$\\])*`"
 
-template_head = ~r"`(\\.|[^`$\\])*[$][{]"
+js_template_normal = js_template_head js_script js_template_middle_scripts js_template_tail
 
-template_middle_scripts = template_middle_script*
+js_template_head = ~r"`(\\.|[^`$\\])*[$][{]"
 
-template_middle_script = template_middle client_script
+js_template_middle_scripts = js_template_middle_script*
 
-template_middle = ~r"[}](\\.|[^`$\\])*[$][{]"
+js_template_middle_script = js_template_middle js_script
 
-template_tail = ~r"[}](\\.|[^`$\\])*`"
+js_template_middle = ~r"[}](\\.|[^`$\\])*[$][{]"
 
-static_import = simple_static_import / normal_static_import
+js_template_tail = ~r"[}](\\.|[^`$\\])*`"
 
-simple_static_import = 'import' space js_simple_quote
+js_static_import = js_simple_static_import / js_normal_static_import
 
-normal_static_import = 'import' space import_identifiers space 'from' space js_simple_quote
+js_simple_static_import = 'import' space js_simple_quote
 
-import_identifiers = import_identifier other_import_identifiers
+js_normal_static_import = 'import' space js_import_identifiers space 'from' space js_simple_quote
 
-other_import_identifiers = other_import_identifier*
+js_import_identifiers = js_import_identifier js_other_import_identifiers
 
-other_import_identifier = maybe_space ',' maybe_space import_identifier
+js_other_import_identifiers = js_other_import_identifier*
 
-import_identifier = identifier / namespace_import_identifier / named_import_identifiers
+js_other_import_identifier = maybe_space ',' maybe_space js_import_identifier
 
-identifier = ~r"[a-zA-Z][a-zA-Z0-9_]*"
+js_import_identifier = js_identifier / js_namespace_import_identifier / js_named_import_identifiers
 
-namespace_import_identifier = '*' maybe_space 'as' space identifier
+js_identifier = ~r"[a-zA-Z][a-zA-Z0-9_]*"
 
-named_import_identifiers = '{' maybe_space named_import_identifier other_named_import_identifiers maybe_space '}'
+js_namespace_import_identifier = '*' maybe_space 'as' space js_identifier
 
-other_named_import_identifiers = other_named_import_identifier*
+js_named_import_identifiers = '{' maybe_space js_named_import_identifier js_other_named_import_identifiers maybe_space '}'
 
-other_named_import_identifier = maybe_space ',' maybe_space named_import_identifier
+js_other_named_import_identifiers = js_other_named_import_identifier*
 
-named_import_identifier = identifier_with_alias / identifier
+js_other_named_import_identifier = maybe_space ',' maybe_space js_named_import_identifier
 
-identifier_with_alias = identifier space 'as' space identifier
+js_named_import_identifier = js_identifier_with_alias / js_identifier
+
+js_identifier_with_alias = js_identifier space 'as' space js_identifier
 
 # /: js中注释的开头字符
 # ': js中字符串开头字符
@@ -202,7 +204,7 @@ identifier_with_alias = identifier space 'as' space identifier
 # {: js模板字符串中嵌入js代码开始字符
 # }: js模板字符串中嵌入js代码结束字符
 # i: js中import语句开头字符
-client_normal_code = ~"[^/'\"`<(){}i]+"
+js_normal_code = ~"[^/'\"`<(){}i]+"
 
 no_script_less_than_char = ~"<(?!/script>)"
 

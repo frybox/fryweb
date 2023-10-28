@@ -1,39 +1,10 @@
-from pygments.lexer import bygroups, default, include, inherit
+from pygments.lexer import Lexer, bygroups, default, include, inherit
 from pygments.lexers.python import PythonLexer
 from pygments.lexers.javascript import JavascriptLexer
-from pygments.token import Name, Operator, Punctuation, String, Text, Whitespace, Comment
-
-class PyxLexer(PythonLexer):
-    name = 'Pyx'
-    aliases = ['pyx']
-    filenames = ['*.pyx']
-    mimetypes = ['text/pyx']
-
-    tokens = {
-        'root': [
-            include("pyx"),
-            inherit,
-        ],
-        'pyx': [
-            (r'<>', Punctuation, 'fragment_children'),
-            (r'(<)(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)\b', 
-              (Punctuation, Name), 'void_element'),
-        ],
-        'fragment_children': [
-            (r'</>', Punctuation, '#pop'),
-            include('children'),
-        ],
-        'void_element': [
-            (r'\s*/?>', Punctuation, '#pop'),
-            include('attributes'),
-        ],
-        'children': [
-        ],
-    }
-
-
+from pygments.token import Token, Name, Operator, Punctuation, String, Text, Whitespace, Comment
 from parsimonious import NodeVisitor, BadGrammar
 from fryhcs.pyx.grammar import grammar
+
 
 def merge(children):
     result = []
@@ -104,26 +75,26 @@ class PyxVisitor(NodeVisitor):
     def generic_visit(self, node, children):
         return children or node.text
 
-    def visit_script(self, node, children):
+    def visit_pyx_script(self, node, children):
         return merge(children)
 
-    def visit_inner_script(self, node, children):
+    def visit_inner_pyx_script(self, node, children):
         return children
 
-    def visit_script_item(self, node, children):
+    def visit_pyx_script_item(self, node, children):
         return children[0]
 
-    def visit_inner_script_item(self, node, children):
+    def visit_inner_pyx_script_item(self, node, children):
         return children[0]
 
-    def visit_comment(self, node, children):
+    def visit_py_comment(self, node, children):
         return py(node.text)
 
-    def visit_inner_brace(self, node, children):
+    def visit_inner_pyx_brace(self, node, children):
         _l, script, _r = children
         return [py('{'), script, py('}')]
 
-    def visit_embed(self, node, children):
+    def visit_pyx_embed(self, node, children):
         _l, script, _r = children
         return [sep('{'), script, sep('}')]
         
@@ -151,10 +122,10 @@ class PyxVisitor(NodeVisitor):
     def visit_less_than_char(self, node, children):
         return py('<')
 
-    def visit_normal_code(self, node, children):
+    def visit_py_normal_code(self, node, children):
         return py(node.text)
 
-    def visit_inner_normal_code(self, node, children):
+    def visit_inner_py_normal_code(self, node, children):
         return py(node.text)
 
     def visit_pyx_element_with_web_script(self, node, children):
@@ -227,13 +198,13 @@ class PyxVisitor(NodeVisitor):
     def visit_pyx_child(self, node, children):
         return children[0]
 
-    def visit_embed_value(self, node, children):
-        embed, s, client_embed = children
-        return [embed, w(s), client_embed]
+    def visit_pyx_js_embed(self, node, children):
+        pyx_embed, s, js_embed = children
+        return [pyx_embed, w(s), js_embed]
 
-    def visit_client_embed_value(self, node, children):
-        lb, fs, rb, s, client_embed = children
-        return [sep(lb), fs, sep(rb), w(s), client_embed]
+    def visit_fs_js_embed(self, node, children):
+        lb, fs, rb, s, js = children
+        return [sep(lb), fs, sep(rb), w(s), js]
         
     def visit_f_string(self, node, children):
         return fs(node.text)
@@ -254,33 +225,75 @@ class PyxVisitor(NodeVisitor):
     def visit_html_comment(self, node, children):
         return (Comment.HtmlComment, node.text)
 
-    def visit_client_script(self, node, children):
+    def visit_js_script(self, node, children):
         return js(node.text)
 
-    def visit_maybe_client_embed(self, node, children):
-        return children
-
-    def visit_client_embed(self, node, children):
+    def visit_js_embed(self, node, children):
         return children[0]
 
-    def visit_js_client_embed(self, node, children):
+    def visit_local_js_embed(self, node, children):
         l, script, r = children
         return [cep(l), script, cep(r)]
 
-    def visit_jsop_client_embed(self, node, children):
+    def visit_jsop_embed(self, node, children):
         l, script, r = children
         return [cep('('), sep('{'), script, sep('}'), cep(')')]
 
 
-def classify(source):
-    tree = grammar.parse(source)
+class FStringLexer(PythonLexer):
+    tokens = {
+        'btdqf': [
+            include('rfstringescape'),
+            include('tdqf'),
+        ],
+        'btsqf': [
+            include('rfstringescape'),
+            include('tsqf'),
+        ],
+    }
+
+
+class PyxLexer(Lexer):
+    name = 'Pyx'
+    aliases = ['pyx']
+    filenames = ['*.pyx']
+    mimetypes = ['text/pyx']
+
+    pylexer = PythonLexer()
+    fslexer = FStringLexer()
+    jslexer = JavascriptLexer()
     visitor = PyxVisitor()
-    return visitor.visit(tree)
+
+    def get_tokens_unprocessed(self, text):
+        tree = grammar.parse(text)
+        i = 0
+        for t, v in self.visitor.visit(tree):
+            if t in Token:
+                yield i, t, v
+            elif t == 'python':
+                for i1, t1, v1 in self.pylexer.get_tokens_unprocessed(v):
+                    yield i+i1, t1, v1
+            elif t == 'fstring':
+                root = 'btsqf' if '"""' in v else 'btdqf'
+                for i1, t1, v1 in self.fslexer.get_tokens_unprocessed(v, stack=(root,)):
+                    yield i+i1, t1, v1
+            elif t == 'javascript':
+                for i1, t1, v1 in self.jslexer.get_tokens_unprocessed(v):
+                    yield i+i1, t1, v1
+            else:
+                raise ValueError(f"Invalid type '{t}': '{v}'.")
+            i += len(v)
+
 
 if __name__ == '__main__':
     import sys
+    from pygments.formatters.terminal import TerminalFormatter
+    from pygments import highlight
+    lexer = PyxLexer()
+    fmter = TerminalFormatter()
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r') as f:
             data = f.read()
-        for d in classify(data):
-            print(d)
+        #print(highlight(data, lexer, fmter))
+        for t, v in lexer.get_tokens(data):
+            print(t, v)

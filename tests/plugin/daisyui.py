@@ -1,3 +1,5 @@
+print("daisyui plugin")
+
 base_css = {
     ":root, [data-theme=lofi]": {
         "color-scheme":        "light",

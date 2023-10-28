@@ -986,6 +986,24 @@ def run_command(module, pyxfile):
     _m = run_module(module, run_name='__main__')
 
 
+@click.command("hl", short_help="Highlight specified .pyx file based on pygments.")
+@click.argument("pyxfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
+def hl_command(pyxfile):
+    """Highlight specified .pyx file based on pygments."""
+    try:
+        from pygments.formatters.terminal import TerminalFormatter
+        from pygments import highlight
+    except ImportError:
+        click.echo("Pygments is not installed, install it via `pip install pygments`")
+        return
+    from fryhcs.pyx.pyxlexer import PyxLexer
+    lexer = PyxLexer()
+    fmter = TerminalFormatter()
+    with open(pyxfile, 'r') as f:
+        source = f.read()
+    click.echo(highlight(source, lexer, fmter))
+
+
 class FryhcsGroup(FlaskGroup):
     def __init__(self, **extra):
         extra.pop('add_default_commands', None)
@@ -996,6 +1014,7 @@ class FryhcsGroup(FlaskGroup):
         self.add_command(x2js_command)
         self.add_command(x2css_command)
         self.add_command(run_command)
+        self.add_command(hl_command)
         self.add_command(shell_command)
         self.add_command(routes_command)
 

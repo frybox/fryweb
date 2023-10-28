@@ -6,7 +6,7 @@ app = Flask(__name__)
 def App(props):
     initial_count = 20
     return <div>
-             <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
+             <h1 ref=(header) text-cyan-500 hover:text-cyan-600 text-center mt-100px>
                Hello FryHCS!
              </h1>
              <p text-indigo-600 text-center mt-9>
@@ -21,13 +21,14 @@ def App(props):
                </button>
              </div>
            </div>
-           <script initial={initial_count}>
+           <script header initial={initial_count}>
               import {signal} from "fryhcs"
 
               let count = signal(initial)
 
               function increment() {
-                  count.value ++
+                  count.value ++;
+                  header.textContent = `Hello FryHCS(${count.value})`;
               }
            </script>
 

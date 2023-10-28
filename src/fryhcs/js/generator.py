@@ -131,45 +131,45 @@ class JSGenerator(BaseGenerator):
         self.args = [k for k in attributes if k]
         self.script = script
 
-    def visit_client_script(self, node, children):
+    def visit_js_script(self, node, children):
         return ''.join(str(ch) for ch in children)
 
-    def visit_client_script_item(self, node, children):
+    def visit_js_script_item(self, node, children):
         return children[0]
 
-    def visit_client_single_line_comment(self, node, children):
+    def visit_js_single_line_comment(self, node, children):
         return node.text
 
-    def visit_client_multi_line_comment(self, node, children):
+    def visit_js_multi_line_comment(self, node, children):
         return node.text
 
-    def visit_template_simple(self, node, children):
+    def visit_js_template_simple(self, node, children):
         return node.text
 
-    def visit_template_normal(self, node, children):
+    def visit_js_template_normal(self, node, children):
         return node.text
 
-    def visit_js_client_embed(self, node, children):
+    def visit_local_js_embed(self, node, children):
         _, script, _ = children
         self.embeds.append(script)
         return script
 
-    def visit_client_parenthesis(self, node, children):
+    def visit_js_parenthesis(self, node, children):
         _, script, _ = children
         return '(' + script + ')'
 
-    def visit_client_brace(self, node, children):
+    def visit_js_brace(self, node, children):
         _, script, _ = children
         return '{' + script + '}'
 
-    def visit_static_import(self, node, children):
+    def visit_js_static_import(self, node, children):
         return children[0]
 
-    def visit_simple_static_import(self, node, children):
+    def visit_js_simple_static_import(self, node, children):
         _, _, module_name = children
         return f'await import({module_name})'
 
-    def visit_normal_static_import(self, node, children):
+    def visit_js_normal_static_import(self, node, children):
         _import, _, identifiers, _, _from, _, module_name = children
         value = ''
         namespace = identifiers.pop('*', '')
@@ -191,63 +191,63 @@ class JSGenerator(BaseGenerator):
                 value += f'const {{{names}}} = await import({module_name})'
         return value
 
-    def visit_import_identifiers(self, node, children):
+    def visit_js_import_identifiers(self, node, children):
         identifier, others = children
         identifiers = identifier
         identifiers.update(others)
         return identifiers
         
-    def visit_other_import_identifiers(self, node, children):
+    def visit_js_other_import_identifiers(self, node, children):
         identifiers = {}
         for ch in children:
             identifiers.update(ch)
         return identifiers
 
-    def visit_other_import_identifier(self, node, children):
+    def visit_js_other_import_identifier(self, node, children):
         _, _comma, _, identifier = children
         return identifier
 
-    def visit_import_identifier(self, node, children):
+    def visit_js_import_identifier(self, node, children):
         if isinstance(children[0], str):
             return {'default': children[0]}
         else:
             return children[0]
 
-    def visit_identifier(self, node, children):
+    def visit_js_identifier(self, node, children):
         return node.text
 
-    def visit_namespace_import_identifier(self, node, children):
+    def visit_js_namespace_import_identifier(self, node, children):
         _star, _, _as, _, identifier = children
         return {'*': identifier}
 
-    def visit_named_import_identifiers(self, node, children):
+    def visit_js_named_import_identifiers(self, node, children):
         _lb, _, identifier, others, _, _rb = children
         identifiers = identifier
         identifiers.update(others)
         return identifiers
 
-    def visit_other_named_import_identifiers(self, node, children):
+    def visit_js_other_named_import_identifiers(self, node, children):
         identifiers = {}
         for ch in children:
             identifiers.update(ch)
         return identifiers
 
-    def visit_other_named_import_identifier(self, node, children):
+    def visit_js_other_named_import_identifier(self, node, children):
         _, _comma, _, identifier = children
         return identifier
 
-    def visit_named_import_identifier(self, node, children):
+    def visit_js_named_import_identifier(self, node, children):
         value = children[0]
         if isinstance(value, str):
             return {value: ''}
         else:
             return value
 
-    def visit_identifier_with_alias(self, node, children):
+    def visit_js_identifier_with_alias(self, node, children):
         identifier, _, _as, _, alias = children
         return {identifier: alias}
 
-    def visit_client_normal_code(self, node, children):
+    def visit_js_normal_code(self, node, children):
         return node.text
 
     def visit_no_script_less_than_char(self, node, children):

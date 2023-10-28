@@ -47,12 +47,12 @@ novalue_attr = 'novalue_attr'         # ('novalue_attr', name): name
 py_attr = 'py_attr'                   # ('py_attr', name, pyscript): name={pyscript}
 js_attr = 'js_attr'                   # ('js_attr', name, jscount): name=(jsscript)
 jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
-#2023.10.27 不再支持元素作为属性值，参考语法文件说明
+#2023.10.27 不再支持元素作为属性值，参考语法文件pyx.ppeg说明
 #element_attr = 'element_attr'         # ('element_attr', name, element): name=<element></element>
 pyjs_attr = 'pyjs_attr'               # ('pyjs_attr', name, pyscript, jscount): name={pyscript}(jsscript)
 pyjsop_attr = 'pyjsop_attr'           # ('pyjsop_attr', name, pyscript, pyscript): name={pyscript1}({pyscript2})
-literaljs_attr = 'literaljs_attr'     # ('literaljs_attr', name, value, jscount): name=[value](jsscript)
-literaljsop_attr = 'literaljsop_attr' # ('literaljsop_attr', name, value, value): name=[value]({pyscript})
+fsjs_attr = 'fsjs_attr'     # ('fsjs_attr', name, value, jscount): name=[value](jsscript)
+fsjsop_attr = 'fsjsop_attr' # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
 children_attr = 'children_attr'       # ('children_attr', [children])
 jstext_attr = 'jstext_attr'           # ('jstext_attr', jscount)
 jsoptext_attr = 'jsoptext_attr'       # ('jsoptext_attr', value)
@@ -91,11 +91,11 @@ def concat_kv(attrs):
                 _, name, value, jsvalue = attr
                 ats.append(f'"{name}": {value}')
                 ats.append(f'"$${name}": {jsvalue}')
-            elif atype == literaljs_attr:
+            elif atype == fsjs_attr:
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
                 ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
-            elif atype == literaljsop_attr:
+            elif atype == fsjsop_attr:
                 _, name, value, jsvalue = attr
                 ats.append(f'"{name}": {value}')
                 ats.append(f'"$${name}": {jsvalue}')
@@ -165,7 +165,7 @@ def check_html_element(name, attrs):
     class_attr = None
     for attr in attrs:
         atype = attr[0]
-        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, pyjs_attr, literaljs_attr, spread_attr):
+        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, pyjs_attr, fsjs_attr, spread_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' in html element '{name}'")
         if attr[1][0] == '@' and atype not in (js_attr, py_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
@@ -233,6 +233,9 @@ def check_html_element(name, attrs):
 #   * `name=({jsop_value})` : 父组件js值在客户端运行时传给子组件
 #                             服务端：ClientEmbed对象
 #                             浏览器：不可见
+#   * `{*python_list}`      : python列表值
+#                             服务端：传递给python组件函数的props参数的一部分
+#                             浏览器：不可见
 #   * `{**python_dict}`     : python字典值
 #                             服务端：传递给python组件函数的props参数的一部分
 #                             浏览器：不可见
@@ -260,16 +263,16 @@ class PyGenerator(BaseGenerator):
     def generic_visit(self, node, children):
         return children or node
 
-    def visit_script(self, node, children):
+    def visit_pyx_script(self, node, children):
         return ''.join(str(ch) for ch in children)
 
-    def visit_inner_script(self, node, children):
+    def visit_inner_pyx_script(self, node, children):
         return ''.join(str(ch) for ch in children)
 
-    def visit_script_item(self, node, children):
+    def visit_pyx_script_item(self, node, children):
         return children[0]
 
-    def visit_inner_script_item(self, node, children):
+    def visit_inner_pyx_script_item(self, node, children):
         item = children[0]
         if isinstance(item, tuple):
             if item[0] == 'element':
@@ -278,18 +281,18 @@ class PyGenerator(BaseGenerator):
                 raise BadGrammar
         return item 
 
-    def visit_comment(self, node, children):
+    def visit_py_comment(self, node, children):
         return node.text
 
-    def visit_inner_brace(self, node, children):
+    def visit_inner_pyx_brace(self, node, children):
         _, script, _ = children
         # inner_brace是正常的python脚本，需要原样输出
         return '{' + script + '}'
 
-    def visit_embed(self, node, children):
+    def visit_pyx_embed(self, node, children):
         _, script, _ = children
         # embed都是赋值表达式，可以直接加上小括号
-        return '(' + script + ')'
+        return ('pyx_embed', '(' + script + ')')
 
     def visit_triple_single_quote(self, node, children):
         return node.text
@@ -315,10 +318,10 @@ class PyGenerator(BaseGenerator):
     def visit_less_than_char(self, node, children):
         return '<'
 
-    def visit_normal_code(self, node, children):
+    def visit_py_normal_code(self, node, children):
         return node.text
 
-    def visit_inner_normal_code(self, node, children):
+    def visit_inner_py_normal_code(self, node, children):
         return node.text
 
     def visit_pyx_element_with_web_script(self, node, children):
@@ -438,28 +441,28 @@ class PyGenerator(BaseGenerator):
         if isinstance(value, str):
             return [literal_attr, name, value]
         elif isinstance(value, tuple):
-            if value[0] == 'client_embed_value':
+            if value[0] == 'fs_js_embed':
                 _, quoted_literal, client_embed = value
-                if client_embed[0] == 'js_client_embed':
+                if client_embed[0] == 'local_js_embed':
                     count = self.inc_client_embed()
-                    return [literaljs_attr, name, quoted_literal, str(count)]
-                elif client_embed[0] == 'jsop_client_embed':
-                    return [literaljsop_attr, name, quoted_literal, client_embed[1]]
+                    return [fsjs_attr, name, quoted_literal, str(count)]
+                elif client_embed[0] == 'jsop_embed':
+                    return [fsjsop_attr, name, quoted_literal, client_embed[1]]
                 else:
                     raise BadGrammar
-            elif value[0] == 'embed_value':
+            elif value[0] == 'pyx_js_embed':
                 _, embed, client_embed = value
-                if client_embed:
-                    if client_embed[0] == 'js_client_embed':
-                        count = self.inc_client_embed()
-                        return [pyjs_attr, name, embed, str(count)]
-                    elif client_embed[0] == 'jsop_client_embed':
-                        return [pyjsop_attr, name, embed, client_embed[1]]
-                    else:
-                        raise BadGrammar
+                if client_embed[0] == 'local_js_embed':
+                    count = self.inc_client_embed()
+                    return [pyjs_attr, name, embed, str(count)]
+                elif client_embed[0] == 'jsop_embed':
+                    return [pyjsop_attr, name, embed, client_embed[1]]
                 else:
-                    return [py_attr, name, embed]
-            elif value[0] == 'js_client_embed':
+                    raise BadGrammar
+            elif value[0] == 'pyx_embed':
+                _, embed = value
+                return [py_attr, name, embed]
+            elif value[0] == 'local_js_embed':
                 count = self.inc_client_embed()
                 if name == ref_attr_name:
                     # 将js变量名编码到ref name中
@@ -471,7 +474,7 @@ class PyGenerator(BaseGenerator):
                     self.refs.add(name)
                     name = ref_attr_name_prefix + name
                 return [js_attr, name, str(count)]
-            elif value[0] == 'jsop_client_embed':
+            elif value[0] == 'jsop_embed':
                 return [jsop_attr, name, value[1]]
             #elif value[0] == 'element':
             #    return [element_attr, name, value[1]]
@@ -515,14 +518,12 @@ class PyGenerator(BaseGenerator):
         if isinstance(pyxchild, str):
             return pyxchild
         elif isinstance(pyxchild, tuple):
-            if pyxchild[0] == 'embed_value':
+            if pyxchild[0] == 'pyx_js_embed':
                 _, embed, client_embed = pyxchild
-                if not client_embed:
-                    return embed
-                if client_embed[0] == 'js_client_embed':
+                if client_embed[0] == 'local_js_embed':
                     attr = jstext_attr
                     value = str(self.inc_client_embed())
-                elif client_embed[0] == 'jsop_client_embed':
+                elif client_embed[0] == 'jsop_embed':
                     attr = jsoptext_attr
                     value = client_embed[1]
                 else:
@@ -531,12 +532,15 @@ class PyGenerator(BaseGenerator):
                          [children_attr, [embed]]]
                 attrs = concat_kv(attrs)
                 return f'Element("span", {{{", ".join(attrs)}}})'
-            elif pyxchild[0] == 'client_embed_value':
+            elif pyxchild[0] == 'pyx_embed':
+                _, embed = pyxchild
+                return embed
+            elif pyxchild[0] == 'fs_js_embed':
                 _, quoted_literal, client_embed = pyxchild
-                if client_embed[0] == 'js_client_embed':
+                if client_embed[0] == 'local_js_embed':
                     attr = jstext_attr
                     value = str(self.inc_client_embed())
-                elif client_embed[0] == 'jsop_client_embed':
+                elif client_embed[0] == 'jsop_embed':
                     attr = jsoptext_attr
                     value = client_embed[1]
                 else:
@@ -550,13 +554,14 @@ class PyGenerator(BaseGenerator):
         else:
             raise BadGrammar(f'Invalid pyx_child "{pyxchild}"')
 
-    def visit_embed_value(self, node, children):
-        embed, _, client_embed = children
-        return ('embed_value', embed, client_embed)
+    def visit_pyx_js_embed(self, node, children):
+        pyx_embed, _, js_embed = children
+        _name, pyx = pyx_embed
+        return ('pyx_js_embed', pyx, js_embed)
 
-    def visit_client_embed_value(self, node, children):
-        _l, quoted_literal, _r, _, client_embed = children
-        return ('client_embed_value', quoted_literal, client_embed)
+    def visit_fs_js_embed(self, node, children):
+        _l, quoted_literal, _r, _, js_embed = children
+        return ('fs_js_embed', quoted_literal, js_embed)
 
     def visit_f_string(self, node, children):
         return quote_f_string(node.text)
@@ -613,23 +618,17 @@ class PyGenerator(BaseGenerator):
     def visit_html_comment(self, node, children):
         return ''
 
-    def visit_client_embed(self, node, children):
+    def visit_js_embed(self, node, children):
         self.web_component_script = True
         return children[0]
 
-    def visit_js_client_embed(self, node, children):
+    def visit_local_js_embed(self, node, children):
         # 返回js script内容，在ref DOM元素时有用
-        return ('js_client_embed', node.text[1:-1])
+        return ('local_js_embed', node.text[1:-1])
 
-    def visit_jsop_client_embed(self, node, children):
+    def visit_jsop_embed(self, node, children):
         _l, script, _r = children
-        return ('jsop_client_embed', script)
-
-    def visit_maybe_client_embed(self, node, children):
-        if children:
-            return children[0]
-        else:
-            return ''
+        return ('jsop_embed', script)
 
 
 def pyx_to_py(source):
