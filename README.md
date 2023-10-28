@@ -15,7 +15,7 @@ Fryhcs is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 * Provide pygments lexer for pyx.
 * Provide development server which supports server/browser auto reloading when file saved.
 * Provide a command line tool `fry`, build css/js, highlight and run pyx file and run development server. 
-* Support plugin machanism, anyone can implement her own components based on fryhcs utilities.
+* Support plugin machanism, anyone can extends with her/his own custom css utilities.
 
 All features are implemented in pure Python, no node.js ecosystem is required.
 
