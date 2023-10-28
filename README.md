@@ -1,11 +1,11 @@
 # Fryhcs
 A Python library to generate HTML, Javascript and CSS, based on pyx file.
 
-Pys is jsx in python, it's the core of this project.
+Pyx is jsx in python, it's the core of this project.
 
-Fryhcs is inspired heavily by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
+Fryhcs is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
-**FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no node.js-based tooling needed!
+**FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
 
 ## Features
 * Support pyx extension to normal python file, similar to jsx, write html tags in python file.
