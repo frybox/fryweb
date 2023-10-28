@@ -408,7 +408,10 @@ class PyGenerator(BaseGenerator):
         return [ch for ch in children if ch]
 
     def visit_pyx_spaced_attribute(self, node, children):
-        _, attr = children
+        space, attr = children
+        if not space and attr:
+            # 元素属性前最好有空格
+            print(f"Warning: attribute {attr} should be prefixed with white space.")
         return attr
 
     def visit_pyx_attribute(self, node, children):

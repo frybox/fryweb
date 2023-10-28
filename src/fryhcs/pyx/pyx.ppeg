@@ -61,7 +61,9 @@ maybe_space = ~r'\s*'
 
 pyx_attributes = pyx_spaced_attribute*
 
-pyx_spaced_attribute = space pyx_attribute
+# space --> maybe_space，语法不要那么严格，spread_attribute和前面的属性值连起来时
+# 不要报错，给个warning就好了。
+pyx_spaced_attribute = maybe_space pyx_attribute
 
 # 去掉对client_embed_attribute的支持，event_attribute是kv_attribute的一种
 #pyx_attribute = pyx_embed_spread_attribute / pyx_client_embed_attribute / pyx_event_attribute / pyx_kv_attribute / pyx_novalue_attribute
