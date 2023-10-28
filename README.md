@@ -5,7 +5,7 @@ Pys is jsx in python, it's the core of this project.
 
 Fryhcs is inspired heavily by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
-Fry Html, Css and Javascript, in pure Python, no node.js-based tooling needed!
+*FRY* *H*tml, *C*ss and Java*S*cript, in pure Python, no node.js-based tooling needed!
 
 ## Features
 * Support pyx extension to normal python file, similar to jsx, write html tags in python file.
