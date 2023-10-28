@@ -206,6 +206,7 @@ class Element(object):
                     else:
                         scriptprops[f'data-{k}'] = v
                 children = element.props[children_attr_name]
+                # 将script包含的组件js参数写到与组件名挨着的地方，更加容易找
                 children.insert(0, Element('script', scriptprops, True))
         elif isinstance(self.name, str):
             props = {}
