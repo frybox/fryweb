@@ -22,12 +22,12 @@ def App(**props):
              </div>
            </div>
            <script initial={initial_count}>
-              import {signal} from "fryhcs"
+              import {signal} from "fryhcs";
 
-              count = signal(initial)
+              let count = signal(initial);
 
               function increment() {
-                  count.value ++
+                  count.value ++;
               }
            </script>
 

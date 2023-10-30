@@ -12,7 +12,7 @@ from fryhcs import Element
 #   </div>)
 # 在注释和字符串中的html不会被fryhcs转化。
 
-def FunctionComponent(**props):
+def FunctionComponent(value, **props):
     # 可以直接将html赋值给变量
     content1 = <span text-cyan-500 hover:text="cyan-400"  hover:container dark="text-cyan-600">你好</span>
 
@@ -88,7 +88,7 @@ def FunctionComponent(**props):
            id="special-div"
            {*list1}
            {**dict1}
-           data-value={props['value']}(age)
+           data-value={value}(age)
            $class="foo bar foobar color-white color-blue value1 value2 value3">
 
         html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}(age)
