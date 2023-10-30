@@ -324,6 +324,12 @@ In fact, this project is created by the father of one son(**F**ang**R**ui) and o
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already
 used in Cython, so it has to be renamed.
 
+Unfortunately, .fy is also used by a rubyvm-based language called fancy. But from [rubygems][1]
+and [github][2], there's no activity for ten years on this project, and the last version is 0.10.0.
+
+[1]: https://rubygems.org/gems/fancy
+[2]: https://github.com/bakkdoor/fancy
+
 ### 3. Is it good to merge frontend code and backend code into one file?
 Good question. We always say frontend-backend separation. But logically, for a web app, the
 frontend code is usually tightly coupled with the backend code, although they are running on
