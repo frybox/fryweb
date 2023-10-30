@@ -19,17 +19,15 @@ def compose_js(args, script, embeds):
     # 为了拿到当前的这个组件元素(document.currentScript)，以及为了每个script标签都执行一次，
     # 不得不将module类型的script转化为标准html script。
     return f"""\
-'fryfunctions$$' in window || (window.fryfunctions$$ = []);
-window.fryfunctions$$.push([document.currentScript, async function (script$$) {{
-    const {{hydrate: hydrate$$, collectrefs: collectrefs$$}} = await import("fryhcs");
+import {{hydrate as hydrate$$}} from "fryhcs";
+export const hydrate = async function (script$$) {{
     const rootElement$$ = script$$.parentElement;
     const componentId$$ = script$$.dataset.fryid;
-    collectrefs$$(rootElement$$, script$$, componentId$$);
     {args}
     {script}
     let embeds$$ = [{embeds}];
     hydrate$$(rootElement$$, componentId$$, embeds$$);
-}}]);
+}};
 """
 
 

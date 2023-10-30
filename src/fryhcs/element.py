@@ -1,6 +1,5 @@
 import inspect
 from fryhcs.utils import static_url, component_name
-from fryhcs.config import fryconfig
 from fryhcs.css.style import CSS
 import types
 
@@ -183,31 +182,27 @@ class Element(object):
             #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`属性上
             element.collect_client_embed(cnumber)
             
-            # 7. 将组件名和组件实例ID附加到html元素树的树根元素上
-            inner = element.props.get(component_attr_name, '')
-            inner_id = element.props.get(component_id_attr_name, '')
+            # 7. 将组件名和组件实例ID附加到html元素树树根元素下新增的第一个script元素上
             cname = component_name(self.name)
-            element.props[component_attr_name] = f'{cname} {inner}' if inner else cname
-            element.props[component_id_attr_name] = f'{cnumber} {inner_id}' if inner_id else str(cnumber)
+            scriptprops = {
+                component_id_attr_name: cnumber,
+                component_attr_name: cname,
+                children_attr_name: [],
+            }
+            children = element.props[children_attr_name]
+            # script是用来记录当前组件信息的，包括组件id，名字，以及后面可能的组件js参数
+            children.insert(0, Element('script', scriptprops, True))
 
-            # 8. 如果当前组件存在js代码，将script脚本元素添加为树根元素的第一个子元素
+            # 8. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
-                scriptprops = {
-                    'src': static_url(fryconfig.js_url) + uuid + '.js',
-                    #'defer': True,
-                    component_id_attr_name: cnumber,
-                    children_attr_name: [],
-                }
+                page.set_script(cnumber, uuid)
                 for k,v in args:
                     if isinstance(v, ClientEmbed):
                         # 父组件实例传过来的js嵌入值
                         scriptprops[k] = v
                     else:
                         scriptprops[f'data-{k}'] = v
-                children = element.props[children_attr_name]
-                # 将script包含的组件js参数写到与组件名挨着的地方，更加容易找
-                children.insert(0, Element('script', scriptprops, True))
         elif isinstance(self.name, str):
             props = {}
             style = {} 

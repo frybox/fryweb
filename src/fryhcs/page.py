@@ -5,18 +5,34 @@ from fryhcs.config import fryconfig
 class Page(object):
     def __init__(self):
         self.component_count = 0
+        self.uuid2cids = {}
 
     def add_component(self):
         self.component_count += 1
         return self.component_count
 
+    def set_script(self, cid, uuid): 
+        if uuid in self.uuid2cids:
+            cids = self.uuid2cids[uuid]
+        else:
+            cids = set() 
+            self.uuid2cids[uuid] = cids
+        cids.add(cid)
 
-def render(element):
-    if isinstance(element, Element):
+    @property
+    def scripts(self):
+        return list(self.uuid2cids.keys())
+
+    def components_of_script(self, uuid):
+        return self.uuid2cids.get(uuid, [])
+
+
+def render(element, page=None):
+    if not page:
         page = Page()
+    if isinstance(element, Element):
         element = element.render(page)
     elif callable(element) and getattr(element, '__name__', 'anonym')[0].isupper():
-        page = Page()
         element = Element(element).render(page)
     return element
 
@@ -24,7 +40,65 @@ def render(element):
 def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewport="width=device-width, initial-scale=1.0", metas={}, properties={}, equivs={}):
     sep = '\n    '
 
-    content = render(content)
+    page = Page()
+    content = render(content, page)
+    scripts = page.scripts
+    if not scripts:
+        hydrate_script = ""
+    else:
+        output = ["let hydrates = {};"]
+        for i, uuid in enumerate(scripts):
+            output.append(f"import {{ hydrate as hydrate_{i} }} from 'components/{uuid}.js';")
+            for cid in page.components_of_script(uuid):
+                output.append(f"hydrates['{cid}'] = hydrate_{i};")
+        all_scripts = '\n      '.join(output)
+
+        hydrate_script = f"""
+    <script type="module">
+      {all_scripts}
+      const componentScripts = document.querySelectorAll('script[data-fryid]');
+      let cid2script = {{}};
+      let cids = [];
+      for (const cscript of componentScripts) {{
+        const cid = cscript.dataset.fryid;
+        console.log(cid);
+        cid2script[cid] = cscript;
+        cids.push(parseInt(cid));
+      }}
+      cids.sort((x,y)=>x-y);
+      for (const cid of cids) {{
+        console.log(cid);
+      }}
+      function collectRefs(element) {{
+        if ('fryembed' in element.dataset) {{
+          const embeds = element.dataset.fryembed;
+          for (const embed of embeds.split(' ')) {{
+            const cid = embed.split('/', 1)[0];
+            const scriptElement = cid2script[cid];
+            const prefix = cid + '/';
+            const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
+            const arg = args.join('-')
+            if (atype === 'ref') {{
+              if (!('frydata' in scriptElement)) {{
+                scriptElement.frydata = {{}};
+              }}
+              scriptElement.frydata[arg] = element;
+            }}
+          }}
+        }}
+        for (const child of element.children) {{
+          collectRefs(child);
+        }}
+      }}
+      const rootScript = cid2script['1'];
+      collectRefs(rootScript.parentElement);
+
+      for (const cid of cids) {{
+          const scid = ''+cid;
+          await hydrates[scid](cid2script[scid]);
+      }}
+    </script>
+"""
 
     metas = sep.join(f'<meta name="{name}" content="{value}">'
                        for name, value in metas.items())
@@ -101,15 +175,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
   </head>
   <body>
     {content}
-    <script>
-      (async function () {{
-        if ('fryfunctions$$' in window) {{
-          for (const [script, fn] of window.fryfunctions$$) {{
-            await fn(script);
-          }}
-        }}
-      }})();
-    </script>
+    {hydrate_script}
     {autoreload}
   </body>
 </html>
