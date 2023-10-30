@@ -72,8 +72,8 @@ def template_changed(sender, file_path, **kwargs):
         # vim编辑临时文件，不触发服务端reload
         return True
 
-    # 当有html/pyx文件发生变化时，更新css/js文件
-    if file_path.suffix in ('.html', '.pyx'):
+    # 当有fy/pyx文件发生变化时，更新css/js文件
+    if file_path.suffix in ('.fy', '.pyx'):
         logger.info("generate css for %s...", file_path)
         incremental_generation_count += 1
         if incremental_generation_count >= 10:
@@ -82,9 +82,8 @@ def template_changed(sender, file_path, **kwargs):
             css_generator.generate()
         else:
             css_generator.generate(file_path)
-        if file_path.suffix == '.pyx':
-            logger.info("generate js for %s...", file_path)
-            js_generator.generate([file_path])
+        logger.info("generate js for %s...", file_path)
+        js_generator.generate([file_path])
 
     # 当有html、js或css文件发生变更时，不需要服务端reoad，但浏览器需要reload
     if file_path.suffix in ('.html', '.js', '.css'):

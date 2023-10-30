@@ -61,14 +61,10 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
       let cids = [];
       for (const cscript of componentScripts) {{
         const cid = cscript.dataset.fryid;
-        console.log(cid);
         cid2script[cid] = cscript;
         cids.push(parseInt(cid));
       }}
       cids.sort((x,y)=>x-y);
-      for (const cid of cids) {{
-        console.log(cid);
-      }}
       function collectRefs(element) {{
         if ('fryembed' in element.dataset) {{
           const embeds = element.dataset.fryembed;
@@ -77,7 +73,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
             const scriptElement = cid2script[cid];
             const prefix = cid + '/';
             const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
-            const arg = args.join('-')
+            const arg = args.join('-');
             if (atype === 'ref') {{
               if (!('frydata' in scriptElement)) {{
                 scriptElement.frydata = {{}};

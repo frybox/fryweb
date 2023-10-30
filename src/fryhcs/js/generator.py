@@ -1,13 +1,13 @@
 from parsimonious import VisitationError
 from pathlib import Path
 import sys
-from fryhcs.pyx.grammar import grammar
-from fryhcs.pyx.generator import BaseGenerator
+from fryhcs.fy.grammar import grammar
+from fryhcs.fy.generator import BaseGenerator
 from fryhcs.fileiter import FileIter
 import re
 
 
-# generate js content for pyx component
+# generate js content for fy component
 def compose_js(args, script, embeds):
     output = []
     for arg in args:
@@ -80,13 +80,13 @@ class JSGenerator(BaseGenerator):
     def visit_py_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_simple_quote(self, node, children):
+    def visit_fy_simple_quote(self, node, children):
         return children[0]
 
     def visit_js_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_element_with_web_script(self, node, children):
+    def visit_fy_element_with_web_script(self, node, children):
         if self.script or self.embeds:
             uuid = self.get_uuid(node)
             self.web_components.append({
@@ -98,30 +98,30 @@ class JSGenerator(BaseGenerator):
         self.args = []
         self.embeds = []
 
-    def visit_pyx_attributes(self, node, children):
+    def visit_fy_attributes(self, node, children):
         return [ch for ch in children if ch]
 
-    def visit_pyx_spaced_attribute(self, node, children):
+    def visit_fy_spaced_attribute(self, node, children):
         _, attr = children
         return attr
 
-    def visit_pyx_attribute(self, node, children):
+    def visit_fy_attribute(self, node, children):
         return children[0]
 
-    def visit_pyx_embed_spread_attribute(self, node, children):
+    def visit_fy_embed_spread_attribute(self, node, children):
         return None
 
-    def visit_pyx_kv_attribute(self, node, children):
+    def visit_fy_kv_attribute(self, node, children):
         name, _, _, _, _value = children
         return name
 
-    def visit_pyx_novalue_attribute(self, node, children):
+    def visit_fy_novalue_attribute(self, node, children):
         return children[0]
 
-    def visit_pyx_attribute_name(self, node, children):
+    def visit_fy_attribute_name(self, node, children):
         return node.text
 
-    def visit_pyx_attribute_value(self, node, children):
+    def visit_fy_attribute_value(self, node, children):
         return children[0]
 
     def visit_web_script(self, node, children):

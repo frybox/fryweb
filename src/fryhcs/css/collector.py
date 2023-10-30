@@ -4,7 +4,7 @@ from collections import defaultdict
 import re
 
 from fryhcs.fileiter import FileIter
-from fryhcs.pyx.grammar import grammar
+from fryhcs.fy.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
 
 class BaseCollector():
@@ -99,13 +99,13 @@ class CssVisitor(NodeVisitor):
     def visit_py_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_simple_quote(self, node, children):
+    def visit_fy_simple_quote(self, node, children):
         return children[0]
 
     def visit_js_simple_quote(self, node, children):
         return children[0]
 
-    def visit_pyx_self_closing_element(self, node, children):
+    def visit_fy_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
         if not name[0].islower():
             return
@@ -116,7 +116,7 @@ class CssVisitor(NodeVisitor):
                 continue
             self.collect_kv(attr[0], attr[1])
 
-    def visit_pyx_start_tag(self, node, children):
+    def visit_fy_start_tag(self, node, children):
         _, start_name, attrs, _, _ = children
         if not start_name[0].islower():
             return
@@ -127,27 +127,27 @@ class CssVisitor(NodeVisitor):
                 continue
             self.collect_kv(attr[0], attr[1])
 
-    def visit_pyx_element_name(self, node, children):
+    def visit_fy_element_name(self, node, children):
         return node.text
 
-    def visit_pyx_attributes(self, node, children):
+    def visit_fy_attributes(self, node, children):
         return [ch for ch in children if ch]
 
-    def visit_pyx_spaced_attribute(self, node, children):
+    def visit_fy_spaced_attribute(self, node, children):
         _, attr = children
         return attr
 
-    def visit_pyx_attribute(self, node, children):
+    def visit_fy_attribute(self, node, children):
         return children[0]
 
-    def visit_pyx_embed_spread_attribute(self, node, children):
+    def visit_fy_embed_spread_attribute(self, node, children):
         return None
 
-    #def visit_pyx_client_embed_attribute(self, node, children):
+    #def visit_fy_client_embed_attribute(self, node, children):
     #    _value, _, css_literal = children
     #    return css_literal
 
-    def visit_pyx_kv_attribute(self, node, children):
+    def visit_fy_kv_attribute(self, node, children):
         name, _, _, _, value = children
         if name in ('$class', 'class'):
             # 将class名字设置为空字符串，is_valid_html_attribute返回false
@@ -156,23 +156,23 @@ class CssVisitor(NodeVisitor):
         if isinstance(value, str):
             return (name, value)
 
-    def visit_pyx_novalue_attribute(self, node, children):
+    def visit_fy_novalue_attribute(self, node, children):
         name, _ = children
         return (name, '')
 
-    def visit_pyx_attribute_name(self, node, children):
+    def visit_fy_attribute_name(self, node, children):
         return node.text
 
-    def visit_pyx_attribute_value(self, node, children):
+    def visit_fy_attribute_value(self, node, children):
         return children[0]
 
-    def visit_pyx_js_embed(self, node, children):
+    def visit_fy_js_embed(self, node, children):
         return None
 
     def visit_fs_js_embed(self, node, children):
         return None
 
-    def visit_pyx_embed(self, node, children):
+    def visit_fy_embed(self, node, children):
         return None
 
     def visit_js_embed(self, node, children):

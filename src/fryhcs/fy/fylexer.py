@@ -3,7 +3,7 @@ from pygments.lexers.python import PythonLexer
 from pygments.lexers.javascript import JavascriptLexer
 from pygments.token import Token, Name, Operator, Punctuation, String, Text, Whitespace, Comment
 from parsimonious import NodeVisitor, BadGrammar
-from fryhcs.pyx.grammar import grammar
+from fryhcs.fy.grammar import grammar
 
 
 def merge(children):
@@ -75,26 +75,26 @@ class PyxVisitor(NodeVisitor):
     def generic_visit(self, node, children):
         return children or node.text
 
-    def visit_pyx_script(self, node, children):
+    def visit_fy_script(self, node, children):
         return merge(children)
 
-    def visit_inner_pyx_script(self, node, children):
+    def visit_inner_fy_script(self, node, children):
         return children
 
-    def visit_pyx_script_item(self, node, children):
+    def visit_fy_script_item(self, node, children):
         return children[0]
 
-    def visit_inner_pyx_script_item(self, node, children):
+    def visit_inner_fy_script_item(self, node, children):
         return children[0]
 
     def visit_py_comment(self, node, children):
         return py(node.text)
 
-    def visit_inner_pyx_brace(self, node, children):
+    def visit_inner_fy_brace(self, node, children):
         _l, script, _r = children
         return [py('{'), script, py('}')]
 
-    def visit_pyx_embed(self, node, children):
+    def visit_fy_embed(self, node, children):
         _l, script, _r = children
         return [sep('{'), script, sep('}')]
         
@@ -113,7 +113,7 @@ class PyxVisitor(NodeVisitor):
     def visit_py_simple_quote(self, node, children):
         return py(children[0])
 
-    def visit_pyx_simple_quote(self, node, children):
+    def visit_fy_simple_quote(self, node, children):
         return s(children[0])
 
     def visit_js_simple_quote(self, node, children):
@@ -128,35 +128,35 @@ class PyxVisitor(NodeVisitor):
     def visit_inner_py_normal_code(self, node, children):
         return py(node.text)
 
-    def visit_pyx_element_with_web_script(self, node, children):
+    def visit_fy_element_with_web_script(self, node, children):
         return children
 
-    def visit_pyx_root_element(self, node, children):
+    def visit_fy_root_element(self, node, children):
         return children[0]
 
-    def visit_pyx_element(self, node, children):
+    def visit_fy_element(self, node, children):
         return children[0]
 
-    def visit_pyx_fragment(self, node, children):
+    def visit_fy_fragment(self, node, children):
         l, chs, r = children
         return [ep(l), chs, ep(r)]
 
-    def visit_pyx_self_closing_element(self, node, children):
+    def visit_fy_self_closing_element(self, node, children):
         l, name, attrs, s, r = children
         return [ep(l), name, attrs, w(s), ep(r)]
 
-    def visit_pyx_paired_element(self, node, children):
+    def visit_fy_paired_element(self, node, children):
         return children
 
-    def visit_pyx_start_tag(self, node, children):
+    def visit_fy_start_tag(self, node, children):
         l, name, attrs, s, r = children
         return [ep(l), name, attrs, w(s), ep(r)]
 
-    def visit_pyx_end_tag(self, node, children):
+    def visit_fy_end_tag(self, node, children):
         l, name, s, r = children
         return [ep(l), name, w(s), ep(r)]
 
-    def visit_pyx_element_name(self, node, children):
+    def visit_fy_element_name(self, node, children):
         return en(node.text)
 
     def visit_space(self, node, children):
@@ -165,42 +165,42 @@ class PyxVisitor(NodeVisitor):
     def visit_maybe_space(self, node, children):
         return node.text
 
-    def visit_pyx_attributes(self, node, children):
+    def visit_fy_attributes(self, node, children):
         return children
 
-    def visit_pyx_spaced_attribute(self, node, children):
+    def visit_fy_spaced_attribute(self, node, children):
         s, attr = children
         return [w(s), attr]
 
-    def visit_pyx_attribute(self, node, children):
+    def visit_fy_attribute(self, node, children):
         return children[0]
 
-    def visit_pyx_embed_spread_attribute(self, node, children):
+    def visit_fy_embed_spread_attribute(self, node, children):
         l, s1, m, s2, script, r = children
         return [sep(l), py(s1), py(m), py(s2), script, sep(r)]
 
-    def visit_pyx_kv_attribute(self, node, children):
+    def visit_fy_kv_attribute(self, node, children):
         name, s1, e, s2, value = children
         return [name, w(s1), o(e), w(s2), value]
 
-    def visit_pyx_novalue_attribute(self, node, children):
+    def visit_fy_novalue_attribute(self, node, children):
         return children[0]
 
-    def visit_pyx_attribute_name(self, node, children):
+    def visit_fy_attribute_name(self, node, children):
         return an(node.text)
 
-    def visit_pyx_attribute_value(self, node, children):
+    def visit_fy_attribute_value(self, node, children):
         return children[0]
 
-    def visit_pyx_children(self, node, children):
+    def visit_fy_children(self, node, children):
         return children
 
-    def visit_pyx_child(self, node, children):
+    def visit_fy_child(self, node, children):
         return children[0]
 
-    def visit_pyx_js_embed(self, node, children):
-        pyx_embed, s, js_embed = children
-        return [pyx_embed, w(s), js_embed]
+    def visit_fy_js_embed(self, node, children):
+        fy_embed, s, js_embed = children
+        return [fy_embed, w(s), js_embed]
 
     def visit_fs_js_embed(self, node, children):
         lb, fs, rb, s, js = children
@@ -209,7 +209,7 @@ class PyxVisitor(NodeVisitor):
     def visit_f_string(self, node, children):
         return fs(node.text)
 
-    def visit_pyx_text(self, node, children):
+    def visit_fy_text(self, node, children):
         return t(node.text)
 
     def visit_no_embed_char(self, node, children):
@@ -253,11 +253,11 @@ class FStringLexer(PythonLexer):
     }
 
 
-class PyxLexer(Lexer):
-    name = 'Pyx'
-    aliases = ['pyx']
-    filenames = ['*.pyx']
-    mimetypes = ['text/pyx']
+class FyLexer(Lexer):
+    name = 'Fy'
+    aliases = ['fy']
+    filenames = ['*.fy']
+    mimetypes = ['text/fy']
 
     pylexer = PythonLexer()
     fslexer = FStringLexer()
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     import sys
     from pygments.formatters.terminal import TerminalFormatter
     from pygments import highlight
-    lexer = PyxLexer()
+    lexer = FyLexer()
     fmter = TerminalFormatter()
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r') as f:

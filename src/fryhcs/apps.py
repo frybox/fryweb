@@ -9,6 +9,6 @@ class FryhcsConfig(AppConfig):
         # 注册信号处理函数
         from . import signals
 
-        # 让python可以import .pyx文件
-        from .pyx.pyxloader import install_path_hook
+        # 让python可以import .fy文件
+        from .fy.fyloader import install_path_hook
         install_path_hook()

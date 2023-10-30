@@ -1,9 +1,9 @@
 from fryhcs import Element
 
-# 这是一个pyx样例
+# 这是一个fy样例
 
-# pyx是一个内嵌html语法的python语法扩展，通过fryhcs将pyx语法转化为python语法
-# pyx内嵌html的方式如下：
+# fy是一个内嵌html语法的python语法扩展，通过fryhcs将fy语法转化为python语法
+# fy内嵌html的方式如下：
 # from fryhcs.html import Element
 # my_element = <div class="my-element">这是我的div</div>
 # another_element = (
@@ -107,7 +107,7 @@ def FunctionComponent(value, **props):
 
         也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初始值: {b}](age)
         
-        "pyx中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
+        "fy中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
         还可以有正常的html：
 
         <div class="normal" style={{'display':'block'}}>

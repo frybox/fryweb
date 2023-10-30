@@ -29,15 +29,15 @@ if fryconfig.django_ok:
         dirs.update(jinja_template_directories())
         return dirs
 
-def pyx_files():
+def fy_files():
     input_files = []
     if fryconfig.django_ok:
         from django.apps import apps
-        input_files = [(ac.path, '**/*.pyx') for ac in apps.get_app_configs()]
+        input_files = [(ac.path, '**/*.fy') for ac in apps.get_app_configs()]
     elif fryconfig.flask_ok:
         from flask import current_app
         try:
-            input_files = [(current_app.root_path, '**/*.pyx')]
+            input_files = [(current_app.root_path, '**/*.fy')]
         except RuntimeError:
             pass
     if not input_files:
@@ -47,11 +47,11 @@ def pyx_files():
 def create_css_generator():
     # input_files = [(dir, '**/*.html') for dir in template_directories()]
     from fryhcs.css.generator import CSSGenerator
-    return CSSGenerator(pyx_files(), fryconfig.css_file)
+    return CSSGenerator(fy_files(), fryconfig.css_file)
 
 def create_js_generator():
     from fryhcs.js.generator import JSGenerator
-    return JSGenerator(pyx_files(), fryconfig.js_root)
+    return JSGenerator(fy_files(), fryconfig.js_root)
 
 
 def static_url(path):

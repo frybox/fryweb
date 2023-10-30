@@ -1,19 +1,19 @@
 
-# top level pyx script
-pyx_script = pyx_script_item*
+# top level fy script
+fy_script = fy_script_item*
 
-# pyx script in html element definition
-inner_pyx_script = inner_pyx_script_item*
+# fy script in html element definition
+inner_fy_script = inner_fy_script_item*
 
-pyx_script_item = py_comment / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element_with_web_script / less_than_char / py_normal_code
+fy_script_item = py_comment / triple_single_quote / triple_double_quote / py_simple_quote / fy_element_with_web_script / less_than_char / py_normal_code
 
-inner_pyx_script_item = py_comment / inner_pyx_brace / triple_single_quote / triple_double_quote / py_simple_quote / pyx_element / less_than_char / inner_py_normal_code
+inner_fy_script_item = py_comment / inner_fy_brace / triple_single_quote / triple_double_quote / py_simple_quote / fy_element / less_than_char / inner_py_normal_code
 
 py_comment = ~r"#[^\r\n]*"
 
-inner_pyx_brace = '{' inner_pyx_script '}'
+inner_fy_brace = '{' inner_fy_script '}'
 
-pyx_embed = '{' inner_pyx_script '}'
+fy_embed = '{' inner_fy_script '}'
 
 triple_single_quote = ~r"'''(\\.|[^'\\]|'(?!''))*'''"
 
@@ -24,7 +24,7 @@ single_quote = ~r"'(\\.|[^'\\])*'"
 double_quote = ~r'"(\\.|[^"\\])*"'
 
 py_simple_quote = single_quote / double_quote
-pyx_simple_quote = single_quote / double_quote
+fy_simple_quote = single_quote / double_quote
 js_simple_quote = single_quote / double_quote
 
 less_than_char = '<'
@@ -34,102 +34,102 @@ py_normal_code = ~"[^#'\"<]+"
 # inner_py_normal_code不能匹配到embedding中的右大括号
 inner_py_normal_code = ~"[^#'\"<{}]+"
 
-pyx_element_with_web_script = pyx_root_element maybe_web_script
+fy_element_with_web_script = fy_root_element maybe_web_script
 
 # 所有元素要么是自闭合，要么是标签成对，不支持不自闭合的空元素，这点和html规范不同
 # https://html.spec.whatwg.org/#void-elements
-pyx_root_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
+fy_root_element = fy_fragment / fy_self_closing_element / fy_paired_element
 
-pyx_element = pyx_fragment / pyx_self_closing_element / pyx_paired_element
+fy_element = fy_fragment / fy_self_closing_element / fy_paired_element
 
-pyx_fragment = '<>' pyx_children '</>'
+fy_fragment = '<>' fy_children '</>'
 
-pyx_self_closing_element = '<' pyx_element_name pyx_attributes maybe_space '/>'
+fy_self_closing_element = '<' fy_element_name fy_attributes maybe_space '/>'
 
-pyx_paired_element = pyx_start_tag pyx_children pyx_end_tag
+fy_paired_element = fy_start_tag fy_children fy_end_tag
 
-pyx_start_tag = '<' pyx_element_name pyx_attributes maybe_space '>'
+fy_start_tag = '<' fy_element_name fy_attributes maybe_space '>'
 
 # https://html.spec.whatwg.org/#end-tags
-pyx_end_tag = '</' pyx_element_name maybe_space '>'
+fy_end_tag = '</' fy_element_name maybe_space '>'
 
-pyx_element_name = ~r'[\w.-]+'
+fy_element_name = ~r'[\w.-]+'
 
 space = ~r'\s+'
 
 maybe_space = ~r'\s*'
 
-pyx_attributes = pyx_spaced_attribute*
+fy_attributes = fy_spaced_attribute*
 
 # space --> maybe_space，语法不要那么严格，spread_attribute和前面的属性值连起来时
 # 不要报错，给个warning就好了。
-pyx_spaced_attribute = maybe_space pyx_attribute
+fy_spaced_attribute = maybe_space fy_attribute
 
 # 去掉对client_embed_attribute的支持，event_attribute是kv_attribute的一种
-#pyx_attribute = pyx_embed_spread_attribute / pyx_client_embed_attribute / pyx_event_attribute / pyx_kv_attribute / pyx_novalue_attribute
-pyx_attribute = pyx_embed_spread_attribute / pyx_kv_attribute / pyx_novalue_attribute
+#fy_attribute = fy_embed_spread_attribute / fy_client_embed_attribute / fy_event_attribute / fy_kv_attribute / fy_novalue_attribute
+fy_attribute = fy_embed_spread_attribute / fy_kv_attribute / fy_novalue_attribute
 
-pyx_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_pyx_script '}'  #maybe_space maybe_css_literal
+fy_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_fy_script '}'  #maybe_space maybe_css_literal
 
-#pyx_client_embed_attribute = client_embed_value maybe_space maybe_css_literal
+#fy_client_embed_attribute = client_embed_value maybe_space maybe_css_literal
 
-#pyx_event_attribute = '@' identifier maybe_space '=' maybe_space client_embed
+#fy_event_attribute = '@' identifier maybe_space '=' maybe_space client_embed
 
-pyx_kv_attribute = pyx_attribute_name maybe_space '=' maybe_space pyx_attribute_value
+fy_kv_attribute = fy_attribute_name maybe_space '=' maybe_space fy_attribute_value
 
-pyx_novalue_attribute = pyx_attribute_name !(maybe_space '=')
+fy_novalue_attribute = fy_attribute_name !(maybe_space '=')
 
 # 属性名中可以有“/”，用以支持无值属性方式的CSS
-pyx_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
+fy_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
 
-# https://html.spec.whatwg.org/#attributes-2  with extension of pyx, and do not support unquoted attribute value
-# pyx_simple_quote: 正常的单双引号属性值
-# pyx_js_embed: python嵌入属性值 + js嵌入属性值
+# https://html.spec.whatwg.org/#attributes-2  with extension of fy, and do not support unquoted attribute value
+# fy_simple_quote: 正常的单双引号属性值
+# fy_js_embed: python嵌入属性值 + js嵌入属性值
 # fs_js_embed: python f-string + js嵌入属性值
-# pyx_embed: python嵌入属性值
+# fy_embed: python嵌入属性值
 # js_embed: js嵌入属性值
-# --pyx_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
+# --fy_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
 # 2023.10.27:
-# 属性值去掉对pyx_element的支持，不再完全跟随jsx，属性值支持pyx_element后，html看起来很复杂。
-# 要支持将元素作为属性值的话，可以将pyx_element赋值给一个python变量，使用pyx_embed属性值
-pyx_attribute_value = pyx_simple_quote / pyx_js_embed / fs_js_embed / pyx_embed / js_embed 
+# 属性值去掉对fy_element的支持，不再完全跟随jsx，属性值支持fy_element后，html看起来很复杂。
+# 要支持将元素作为属性值的话，可以将fy_element赋值给一个python变量，使用fy_embed属性值
+fy_attribute_value = fy_simple_quote / fy_js_embed / fs_js_embed / fy_embed / js_embed 
 
-#pyx_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
+#fy_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
-#pyx_attr_value_client_embed = client_embed_value maybe_space maybe_css_literal
+#fy_attr_value_client_embed = client_embed_value maybe_space maybe_css_literal
 
-#pyx_css_literal = ':' maybe_space pyx_simple_quote
+#fy_css_literal = ':' maybe_space fy_simple_quote
 
-#maybe_css_literal = pyx_css_literal?
+#maybe_css_literal = fy_css_literal?
 
 # 暂不支持没有引号的属性值
-#pyx_unquoted_attribute_value = ~"[^\\s\"'=<>{}`]+"
+#fy_unquoted_attribute_value = ~"[^\\s\"'=<>{}`]+"
 
-pyx_children = pyx_child*
+fy_children = fy_child*
 
 # 将<script>从root_element内部挪到root_element之后
-#pyx_child = embed_value / client_embed_value / web_component_script / html_comment / pyx_element / pyx_text / no_embed_char
-pyx_child = pyx_js_embed / fs_js_embed / pyx_embed / html_comment / pyx_element / pyx_text / no_embed_char
+#fy_child = embed_value / client_embed_value / web_component_script / html_comment / fy_element / fy_text / no_embed_char
+fy_child = fy_js_embed / fs_js_embed / fy_embed / html_comment / fy_element / fy_text / no_embed_char
 
-pyx_js_embed = pyx_embed maybe_space js_embed
+fy_js_embed = fy_embed maybe_space js_embed
 
 fs_js_embed = '[' f_string ']' maybe_space js_embed
 
 f_string = f_string_item*
 
-f_string_item = simple_f_string / '{{' / '}}' / pyx_embed
+f_string_item = simple_f_string / '{{' / '}}' / fy_embed
 
 simple_f_string = ~r"(\\.|[^\]{}\\])+"
 
 # 多个空格缩减为1个，丢弃只有空格的字符串，单双引号是正常字符
-pyx_text = ~r"[^<>{}[\]]+"
+fy_text = ~r"[^<>{}[\]]+"
 
 no_embed_char = ~r"[{}[\]]"
 
 maybe_web_script =  web_script?
 
-web_script = maybe_space ~",?" maybe_space '<script' pyx_attributes maybe_space '>' js_script "</script>"
-#web_component_script = '<script' pyx_attributes maybe_space '>' js_script "</script>"
+web_script = maybe_space ~",?" maybe_space '<script' fy_attributes maybe_space '>' js_script "</script>"
+#web_component_script = '<script' fy_attributes maybe_space '>' js_script "</script>"
 
 html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 
@@ -141,7 +141,7 @@ js_embed = jsop_embed / local_js_embed
 local_js_embed = '(' js_script ')'
 
 # JS Over Py embed，是父组件传过来的js嵌入值
-jsop_embed = '({' inner_pyx_script '})'
+jsop_embed = '({' inner_fy_script '})'
 
 js_parenthesis = '(' js_script ')'
 
