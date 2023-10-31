@@ -3,12 +3,12 @@ name = "fryhcs"
 version = "0.1.0"
 keywords = [
     "fryhcs",
-    "fy",
+    "fry",
     "django",
     "flask",
 ]
 authors = [{name="Zenk Ju", email="juzejian@gmail.com"},]
-description = "A python library to generate HTML, Javascript and CSS, based on fy file"
+description = "A python library to generate HTML, Javascript and CSS, based on fry file"
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.8"

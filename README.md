@@ -1,20 +1,20 @@
 # Fryhcs
-A Python library to generate HTML, Javascript and CSS, based on .fy file.
+A Python library to generate HTML, Javascript and CSS, based on .fry file.
 
-Fy is jsx in python, it's the core of this project.
+Fry is jsx in python, it's the core of this project.
 
 Fryhcs is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
 **FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
 
 ## Features
-* Support fy extension to normal python file, similar to jsx, write html tags in python file.
-* Provide a fy loader for python import machanism, load and execute fy files directly.
+* Support fry extension to normal python file, similar to jsx, write html tags in python file.
+* Provide a fry loader for python import machanism, load and execute fry files directly.
 * Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
 * Support django/flask framework.
-* Provide pygments lexer for fy.
+* Provide pygments lexer for fry.
 * Provide development server which supports server/browser auto reloading when file saved.
-* Provide a command line tool `fry`, build css/js, highlight and run fy file and run development server. 
+* Provide a command line tool `fry`, build css/js, highlight and run fry file and run development server. 
 * Support plugin machanism, anyone can extends with her/his own custom css utilities.
 
 All features are implemented in pure Python, no node.js ecosystem is required.
@@ -28,7 +28,7 @@ $ pip install fryhcs
 ## Usage
 
 ### 1. Basic
-create app.fy file:
+create app.fry file:
 
 ```python
 from fryhcs import html, Element
@@ -46,10 +46,10 @@ def index():
     return html(App, "Hello")
 ```
 
-in the same directory as app.fy, run command:
+in the same directory as app.fry, run command:
 
 ```bash
-$ fry x2y app.fy
+$ fry x2y app.fry
 ```
 
 check the generated python content:
@@ -71,7 +71,7 @@ def index():
 
 To generate CSS file `static/css/styles.css`, run command:
 ```bash
-$ fry x2css app.fy
+$ fry x2css app.fry
 ```
 
 Generated CSS:
@@ -105,11 +105,11 @@ $ fry serve --debug
 
 Open browser, access `http://127.0.0.1:5000` to browse the page.
 
-Change the app.fy file, save, check the browser auto reloading.
+Change the app.fry file, save, check the browser auto reloading.
 
 `fryhcs.render` can be used to render component directly.
 
-Create components.fy and input following code:
+Create components.fry and input following code:
 
 ```python
 from fryhcs import Element
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
 Run command to see the generated html fragment:
 ```bash
-$ fry run component.fy
+$ fry run component.fry
 ```
 
 
@@ -320,12 +320,15 @@ MIT License
 
 In fact, this project is created by the father of one son(**F**ang**R**ui) and one daughter(**F**ang**Y**i)...
 
-### 2. Why name the file format .fy
+### 2. Why name the file format .fry
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already
 used in Cython, so it has to be renamed.
 
-Unfortunately, .fy is also used by a rubyvm-based language called fancy. But from [rubygems][1]
-and [github][2], there's no activity for ten years on this project, and the last version is 0.10.0.
+First it's renamed to be .fy, easy to write. Unfortunately, .fy is also used by a rubyvm-based
+language called fancy. But from [rubygems][1] and [github][2], there's no activity for ten years
+on this project, and the last version is 0.10.0.
+
+At last, it's named to be .fry.
 
 [1]: https://rubygems.org/gems/fancy
 [2]: https://github.com/bakkdoor/fancy

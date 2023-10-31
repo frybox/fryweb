@@ -704,12 +704,12 @@ def generate_static(path=None):
     if not css_generator or not js_generator:
         return
     if not path:
-        logger.info("Regenerating all js files and css files from .fy files...")
+        logger.info("Regenerating all js files and css files from .fry files...")
         css_generator.generate()
         js_generator.generate(clean=True)
     else:
         path = Path(path).absolute()
-        if path.suffix == '.fy':
+        if path.suffix == '.fry':
             logger.info(f"Regenerating js files and css file for {str(path)}...")
             css_generator.generate(path)
             js_generator.generate([path])
@@ -896,93 +896,93 @@ def serve_command(
 serve_command.params.insert(0, _debug_option)
 
 
-@click.command("build", short_help="Build js files and css style file for all .fy files.")
+@click.command("build", short_help="Build js files and css style file for all .fry files.")
 @pass_script_info
 def build_command(info):
-    """Build js files and css style file for all .fy files."""
+    """Build js files and css style file for all .fry files."""
     app = info.load_app()
     with app.app_context():
         css_generator = create_css_generator()
         js_generator = create_js_generator()
-        logger.info("Regenerating all js files and css files from .fy files...")
+        logger.info("Regenerating all js files and css files from .fry files...")
         css_generator.generate()
         js_generator.generate(clean=True)
 
 
-@click.command("fy2py", short_help="Convert specified .fy file into .py file.")
-@click.argument("fyfile")
-def fy2py_command(fyfile):
-    """Convert specified .fy file into .py file."""
-    from fryhcs.fy.generator import fy_to_py
-    path = Path(fyfile)
+@click.command("topy", short_help="Convert specified .fry file into .py file.")
+@click.argument("fryfile")
+def topy_command(fryfile):
+    """Convert specified .fry file into .py file."""
+    from fryhcs.fry.generator import fry_to_py
+    path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fyfile}'.")
+        print("Error: can't open file '{fryfile}'.")
         sys.exit(1)
     with path.open('r') as f:
         data = f.read()
-    print(fy_to_py(data))
+    print(fry_to_py(data))
 
 
-@click.command("fy2js", short_help="Convert specified .fy file into .js file(s).")
-@click.argument("fyfile")
+@click.command("tojs", short_help="Convert specified .fry file into .js file(s).")
+@click.argument("fryfile")
 @click.argument("jsdir")
-def fy2js_command(fyfile, jsdir):
-    """Convert specified .fy file into .js file(s)."""
+def tojs_command(fryfile, jsdir):
+    """Convert specified .fry file into .js file(s)."""
     from fryhcs.js.generator import JSGenerator
-    path = Path(fyfile)
+    path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fyfile}'.")
+        print("Error: can't open file '{fryfile}'.")
         sys.exit(1)
-    generator = JSGenerator([fyfile], jsdir)
+    generator = JSGenerator([fryfile], jsdir)
     count = generator.generate()
     if count == 0:
-        print(f"No js information in '{fyfile}'.")
+        print(f"No js information in '{fryfile}'.")
     else:
-        print(f"{count} js files from '{fyfile}' are generated into directory '{jsdir}'")
+        print(f"{count} js files from '{fryfile}' are generated into directory '{jsdir}'")
 
 
-@click.command("fy2css", short_help="Convert specified .fy file into style.css file.")
+@click.command("tocss", short_help="Convert specified .fry file into style.css file.")
 @click.option("-p", "--plugin", multiple=True, help="Specify a plugin to be loaded")
-@click.argument("fyfile")
+@click.argument("fryfile")
 @click.argument("cssfile")
-def fy2css_command(plugin, fyfile, cssfile):
-    """Convert specified .fy file into style.css file."""
+def tocss_command(plugin, fryfile, cssfile):
+    """Convert specified .fry file into style.css file."""
     if plugin:
         sys.path.insert(0, '')
         plugins = ':'.join(plugin)
         os.environ['FRYHCS_PLUGINS'] = plugins
     from fryhcs.css.generator import CSSGenerator
-    path = Path(fyfile)
+    path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fyfile}'.")
+        print("Error: can't open file '{fryfile}'.")
         sys.exit(1)
-    generator = CSSGenerator([fyfile], cssfile)
+    generator = CSSGenerator([fryfile], cssfile)
     generator.generate()
-    print(f"styles from '{fyfile}' are generated into file '{cssfile}'.")
+    print(f"styles from '{fryfile}' are generated into file '{cssfile}'.")
 
 
-@click.command("run", short_help="Convert specified .fy file into .py file and execute it.")
+@click.command("run", short_help="Convert specified .fry file into .py file and execute it.")
 @click.option("-m", "module", default=None, help="Specify a module to be run")
-@click.argument("fyfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
-def run_command(module, fyfile):
-    """Convert specified .fy file into .py file and execute it."""
+@click.argument("fryfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
+def run_command(module, fryfile):
+    """Convert specified .fry file into .py file and execute it."""
     from runpy import run_module
-    if module and fyfile:
+    if module and fryfile:
         click.echo("ONLY ONE of -m MODULE and PYXFILE can be specified.")
         return
     if module:
         sys.path.insert(0, '')
-    elif fyfile:
-        path = Path(fyfile)
+    elif fryfile:
+        path = Path(fryfile)
         if path.is_dir():
             sys.path.insert(0, str(path))
             module = '__main__'
-        elif path.suffix in ('.py', '.pyc', '.fy'):
+        elif path.suffix in ('.py', '.pyc', '.fry'):
             dir = path.parent
             sys.path.insert(0, str(dir))
             module = path.stem
         else:
-            click.echo("PYXFILE should be .py, .pyc or .fy file.")
+            click.echo("PYXFILE should be .py, .pyc or .fry file.")
             return
     else:
         click.echo("one of -m MODULE and PYXFILE should be specified.")
@@ -990,20 +990,20 @@ def run_command(module, fyfile):
     _m = run_module(module, run_name='__main__')
 
 
-@click.command("hl", short_help="Highlight specified .fy file based on pygments.")
-@click.argument("fyfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
-def hl_command(fyfile):
-    """Highlight specified .fy file based on pygments."""
+@click.command("hl", short_help="Highlight specified .fry file based on pygments.")
+@click.argument("fryfile", default=None, required=False, type=click.Path(exists=True, resolve_path=True))
+def hl_command(fryfile):
+    """Highlight specified .fry file based on pygments."""
     try:
         from pygments.formatters.terminal import TerminalFormatter
         from pygments import highlight
     except ImportError:
         click.echo("Pygments is not installed, install it via `pip install pygments`")
         return
-    from fryhcs.fy.fylexer import FyLexer
-    lexer = FyLexer()
+    from fryhcs.fry.frylexer import FryLexer
+    lexer = FryLexer()
     fmter = TerminalFormatter()
-    with open(fyfile, 'r') as f:
+    with open(fryfile, 'r') as f:
         source = f.read()
     click.echo(highlight(source, lexer, fmter))
 
@@ -1014,9 +1014,9 @@ class FryhcsGroup(FlaskGroup):
         super().__init__(add_default_commands=False, **extra) 
         self.add_command(serve_command)
         self.add_command(build_command)
-        self.add_command(fy2py_command)
-        self.add_command(fy2js_command)
-        self.add_command(fy2css_command)
+        self.add_command(topy_command)
+        self.add_command(tojs_command)
+        self.add_command(tocss_command)
         self.add_command(run_command)
         self.add_command(hl_command)
         self.add_command(shell_command)
@@ -1035,8 +1035,8 @@ in the current directory.
 
 
 def main():
-    # 让python可以import .fy文件
-    from fryhcs.fy.fyloader import install_path_hook
+    # 让python可以import .fry文件
+    from fryhcs.fry.fryloader import install_path_hook
     install_path_hook()
     cli.main()
 
