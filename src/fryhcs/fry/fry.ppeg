@@ -148,11 +148,13 @@ js_parenthesis = '(' js_script ')'
 # 为了处理template string中内嵌的js代码，需要加上js_brace
 js_brace = '{' js_script '}'
 
-js_script_item = js_single_line_comment / js_multi_line_comment / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
+js_script_item = js_single_line_comment / js_multi_line_comment / js_regexp / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
 
 js_single_line_comment = ~r"//[^\r\n]*"
 
 js_multi_line_comment = '/*' ~"[*](?!/)|[^*]*" '*/'
+
+js_regexp = ~r"/([^\\/]|\\.)+/[dgimsuy]*(?=\s*([.;,)\]}]|$))"
 
 js_template_simple = ~r"`(\\.|[^`$\\])*`"
 

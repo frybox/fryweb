@@ -141,6 +141,9 @@ class JSGenerator(BaseGenerator):
     def visit_js_multi_line_comment(self, node, children):
         return node.text
 
+    def visit_js_regexp(self, node, children):
+        return node.text
+
     def visit_js_template_simple(self, node, children):
         return node.text
 
