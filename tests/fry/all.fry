@@ -13,6 +13,7 @@ from fryhcs import Element
 # 在注释和字符串中的html不会被fryhcs转化。
 
 def FunctionComponent(value, **props):
+    print(f"FunctionComponent: '{props}'")
     # 可以直接将html赋值给变量
     content1 = <span text-cyan-500 hover:text="cyan-400"  hover:container dark="text-cyan-600">你好</span>
 
@@ -128,6 +129,7 @@ def FunctionComponent(value, **props):
     </script>)
 
 def FunctionComponent2(**props):
+    print(f"FunctionComponent2: '{props}'")
     mylist = ('disabled', 'hidden', 'text-cyan-50')
     myprops = {k:v for k,v in props.items() if k != 'children'}
     return (
@@ -138,6 +140,7 @@ def FunctionComponent2(**props):
       </div>)
 
 def FunctionComponent3(**props):
+    print(f"FunctionComponent3: '{props}'")
     return (
       <div>
         <div>[初始值](value)</div>

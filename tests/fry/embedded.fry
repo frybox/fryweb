@@ -1,7 +1,7 @@
 from fryhcs import Element
 from random import randint
 
-def A(**props):
+def A():
     style = f'text-cyan-{randint(1, 9)*100} bg-#6667'
     #a = <span $style={style}>[](3)</span>
     a = <span $class="bg-cyan-200 absolute" $style={style}>[初{1}始{2}值](3)</span>

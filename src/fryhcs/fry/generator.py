@@ -361,7 +361,8 @@ class PyGenerator(BaseGenerator):
             name = f'"{name}"'
         else:
             check_component_element(name, attrs)
-        attrs.append([children_attr,[]])
+        # self closing元素不能有children属性，否则组件函数的参数会出错。
+        #attrs.append([children_attr,[]])
         return (name, attrs)
 
     def visit_fry_paired_element(self, node, children):

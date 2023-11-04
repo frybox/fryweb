@@ -3,7 +3,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def Sub2(v, create, **props):
+def Sub2(v, create):
     return (
     <div ref=(foo)>
       <p>Sub2: {v}</p>
@@ -14,14 +14,14 @@ def Sub2(v, create, **props):
       console.log(`sub2: ${foo}`);
     </script>)
 
-def Sub1(bar, create, **props):
+def Sub1(bar, create, children):
     return (
     <Sub2 v={bar} create={create}/>
     <script>
       console.log('sub1')
     </script>)
 
-def App(**props):
+def App():
     return (
     <Sub1 bar="from app" create=(create_signal)>
     </Sub1>
