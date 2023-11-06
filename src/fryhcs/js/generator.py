@@ -55,17 +55,25 @@ class JSGenerator(BaseGenerator):
         for file in input_files:
             with file.open('r') as f:
                 count += self.generate_one(f.read())
-        self.esbuild()
+        self.bundle()
         return count
                 
-    def esbuild(self):
+    def bundle(self):
         src = list(self.tmp_dir.glob('*.js'))
         if not src:
             return
-        args = ['npm', 'run', 'esb', '--', '--format=esm', '--bundle', '--splitting', f'--outdir={self.output_dir}']
-        args += [str(js) for js in src]
+        this = Path(__file__).absolute().parent
+        bun = this / 'bun' 
         env = os.environ.copy()
-        env['NODE_PATH'] = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static/js')
+        if True:
+            env['NODE_PATH'] = str(this / '..' / 'static' / 'js')
+            args = ['npx', 'esbuild', '--format=esm', '--bundle']
+        elif bun.is_file():
+            # 对于动态import的js，只修改地址，没有打包
+            # 暂时不用bun
+            args = [str(bun), 'build', '--external', 'fryhcs']
+        args += ['--splitting', f'--outdir={self.output_dir}']
+        args += [str(js) for js in src]
         subprocess.run(args, env=env)
 
     def generate_one(self, source):
