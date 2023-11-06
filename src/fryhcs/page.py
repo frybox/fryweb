@@ -48,7 +48,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     else:
         output = ["let hydrates = {};"]
         for i, uuid in enumerate(scripts):
-            output.append(f"import {{ hydrate as hydrate_{i} }} from 'components/{uuid}.js';")
+            output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}/{uuid}.js';")
             for cid in page.components_of_script(uuid):
                 output.append(f"hydrates['{cid}'] = hydrate_{i};")
         all_scripts = '\n      '.join(output)
@@ -60,6 +60,11 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
       let cid2script = {{}};
       let cids = [];
       for (const cscript of componentScripts) {{
+        cscript.frydata = {{}};
+        for (const key in cscript.dataset) {{
+          if (!key.startsWith('fry'))
+            cscript.frydata[key] = cscript.dataset[key];
+        }}
         const cid = cscript.dataset.fryid;
         cid2script[cid] = cscript;
         cids.push(parseInt(cid));
@@ -75,9 +80,6 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
             const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
             const arg = args.join('-');
             if (atype === 'ref') {{
-              if (!('frydata' in scriptElement)) {{
-                scriptElement.frydata = {{}};
-              }}
               scriptElement.frydata[arg] = element;
             }}
           }}
@@ -106,9 +108,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     <script type="importmap">
       {{
         "imports": {{
-          "fryhcs": "{static_url('js/fryhcs.js')}",
-          "components/": "{static_url(fryconfig.js_url)}",
-          "@/": "{static_url('/')}"
+          "fryhcs": "{static_url('js/fryhcs.js')}"
         }}
       }}
     </script>

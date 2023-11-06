@@ -5,13 +5,15 @@ from fryhcs.fry.grammar import grammar
 from fryhcs.fry.generator import BaseGenerator
 from fryhcs.fileiter import FileIter
 import re
+import os
+import subprocess
 
 
 # generate js content for fry component
 def compose_js(args, script, embeds):
     output = []
     for arg in args:
-        output.append(f'const {arg} = ("frydata" in script$$ && "{arg}" in script$$.frydata) ? script$$.frydata.{arg} : script$$.dataset.{arg};')
+        output.append(f'const {arg} = script$$.frydata.{arg};')
     args = '\n    '.join(output)
 
     embeds = ', '.join(embeds)
@@ -21,11 +23,11 @@ def compose_js(args, script, embeds):
     return f"""\
 import {{hydrate as hydrate$$}} from "fryhcs";
 export const hydrate = async function (script$$) {{
-    const rootElement$$ = script$$.parentElement;
-    const componentId$$ = script$$.dataset.fryid;
     {args}
     {script}
-    let embeds$$ = [{embeds}];
+    const rootElement$$ = script$$.parentElement;
+    const componentId$$ = script$$.dataset.fryid;
+    const embeds$$ = [{embeds}];
     hydrate$$(rootElement$$, componentId$$, embeds$$);
 }};
 """
@@ -36,21 +38,36 @@ class JSGenerator(BaseGenerator):
         super().__init__()
         self.fileiter = FileIter(input_files)
         self.output_dir = Path(output_dir).absolute()
+        self.tmp_dir = self.output_dir / '.tmp'
 
     def generate(self, input_files=[], clean=False):
         if not input_files:
             input_files = self.fileiter.all_files()
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
         if clean:
             pattern = '[0-9a-f]'*40+'.js'
             for f in self.output_dir.glob(pattern):
+                f.unlink(missing_ok=True)
+            for f in self.tmp_dir.glob('*.js'):
                 f.unlink(missing_ok=True)
         count = 0
         for file in input_files:
             with file.open('r') as f:
                 count += self.generate_one(f.read())
+        self.esbuild()
         return count
                 
+    def esbuild(self):
+        src = list(self.tmp_dir.glob('*.js'))
+        if not src:
+            return
+        args = ['npm', 'run', 'esb', '--', '--format=esm', '--bundle', '--splitting', f'--outdir={self.output_dir}']
+        args += [str(js) for js in src]
+        env = os.environ.copy()
+        env['NODE_PATH'] = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static/js')
+        subprocess.run(args, env=env)
+
     def generate_one(self, source):
         tree = grammar.parse(source)
         self.web_components = []
@@ -63,7 +80,7 @@ class JSGenerator(BaseGenerator):
             args = c['args']
             script = c['script']
             embeds = c['embeds']
-            jspath = self.output_dir / f'{name}.js'
+            jspath = self.tmp_dir / f'{name}.js'
             with jspath.open('w') as f:
                 f.write(compose_js(args, script, embeds))
         return len(self.web_components)
