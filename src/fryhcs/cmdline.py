@@ -778,7 +778,7 @@ class SeparatedPathType(click.Path):
         return [super_convert(item, param, ctx) for item in items]
 
 
-@click.command("serve", short_help="Run a development server.")
+@click.command("dev", short_help="Run a development server.")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
 @click.option("--port", "-p", default=5000, help="The port to bind to.")
 @click.option(
@@ -831,7 +831,7 @@ class SeparatedPathType(click.Path):
     ),
 )
 @pass_script_info
-def serve_command(
+def dev_command(
     info,
     host,
     port,
@@ -893,7 +893,7 @@ def serve_command(
         exclude_patterns=exclude_patterns,
     )
 
-serve_command.params.insert(0, _debug_option)
+dev_command.params.insert(0, _debug_option)
 
 
 @click.command("build", short_help="Build js files and css style file for all .fry files.")
@@ -1012,7 +1012,7 @@ class FryhcsGroup(FlaskGroup):
     def __init__(self, **extra):
         extra.pop('add_default_commands', None)
         super().__init__(add_default_commands=False, **extra) 
-        self.add_command(serve_command)
+        self.add_command(dev_command)
         self.add_command(build_command)
         self.add_command(topy_command)
         self.add_command(tojs_command)
