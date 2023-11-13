@@ -48,7 +48,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     else:
         output = ["let hydrates = {};"]
         for i, uuid in enumerate(scripts):
-            output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}/{uuid}.js';")
+            output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
             for cid in page.components_of_script(uuid):
                 output.append(f"hydrates['{cid}'] = hydrate_{i};")
         all_scripts = '\n      '.join(output)
