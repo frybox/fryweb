@@ -166,10 +166,10 @@ class CssVisitor(NodeVisitor):
     def visit_fry_attribute_value(self, node, children):
         return children[0]
 
-    def visit_fry_js_embed(self, node, children):
-        return None
+    #def visit_fry_js_embed(self, node, children):
+    #    return None
 
-    def visit_fs_js_embed(self, node, children):
+    def visit_joint_embed(self, node, children):
         return None
 
     def visit_fry_embed(self, node, children):

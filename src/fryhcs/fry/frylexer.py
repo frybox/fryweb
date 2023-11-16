@@ -198,11 +198,11 @@ class FryVisitor(NodeVisitor):
     def visit_fry_child(self, node, children):
         return children[0]
 
-    def visit_fry_js_embed(self, node, children):
-        fry_embed, s, js_embed = children
-        return [fry_embed, w(s), js_embed]
+    #def visit_fry_js_embed(self, node, children):
+    #    fry_embed, s, js_embed = children
+    #    return [fry_embed, w(s), js_embed]
 
-    def visit_fs_js_embed(self, node, children):
+    def visit_joint_embed(self, node, children):
         lb, fs, rb, s, js = children
         return [sep(lb), fs, sep(rb), w(s), js]
         

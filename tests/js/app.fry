@@ -7,7 +7,7 @@ def Sub2(v, create):
     return (
     <div ref=(foo)>
       <p>Sub2: {v}</p>
-      <p>Sub2: {v}(value)</p>
+      <p>Sub2: [{v}](value)</p>
     </div>
     <script foo create={create}>
       const value = create(10);

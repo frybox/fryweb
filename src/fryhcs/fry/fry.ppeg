@@ -80,19 +80,20 @@ fry_kv_attribute = fry_attribute_name maybe_space '=' maybe_space fry_attribute_
 fry_novalue_attribute = fry_attribute_name !(maybe_space '=')
 
 # 属性名中可以有“/”，用以支持无值属性方式的CSS
-fry_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
+# 缩小属性名的范围，支持css utility即可
+#fry_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
+fry_attribute_name = ~r"([a-zA-Z0-9@#%$:._-]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of fry, and do not support unquoted attribute value
 # fry_simple_quote: 正常的单双引号属性值
-# fry_js_embed: python嵌入属性值 + js嵌入属性值
-# fs_js_embed: python f-string + js嵌入属性值
-# fry_embed: python嵌入属性值
-# js_embed: js嵌入属性值
+# joint_embed: [python f-string](js嵌入属性值)
+# fry_embed: {python嵌入属性值}
+# js_embed: (js嵌入属性值)
 # --fry_element: html基础元素或组件元素 TODO 是否要去掉对元素属性值的支持？
 # 2023.10.27:
 # 属性值去掉对fry_element的支持，不再完全跟随jsx，属性值支持fry_element后，html看起来很复杂。
 # 要支持将元素作为属性值的话，可以将fry_element赋值给一个python变量，使用fry_embed属性值
-fry_attribute_value = fry_simple_quote / fry_js_embed / fs_js_embed / fry_embed / js_embed 
+fry_attribute_value = fry_simple_quote / joint_embed / fry_embed / js_embed 
 
 #fry_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
@@ -102,18 +103,16 @@ fry_attribute_value = fry_simple_quote / fry_js_embed / fs_js_embed / fry_embed 
 
 #maybe_css_literal = fry_css_literal?
 
-# 暂不支持没有引号的属性值
+# 不支持没有引号的属性值
 #fry_unquoted_attribute_value = ~"[^\\s\"'=<>{}`]+"
 
 fry_children = fry_child*
 
 # 将<script>从root_element内部挪到root_element之后
 #fry_child = embed_value / client_embed_value / web_component_script / html_comment / fry_element / fry_text / no_embed_char
-fry_child = fry_js_embed / fs_js_embed / fry_embed / html_comment / fry_element / fry_text / no_embed_char
+fry_child = joint_embed / fry_embed / html_comment / fry_element / fry_text / no_embed_char
 
-fry_js_embed = fry_embed maybe_space js_embed
-
-fs_js_embed = '[' f_string ']' maybe_space js_embed
+joint_embed = '[' f_string ']' maybe_space js_embed
 
 f_string = f_string_item*
 

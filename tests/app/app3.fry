@@ -11,7 +11,7 @@ def App():
              </h1>
              <p text-indigo-600 text-center mt-9>
                Count:
-               <span text-red-600>{initial_count}(count)</span>
+               <span text-red-600>[{initial_count}](count)</span>
              </p>
              <div flex w-full justify-center>
                <button type="button" @click=(increment)

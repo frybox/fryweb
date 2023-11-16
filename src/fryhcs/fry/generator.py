@@ -49,10 +49,11 @@ js_attr = 'js_attr'                   # ('js_attr', name, jscount): name=(jsscri
 jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
 #2023.10.27 不再支持元素作为属性值，参考语法文件fry.ppeg说明
 #element_attr = 'element_attr'         # ('element_attr', name, element): name=<element></element>
-pyjs_attr = 'pyjs_attr'               # ('pyjs_attr', name, pyscript, jscount): name={pyscript}(jsscript)
-pyjsop_attr = 'pyjsop_attr'           # ('pyjsop_attr', name, pyscript, pyscript): name={pyscript1}({pyscript2})
-fsjs_attr = 'fsjs_attr'     # ('fsjs_attr', name, value, jscount): name=[value](jsscript)
-fsjsop_attr = 'fsjsop_attr' # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
+#2023.11.16 不在支持python嵌入后跟js嵌入
+#pyjs_attr = 'pyjs_attr'               # ('pyjs_attr', name, pyscript, jscount): name={pyscript}(jsscript)
+#pyjsop_attr = 'pyjsop_attr'           # ('pyjsop_attr', name, pyscript, pyscript): name={pyscript1}({pyscript2})
+fsjs_attr = 'fsjs_attr'               # ('fsjs_attr', name, value, jscount): name=[value](jsscript)
+fsjsop_attr = 'fsjsop_attr'           # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
 children_attr = 'children_attr'       # ('children_attr', [children])
 jstext_attr = 'jstext_attr'           # ('jstext_attr', jscount)
 jsoptext_attr = 'jsoptext_attr'       # ('jsoptext_attr', value)
@@ -83,14 +84,14 @@ def concat_kv(attrs):
             #elif atype == element_attr:
             #    _, name, value = attr
             #    ats.append(f'"{name}": {value}')
-            elif atype == pyjs_attr:
-                _, name, value, jscount = attr
-                ats.append(f'"{name}": {value}')
-                ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
-            elif atype == pyjsop_attr:
-                _, name, value, jsvalue = attr
-                ats.append(f'"{name}": {value}')
-                ats.append(f'"$${name}": {jsvalue}')
+            #elif atype == pyjs_attr:
+            #    _, name, value, jscount = attr
+            #    ats.append(f'"{name}": {value}')
+            #    ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
+            #elif atype == pyjsop_attr:
+            #    _, name, value, jsvalue = attr
+            #    ats.append(f'"{name}": {value}')
+            #    ats.append(f'"$${name}": {jsvalue}')
             elif atype == fsjs_attr:
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
@@ -150,6 +151,7 @@ def concat_kv(attrs):
 #   * `name={py_value}`                    : python值在服务端渲染为常量传给浏览器引擎，不可以为ClientEmbed
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
+# 2023.11.16: 如下两种情况不再支持：
 #   * `name={py_value}(js_value)`          : python值，客户端js修改
 #   * `name={py_value}({jsop_value})`      : python值，客户端父组件js修改
 #                                            服务端：`name=py_value`，python数据值
@@ -165,7 +167,7 @@ def check_html_element(name, attrs):
     class_attr = None
     for attr in attrs:
         atype = attr[0]
-        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, pyjs_attr, fsjs_attr, spread_attr):
+        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, fsjs_attr, fsjsop_attr, spread_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' in html element '{name}'")
         if attr[1][0] == '@' and atype not in (js_attr, py_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
@@ -442,7 +444,7 @@ class PyGenerator(BaseGenerator):
         if isinstance(value, str):
             return [literal_attr, name, value]
         elif isinstance(value, tuple):
-            if value[0] == 'fs_js_embed':
+            if value[0] == 'joint_embed':
                 _, quoted_literal, client_embed = value
                 if client_embed[0] == 'local_js_embed':
                     count = self.inc_client_embed()
@@ -451,15 +453,15 @@ class PyGenerator(BaseGenerator):
                     return [fsjsop_attr, name, quoted_literal, client_embed[1]]
                 else:
                     raise BadGrammar
-            elif value[0] == 'fry_js_embed':
-                _, embed, client_embed = value
-                if client_embed[0] == 'local_js_embed':
-                    count = self.inc_client_embed()
-                    return [pyjs_attr, name, embed, str(count)]
-                elif client_embed[0] == 'jsop_embed':
-                    return [pyjsop_attr, name, embed, client_embed[1]]
-                else:
-                    raise BadGrammar
+            #elif value[0] == 'fry_js_embed':
+            #    _, embed, client_embed = value
+            #    if client_embed[0] == 'local_js_embed':
+            #        count = self.inc_client_embed()
+            #        return [pyjs_attr, name, embed, str(count)]
+            #    elif client_embed[0] == 'jsop_embed':
+            #        return [pyjsop_attr, name, embed, client_embed[1]]
+            #    else:
+            #        raise BadGrammar
             elif value[0] == 'fry_embed':
                 _, embed = value
                 return [py_attr, name, embed]
@@ -519,24 +521,25 @@ class PyGenerator(BaseGenerator):
         if isinstance(frychild, str):
             return frychild
         elif isinstance(frychild, tuple):
-            if frychild[0] == 'fry_js_embed':
-                _, embed, client_embed = frychild
-                if client_embed[0] == 'local_js_embed':
-                    attr = jstext_attr
-                    value = str(self.inc_client_embed())
-                elif client_embed[0] == 'jsop_embed':
-                    attr = jsoptext_attr
-                    value = client_embed[1]
-                else:
-                    raise BadGrammar
-                attrs = [[attr, value],
-                         [children_attr, [embed]]]
-                attrs = concat_kv(attrs)
-                return f'Element("span", {{{", ".join(attrs)}}})'
-            elif frychild[0] == 'fry_embed':
+            #if frychild[0] == 'fry_js_embed':
+            #    _, embed, client_embed = frychild
+            #    if client_embed[0] == 'local_js_embed':
+            #        attr = jstext_attr
+            #        value = str(self.inc_client_embed())
+            #    elif client_embed[0] == 'jsop_embed':
+            #        attr = jsoptext_attr
+            #        value = client_embed[1]
+            #    else:
+            #        raise BadGrammar
+            #    attrs = [[attr, value],
+            #             [children_attr, [embed]]]
+            #    attrs = concat_kv(attrs)
+            #    return f'Element("span", {{{", ".join(attrs)}}})'
+            #elif frychild[0] == 'fry_embed':
+            if frychild[0] == 'fry_embed':
                 _, embed = frychild
                 return embed
-            elif frychild[0] == 'fs_js_embed':
+            elif frychild[0] == 'joint_embed':
                 _, quoted_literal, client_embed = frychild
                 if client_embed[0] == 'local_js_embed':
                     attr = jstext_attr
@@ -555,14 +558,14 @@ class PyGenerator(BaseGenerator):
         else:
             raise BadGrammar(f'Invalid fry_child "{frychild}"')
 
-    def visit_fry_js_embed(self, node, children):
-        fry_embed, _, js_embed = children
-        _name, fry = fry_embed
-        return ('fry_js_embed', fry, js_embed)
+    #def visit_fry_js_embed(self, node, children):
+    #    fry_embed, _, js_embed = children
+    #    _name, fry = fry_embed
+    #    return ('fry_js_embed', fry, js_embed)
 
-    def visit_fs_js_embed(self, node, children):
+    def visit_joint_embed(self, node, children):
         _l, quoted_literal, _r, _, js_embed = children
-        return ('fs_js_embed', quoted_literal, js_embed)
+        return ('joint_embed', quoted_literal, js_embed)
 
     def visit_f_string(self, node, children):
         return quote_f_string(node.text)

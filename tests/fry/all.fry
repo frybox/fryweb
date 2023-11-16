@@ -89,10 +89,10 @@ def FunctionComponent(value, **props):
            id="special-div"
            {*list1}
            {**dict1}
-           data-value={value}(age)
+           data-value={value}
            $class="foo bar foobar color-white color-blue value1 value2 value3">
 
-        html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}(age)
+        html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}
 
         这是一个支持<span text-red>frycss</span>语法的div。下面是列表内容：
         <ul>
