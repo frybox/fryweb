@@ -12,9 +12,9 @@ import subprocess
 # generate js content for fry component
 def compose_js(args, script, embeds):
     output = []
-    for arg in args:
-        output.append(f'const {arg} = script$$.frydata.{arg};')
-    args = '\n    '.join(output)
+    if args:
+        args = ', '.join(args)
+        args = f'const {args} = script$$.fryargs;'
 
     embeds = ', '.join(embeds)
 
@@ -273,6 +273,9 @@ class JSGenerator(BaseGenerator):
         identifier, _, _as, _, alias = children
         return {identifier: alias}
 
+    def visit_js_default_export(self, node, children):
+        return 'script$$.fryobject ='
+
     def visit_js_normal_code(self, node, children):
         return node.text
 
@@ -285,3 +288,5 @@ class JSGenerator(BaseGenerator):
     def visit_no_import_i_char(self, node, children):
         return node.text
 
+    def visit_no_export_e_char(self, node, children):
+        return node.text

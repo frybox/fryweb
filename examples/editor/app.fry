@@ -16,8 +16,8 @@ def App():
       import {EditorView, basicSetup} from "codemirror"
       import {keymap} from "@codemirror/view"
       import {indentWithTab} from "@codemirror/commands"
-      import {fryhcs as language} from "codemirror-lang-fryhcs"
-      //import {html as language} from "@codemirror/lang-html"
+      //import {fryhcs as language} from "codemirror-lang-fryhcs"
+      import {html as language} from "@codemirror/lang-html"
       //import {python as language} from "@codemirror/lang-python"
       //import {javascript as language} from "@codemirror/lang-javascript"
 

@@ -60,16 +60,15 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
       let cid2script = {{}};
       let cids = [];
       for (const cscript of componentScripts) {{
-        cscript.frydata = {{}};
+        cscript.fryargs = {{}};
         for (const key in cscript.dataset) {{
           if (!key.startsWith('fry'))
-            cscript.frydata[key] = cscript.dataset[key];
+            cscript.fryargs[key] = cscript.dataset[key];
         }}
         const cid = cscript.dataset.fryid;
         cid2script[cid] = cscript;
         cids.push(parseInt(cid));
       }}
-      cids.sort((x,y)=>x-y);
       function collectRefs(element) {{
         if ('fryembed' in element.dataset) {{
           const embeds = element.dataset.fryembed;
@@ -80,7 +79,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
             const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
             const arg = args.join('-');
             if (atype === 'ref') {{
-              scriptElement.frydata[arg] = element;
+              scriptElement.fryargs[arg] = element;
             }}
           }}
         }}
@@ -91,6 +90,8 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
       const rootScript = cid2script['1'];
       collectRefs(rootScript.parentElement);
 
+      // 从后往前(从里往外)执行
+      cids.sort((x,y)=>y-x);
       for (const cid of cids) {{
           const scid = ''+cid;
           await hydrates[scid](cid2script[scid]);
