@@ -69,17 +69,25 @@ class ClientEmbed(object):
         else:
             return f'{self.component}/{self.embed_id}'
 
+# 组件名称的html元素属性名
 component_attr_name = 'data-fryclass'
+# 组件实例ID的html元素属性名
 component_id_attr_name = 'data-fryid'
+# js嵌入值的html元素属性名
 client_embed_attr_name = 'data-fryembed'
+# 子组件实例对象引用的元素属性名
 client_ref_attr_name = 'data-fryref'
+# 子组件实例对象引用列表的元素属性名
 client_refall_attr_name = 'data-fryrefall'
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 style_attr_name = 'style'
+# 使用动态数据生成utility的属性名
 utility_attr_name = '$style'
+# 引用属性名
 ref_attr_name = 'ref'
 ref_attr_name_prefix = 'ref:'
+# 引用列表属性名
 refall_attr_name = 'refall'
 refall_attr_name_prefix = 'refall:'
 
