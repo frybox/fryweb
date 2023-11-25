@@ -122,86 +122,126 @@ function effect(fn) {
 }
 
 
-function hydrate(rootElement, componentId, embedValues) {
-    const prefix = '' + componentId + '/';
-    function handle(element) {
-        if ('fryembed' in element.dataset) {
-            const embeds = element.dataset.fryembed;
-            for (const embed of embeds.split(' ')) {
-                if (!embed.startsWith(prefix)) {
-                    continue;
-                }
-                const [embedId, atype, ...args] = embed.substr(prefix.length).split('-');
-                const index = parseInt(embedId);
-                const arg = args.join('-')
-                if (index >= embedValues.length) {
-                    console.log("invalid embed id: ", embedId);
-                    continue;
-                }
-                const value = embedValues[index];
-
-                if (atype === 'text') {
-                    // 设置html文本时需要进行响应式处理
-                    if (value instanceof Signal) {
-                        effect(() => element.textContent = value.value);
-                    } else {
-                        element.textContent = value;
-                    }
-                } else if (atype === 'event') {
-                    element.addEventListener(arg, value);
-                } else if (atype === 'attr') {
-                    // 设置html元素属性值时需要进行响应式处理
-                    if (value instanceof Signal) {
-                        effect(() => element.setAttribute(arg, value.value));
-                    } else {
-                        element.setAttribute(arg, value);
-                    }
-                } else if (atype === 'object') {
-                    // 设置对象属性时不使用effect，signal对象本身将传给js脚本
-                    if (!('frydata' in element)) {
-                        element.frydata = {};
-                    }
-                    element.frydata[arg] = value;
-                } else if (atype === 'ref') {
-                    // 这是定义ref的地方，已经在collectrefs中为ref变量赋值，所以：
-                    // assert element === value
-                } else {
-                    console.log("invalid attribute type: ", atype);
-                }
-            }
+async function hydrate(scripts, hydrates) {
+    let cid2script = {};
+    let cids = [];
+    for (const cscript of scripts) {
+        cscript.fryargs = {};
+        for (const key in cscript.dataset) {
+            if (!key.startsWith('fry'))
+                cscript.fryargs[key] = cscript.dataset[key];
         }
-        for (const child of element.children) {
-            handle(child);
-        }
+        const cid = cscript.dataset.fryid;
+        cid2script[cid] = cscript;
+        cids.push(parseInt(cid));
     }
-    handle(rootElement);
-}
-
-
-function collectrefs(rootElement, scriptElement, componentId) {
-    const prefix = '' + componentId + '/';
-    function handle(element) {
+    function collectRefs(element) {
         if ('fryembed' in element.dataset) {
             const embeds = element.dataset.fryembed;
             for (const embed of embeds.split(' ')) {
-                if (!embed.startsWith(prefix)) {
-                    continue;
-                }
+                const cid = embed.split('/', 1)[0];
+                const scriptElement = cid2script[cid];
+                const prefix = cid + '/';
                 const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
-                const arg = args.join('-')
+                const arg = args.join('-');
                 if (atype === 'ref') {
-                    if (!('frydata' in scriptElement)) {
-                        scriptElement.frydata = {};
+                    scriptElement.fryargs[arg] = element;
+                } else if (atype === 'refall') {
+                    if (arg in scriptElement.fryargs) {
+                        scriptElement.fryargs[arg].push(element);
+                    } else {
+                        scriptElement.fryargs[arg] = [element];
                     }
-                    scriptElement.frydata[arg] = element;
                 }
             }
         }
         for (const child of element.children) {
-            handle(child);
+            collectRefs(child);
         }
     }
-    handle(rootElement);
+    const rootScript = cid2script['1'];
+    collectRefs(rootScript.parentElement);
+
+    function doHydrate(script, embedValues) {
+        const rootElement = script.parentElement;
+        const componentId = script.dataset.fryid;
+        const prefix = '' + componentId + '/';
+        function handle(element) {
+            if ('fryembed' in element.dataset) {
+                const embeds = element.dataset.fryembed;
+                for (const embed of embeds.split(' ')) {
+                    if (!embed.startsWith(prefix)) {
+                        continue;
+                    }
+                    const [embedId, atype, ...args] = embed.substr(prefix.length).split('-');
+                    const index = parseInt(embedId);
+                    const arg = args.join('-')
+                    if (index >= embedValues.length) {
+                        console.log("invalid embed id: ", embedId);
+                        continue;
+                    }
+                    const value = embedValues[index];
+
+                    if (atype === 'text') {
+                        // 设置html文本时需要进行响应式处理
+                        if (value instanceof Signal) {
+                            effect(() => element.textContent = value.value);
+                        } else {
+                            element.textContent = value;
+                        }
+                    } else if (atype === 'event') {
+                        element.addEventListener(arg, value);
+                    } else if (atype === 'attr') {
+                        // 设置html元素属性值时需要进行响应式处理
+                        if (value instanceof Signal) {
+                            effect(() => element.setAttribute(arg, value.value));
+                        } else {
+                            element.setAttribute(arg, value);
+                        }
+                    } else if (atype === 'object') {
+                        // 设置对象属性时不使用effect，signal对象本身将传给js脚本
+                        if (!('frydata' in element)) {
+                            element.frydata = {};
+                        }
+                        element.frydata[arg] = value;
+                    } else if (atype === 'ref' || atype === 'refall') {
+                        // 这是定义ref的地方，已经在collectrefs中为ref变量赋值，所以：
+                        // assert element === value
+                    } else {
+                        console.log("invalid attribute type: ", atype);
+                    }
+                }
+            }
+            for (const child of element.children) {
+                handle(child);
+            }
+        }
+        handle(rootElement);
+    }
+
+    // 从后往前(从里往外)执行组件水和代码
+    cids.sort((x,y)=>y-x);
+    for (const cid of cids) {
+        const scid = ''+cid;
+        const script = cid2script[scid];
+        // 处理子组件ref与refall
+        if ('fryref' in script.dataset) {
+            const objects = script.dataset.fryref;
+            for (const obj of objects.split(' ')) {
+                const [arg, subid] = obj.split('-');
+                script.fryargs[arg] = cid2script[subid].fryobject;
+            }
+        }
+        if ('fryrefall' in script.dataset) {
+            const objects = script.dataset.fryrefall;
+            for (const obj of objects.split(' ')) {
+                const [arg, ...subids] = obj.split('-');
+                script.fryargs[arg] = subids.map(subid=>cid2script[subid].fryobject);
+            }
+        }
+        // 执行本组件水合
+        await hydrates[scid](script, doHydrate);
+    }
 }
 
 
@@ -244,4 +284,4 @@ function event(component, type, options) {
 }
 
 
-export {signal, effect, hydrate, collectrefs, update, event}
+export {signal, effect, hydrate, update, event}

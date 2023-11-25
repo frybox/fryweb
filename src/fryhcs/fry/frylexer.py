@@ -229,15 +229,8 @@ class FryVisitor(NodeVisitor):
         return js(node.text)
 
     def visit_js_embed(self, node, children):
-        return children[0]
-
-    def visit_local_js_embed(self, node, children):
         l, script, r = children
         return [cep(l), script, cep(r)]
-
-    def visit_jsop_embed(self, node, children):
-        l, script, r = children
-        return [cep('('), sep('{'), script, sep('}'), cep(')')]
 
 
 class FStringLexer(PythonLexer):

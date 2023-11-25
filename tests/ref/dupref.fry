@@ -6,7 +6,7 @@ def RefApp():
       <p ref=(foo)>
         Hello World!
       </p>
-      <p ref=(foo)>
+      <p refall=(foo)>
         Hello FryHCS!
       </p>
     </div>

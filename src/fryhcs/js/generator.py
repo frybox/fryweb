@@ -10,25 +10,20 @@ import subprocess
 
 
 # generate js content for fry component
+# element$$：代表组件的<script>元素
+# hydrate$$：使用embeds$$对html元素树进行水合的函数
+# embeds$$： js嵌入值列表
 def compose_js(args, script, embeds):
     output = []
     if args:
-        args = ', '.join(args)
-        args = f'const {args} = script$$.fryargs;'
+        args = f'const {{ {", ".join(args)} }} = element$$.fryargs;'
 
-    embeds = ', '.join(embeds)
-
-    # 为了拿到当前的这个组件元素(document.currentScript)，以及为了每个script标签都执行一次，
-    # 不得不将module类型的script转化为标准html script。
     return f"""\
-import {{hydrate as hydrate$$}} from "fryhcs";
-export const hydrate = async function (script$$) {{
+export const hydrate = async function (element$$, hydrate$$) {{
     {args}
     {script}
-    const rootElement$$ = script$$.parentElement;
-    const componentId$$ = script$$.dataset.fryid;
-    const embeds$$ = [{embeds}];
-    hydrate$$(rootElement$$, componentId$$, embeds$$);
+    const embeds$$ = [{', '.join(embeds)}];
+    hydrate$$(element$$, embeds$$);
 }};
 """
 
@@ -175,7 +170,7 @@ class JSGenerator(BaseGenerator):
     def visit_js_template_normal(self, node, children):
         return node.text
 
-    def visit_local_js_embed(self, node, children):
+    def visit_js_embed(self, node, children):
         _, script, _ = children
         self.embeds.append(script)
         return script
@@ -274,7 +269,7 @@ class JSGenerator(BaseGenerator):
         return {identifier: alias}
 
     def visit_js_default_export(self, node, children):
-        return 'script$$.fryobject ='
+        return 'element$$.fryobject ='
 
     def visit_js_normal_code(self, node, children):
         return node.text

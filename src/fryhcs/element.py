@@ -14,7 +14,7 @@ class RenderException(Exception):
 def render_children(children, page):
     chs = []
     for ch in children:
-        if isinstance(ch, (list, tuple, types.GeneratorType)):
+        if isinstance(ch, list): #tuple和GeneratorType都已转化为list
             chs += render_children(ch, page)
         elif isinstance(ch, Element):
             chs.append(ch.render(page))
@@ -72,12 +72,16 @@ class ClientEmbed(object):
 component_attr_name = 'data-fryclass'
 component_id_attr_name = 'data-fryid'
 client_embed_attr_name = 'data-fryembed'
+client_ref_attr_name = 'data-fryref'
+client_refall_attr_name = 'data-fryrefall'
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 style_attr_name = 'style'
 utility_attr_name = '$style'
 ref_attr_name = 'ref'
 ref_attr_name_prefix = 'ref:'
+refall_attr_name = 'refall'
+refall_attr_name_prefix = 'refall:'
 
 class Element(object):
 
@@ -85,6 +89,7 @@ class Element(object):
         self.name = name
         self.props = props
         self.rendered = rendered
+        self.cid = 0
 
     def is_component(self):
         if self.rendered:
@@ -92,11 +97,33 @@ class Element(object):
         else:
             return inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
+    def tolist(self):
+        def convert(v):
+            if isinstance(v, (tuple, types.GeneratorType)):
+                return list(v)
+            else:
+                return v
+        def handle(v):
+            if isinstance(v, Element):
+                v.props = {key: convert(value) for key, value in v.props.items()}
+                handle(v.props)
+            elif isinstance(v, dict):
+                for key, value in v.items():
+                    value = convert(value)
+                    v[key] = value
+                    handle(value)
+            elif isinstance(v, list):
+                for i, value in enumerate(v):
+                    value = convert(value)
+                    v[i] = value
+                    handle(value)
+        handle(self)
+
     def hook_client_embed(self, component):
         def hook(v):
             if isinstance(v, ClientEmbed):
                 v.hook(component)
-            elif isinstance(v, (list, tuple)):
+            elif isinstance(v, list): #tuple和GeneratorType都已转化为list
                 for lv in v:
                     hook(lv)
             elif isinstance(v, dict):
@@ -126,6 +153,9 @@ class Element(object):
                         value.embed_id = f'{value.embed_id}-attr-{key[2:]}'
                     elif key == '*':
                         value.embed_id = f'{value.embed_id}-text'
+                    elif key.startswith(refall_attr_name_prefix):
+                        name = key.split(':', 1)[1]
+                        value.embed_id = f"{value.embed_id}-refall-{name}"
                     elif key.startswith(ref_attr_name_prefix):
                         name = key.split(':', 1)[1]
                         value.embed_id = f"{value.embed_id}-ref-{name}"
@@ -147,42 +177,66 @@ class Element(object):
 
         if inspect.isfunction(self.name):
             # 渲染函数组件元素流程：
-            # 1. 执行组件函数，返回未渲染的原始组件元素树
-            #    元素树中的js嵌入值以ClientEmbed对象表示，元素树中
-            #    的ClientEmbed对象有两类，一类是从组件函数参数中传进来
-            #    的父组件js嵌入值，一类是新生成的本组件js嵌入值。
-            #    父组件js嵌入值中有父组件实例唯一编号，本组件js嵌入值
-            #    中(暂时)不带组件实例唯一编号。
-            #    其中：
-            #    * 元素树中html元素属性和文本中的js嵌入值都被移到
-            #      所在元素的data-fryembed属性值列表中；
-            #    * 元素树中子组件元素属性中的js嵌入值，将被当做
-            #      props值传入子组件函数中
-            result = self.name(**self.props)
-            if not isinstance(result, Element):
-                raise RuntimeError(f"Function '{self.name.__name__}' should return Element")
-
-            # 2. 生成页面内组件实例唯一编号
+            # 1. 生成页面内组件实例唯一编号
             #    组件函数每执行一次，返回该组件的一个实例。页面中
             #    每个组件实例都有一个页面内唯一编号。
             cnumber = page.add_component()
 
-            # 3. 将组件实例唯一编号挂载到组件元素树的所有本组件生成的
+            # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录下来
+            for key in list(self.props.keys()):
+                if key.startswith(refall_attr_name_prefix):
+                    name = key.split(':', 1)[1]
+                    embed = self.props.pop(key)
+                    pcid = embed.component
+                    if pcid == 0:
+                        raise RuntimeError("Invalid embed")
+                    page.add_refall(pcid, name, cnumber)
+                elif key.startswith(ref_attr_name_prefix):
+                    name = key.split(':', 1)[1]
+                    embed = self.props.pop(key)
+                    pcid = embed.component
+                    if pcid == 0:
+                        raise RuntimeError("Invalid embed")
+                    page.add_ref(pcid, name, cnumber)
+
+            # 3. 执行组件函数，返回未渲染的原始组件元素树
+            #    唯一不是合法python identifier的ref:jsname和refall:jsname已经在上一步
+            #    删除，此时self.props的key应该都是合法的python identifier，可以
+            #    **self.props用来给函数调用传参。
+            #    元素树中的js嵌入值以ClientEmbed对象表示，元素树中
+            #    的ClientEmbed对象只能是新生成的本组件js嵌入值。
+            #    本组件js嵌入值中(暂时)不带组件实例唯一编号，通过下一步hook_client_embed
+            #    将组件实例唯一编号附加到js嵌入值中。
+            #    其中：
+            #    * 元素树中html元素属性和文本中的js嵌入值都被移到
+            #      所在元素的data-fryembed属性值列表中；
+            #    * 元素树中子组件元素属性中的js嵌入值只有ref和refall，已经在
+            #      上一步中处理，所以子组件元素属性中不存在js嵌入值
+            result = self.name(**self.props)
+            if not isinstance(result, Element):
+                raise RuntimeError(f"Function '{self.name.__name__}' should return Element")
+
+            # 4. 转化Generator/tuple为list，Generator只能遍历一次，后面会有多次的遍历
+            #    tuple无法改变内部数据，也变为list
+            result.tolist()
+
+            # 5. 将组件实例唯一编号挂载到组件元素树的所有本组件生成的
             #    js嵌入值上，使每个js嵌入值具有页面内唯一标识，
             #    标识格式为：组件实例唯一编号/js嵌入值在组件内唯一编号
             result.hook_client_embed(cnumber)
 
-            # 4. 从原始组件元素树根元素的属性中取出calljs属性值
+            # 6. 从原始组件元素树根元素的属性中取出calljs属性值
             calljs = result.props.pop(call_client_script_attr_name, False)
 
-            # 5. 原始组件元素树渲染为最终的html元素树，
+            # 7. 原始组件元素树渲染为最终的html元素树，
             element = result.render(page)
+            element.cid = cnumber
 
-            # 6. 此时已hook到组件实例的js嵌入值已挂载到html元素树上的合适
+            # 8. 此时已hook到组件实例的js嵌入值已挂载到html元素树上的合适
             #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`属性上
             element.collect_client_embed(cnumber)
             
-            # 7. 将组件名和组件实例ID附加到html元素树树根元素下新增的第一个script元素上
+            # 9. 将组件名和组件实例ID附加到html元素树树根元素下新增的第一个script元素上
             cname = component_name(self.name)
             scriptprops = {
                 component_id_attr_name: cnumber,
@@ -193,14 +247,26 @@ class Element(object):
             # script是用来记录当前组件信息的，包括组件id，名字，以及后面可能的组件js参数
             children.insert(0, Element('script', scriptprops, True))
 
-            # 8. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
+            # 10. 将子组件实例的引用附加到script上
+            refs = page.child_refs(cnumber)
+            if refs:
+                refs = ' '.join(f'{name}-{ccid}' for name,ccid in refs.items())
+                scriptprops[client_ref_attr_name] = refs
+            refalls = page.child_refalls(cnumber)
+            if refalls:
+                refalls = [(name, '-'.join(str(ccid) for ccid in ccids)) for name, ccids in refalls.items()]
+                refalls = ' '.join(f'{name}-{ccids}' for name, ccids in refalls)
+                scriptprops[client_refall_attr_name] = refalls
+
+            # 11. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
                 page.set_script(cnumber, uuid)
                 for k,v in args:
                     if isinstance(v, ClientEmbed):
-                        # 父组件实例传过来的js嵌入值
-                        scriptprops[k] = v
+                        # 不支持父组件实例传过来的js嵌入值
+                        #scriptprops[k] = v
+                        raise RuntimeError(f"Js embed can't be used as script argument('{k}')")
                     else:
                         scriptprops[f'data-{k}'] = v
         elif isinstance(self.name, str):

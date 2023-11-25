@@ -5,7 +5,7 @@ import hashlib
 from fryhcs.fry.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
-from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, ref_attr_name_prefix
+from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, ref_attr_name_prefix, refall_attr_name, refall_attr_name_prefix
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -46,17 +46,18 @@ literal_attr = 'literal_attr'         # ('literal_attr', name, value): name="lit
 novalue_attr = 'novalue_attr'         # ('novalue_attr', name): name
 py_attr = 'py_attr'                   # ('py_attr', name, pyscript): name={pyscript}
 js_attr = 'js_attr'                   # ('js_attr', name, jscount): name=(jsscript)
-jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
+#2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
+#jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
 #2023.10.27 不再支持元素作为属性值，参考语法文件fry.ppeg说明
 #element_attr = 'element_attr'         # ('element_attr', name, element): name=<element></element>
-#2023.11.16 不在支持python嵌入后跟js嵌入
+#2023.11.16 不再支持python嵌入后跟js嵌入
 #pyjs_attr = 'pyjs_attr'               # ('pyjs_attr', name, pyscript, jscount): name={pyscript}(jsscript)
 #pyjsop_attr = 'pyjsop_attr'           # ('pyjsop_attr', name, pyscript, pyscript): name={pyscript1}({pyscript2})
 fsjs_attr = 'fsjs_attr'               # ('fsjs_attr', name, value, jscount): name=[value](jsscript)
-fsjsop_attr = 'fsjsop_attr'           # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
+#fsjsop_attr = 'fsjsop_attr'           # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
 children_attr = 'children_attr'       # ('children_attr', [children])
 jstext_attr = 'jstext_attr'           # ('jstext_attr', jscount)
-jsoptext_attr = 'jsoptext_attr'       # ('jsoptext_attr', value)
+#jsoptext_attr = 'jsoptext_attr'       # ('jsoptext_attr', value)
 call_client_attr = 'call_client_attr' # ('call_client_attr', uuid, args)
 
 def concat_kv(attrs):
@@ -78,9 +79,9 @@ def concat_kv(attrs):
             elif atype == js_attr:
                 _, name, jscount = attr
                 ats.append(f'"{name}": Element.ClientEmbed({jscount})')
-            elif atype == jsop_attr:
-                _, name, value = attr
-                ats.append(f'"{name}": {value}')
+            #elif atype == jsop_attr:
+            #    _, name, value = attr
+            #    ats.append(f'"{name}": {value}')
             #elif atype == element_attr:
             #    _, name, value = attr
             #    ats.append(f'"{name}": {value}')
@@ -96,18 +97,18 @@ def concat_kv(attrs):
                 _, name, value, jscount = attr
                 ats.append(f'"{name}": {value}')
                 ats.append(f'"$${name}": Element.ClientEmbed({jscount})')
-            elif atype == fsjsop_attr:
-                _, name, value, jsvalue = attr
-                ats.append(f'"{name}": {value}')
-                ats.append(f'"$${name}": {jsvalue}')
+            #elif atype == fsjsop_attr:
+            #    _, name, value, jsvalue = attr
+            #    ats.append(f'"{name}": {value}')
+            #    ats.append(f'"$${name}": {jsvalue}')
             elif atype == children_attr:
                 ats.append(f'"{children_attr_name}": [{", ".join(attr[1])}]')
             elif atype == jstext_attr:
                 _, jscount = attr
                 ats.append(f'"*": Element.ClientEmbed({jscount})')
-            elif atype == jsoptext_attr:
-                _, jsvalue = attr
-                ats.append(f'"*": {jsvalue}')
+            #elif atype == jsoptext_attr:
+            #    _, jsvalue = attr
+            #    ats.append(f'"*": {jsvalue}')
             elif atype == call_client_attr:
                 _, uuid, args = attr
                 args = ', '.join(f'("{k}", {v})' for k,v in args)
@@ -132,15 +133,18 @@ def concat_kv(attrs):
 #   * `name='literal_value'`               : 符合html规范的属性在客户端传给浏览器引擎，否则放到css中
 #                                            服务端：class中的值，或正常html元素属性
 #                                            浏览器：class中的值，或正常html元素属性
-#   * `name=(js_value)`                    : 这种格式目前只支持name=ref，js_value是一个js变量名，用于将
+#   * `name=(js_value)`                    : 这种格式目前只支持name为ref或refall，js_value是一个js变量名，用于将
 #                                            当前元素赋值给一个js变量
 #   * `@event=(js_handler)`                : 本组件的js事件处理函数
-#   * `@event=({jsop_handler})`            : 父组件的js事件处理函数
 #                                            服务端：ClientEmbed对象
 #                                            浏览器：data-fry-script一项
+# 2023.11.24: 如下情况不再支持
+# <del>
+#   * `@event=({jsop_handler})`            : 父组件的js事件处理函数
 #   * `@event={py_value}`                  : ClientEmbed类型的python值，父组件的事件处理函数
 #                                            服务端：data-fry-script一项
 #                                            浏览器：data-fry-script一项
+# </del>
 #   * `$name={py_value}`                   : python值在服务端渲染为常量赋值给属性name，传给浏览器引擎
 #                                            目前支持的name只有"style"($style), 用于使用utility指定元素内置style，
 #   * `$name='literal_value'`              : utility列表值在服务端转化为CSS，传给浏览器引擎
@@ -152,14 +156,19 @@ def concat_kv(attrs):
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
 # 2023.11.16: 如下两种情况不再支持：
+# <del>
 #   * `name={py_value}(js_value)`          : python值，客户端js修改
 #   * `name={py_value}({jsop_value})`      : python值，客户端父组件js修改
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，同时新增data-fry-script一项
-#   * `name=[literal_value](js_value)`     : 常量字符串，客户端js修改
+# </del>
+#   * `name=[literal_value](js_value)`     : 常量字符串，客户端js在水合后以js_value将其修改
+# 2023.11.24: 如下不再支持
+# <del>
 #   * `name=[literal_value]({jsop_value})` : 常量字符串，客户端父组件js修改
 #                                            服务端：`name=literal_value`，python数据值
 #                                            浏览器：`name="literal_value"`，字符串值，同时新增data-fry-script一项
+# </del>
 #   * `{*python_list}`                     : python列表值，服务端渲染为常量传给浏览器引擎
 #   * `{**python_dict}`                    : python字典值，服务端渲染为常量传给浏览器引擎
 def check_html_element(name, attrs):
@@ -167,18 +176,22 @@ def check_html_element(name, attrs):
     class_attr = None
     for attr in attrs:
         atype = attr[0]
-        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, fsjs_attr, fsjsop_attr, spread_attr):
+        if atype not in (novalue_attr, literal_attr, js_attr, py_attr, fsjs_attr, spread_attr):
             raise BadGrammar(f"Invalid attribute type '{atype}' in html element '{name}'")
-        if attr[1][0] == '@' and atype not in (js_attr, py_attr):
+        # 检查事件处理器
+        if attr[1][0] == '@' and atype not in (js_attr, ):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
+        # 检查$style
         if attr[1][0] == '$':
             if attr[1] not in ('$style',):
                 raise BadGrammar("unsupported attribute name: '{attr[1]}'")
             if attr[1] == '$style' and atype != py_attr:
                 raise BadGrammar(f"invalid attribute type '{atype}' for '$style' in html element '{name}': '{py_attr}' needed.")
         if atype == js_attr:
-            if attr[1][0] != '@' and not attr[1].startswith(ref_attr_name_prefix):
-                raise BadGrammar(f"js_attr type can only be specified for event handler or ref, not '{attr[1]}'")
+            if (attr[1][0] != '@' and
+                not attr[1].startswith(ref_attr_name_prefix) and
+                not attr[1].startswith(refall_attr_name_prefix)):
+                raise BadGrammar(f"js_attr type can only be specified for event handler or ref/refall, not '{attr[1]}'")
             attr[0] = py_attr
             attr[2] = f'Element.ClientEmbed({attr[2]})'
         if atype == novalue_attr:
@@ -224,13 +237,17 @@ def check_html_element(name, attrs):
 #   * `name='literal_value'`: 常量字符串在服务端传给子组件
 #                             服务端：常量字符串
 #                             浏览器：不可见
-#   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，包括ClientEmbed
+#   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，但不包括ClientEmbed
 #                             服务端：python数据
 #                             浏览器：不可见
-#   * `name=(js_value)`     : 本组件js值在客户端运行时传给子组件
+#   * `name=(js_value)`     : 目前只支持name为ref，此时js_value为父组件js代码的入参变量名,
+#                             值为子组件的js对象。
+# 2023.11.24: 如下情况不再支持
+# <del>
 #   * `name=({jsop_value})` : 父组件js值在客户端运行时传给子组件
 #                             服务端：ClientEmbed对象
 #                             浏览器：不可见
+# </del>
 #   * `{*python_list}`      : python列表值
 #                             服务端：传递给python组件函数的props参数的一部分
 #                             浏览器：不可见
@@ -240,14 +257,14 @@ def check_html_element(name, attrs):
 def check_component_element(name, attrs):
     for attr in attrs:
         atype = attr[0]
-        if atype not in (spread_attr, literal_attr, py_attr, js_attr, jsop_attr):
-            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr, jsop_attr")
-        if atype != spread_attr and not attr[1].isidentifier():
+        if atype not in (spread_attr, literal_attr, py_attr, js_attr):
+            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr")
+        if atype in (literal_attr, py_attr) and not attr[1].isidentifier():
             raise BadGrammar(f"Invalid attibute name '{attr[1]}' on Component element '{name}', identifier needed.")
         if atype == js_attr:
-            # TODO 检查如下设置是否合理
-            if attr[1].startswith(ref_attr_name_prefix):
-                raise BadGrammar(f"Can't ref to component element yet now, only DOM element can be REFed.")
+            if (not attr[1].startswith(ref_attr_name_prefix) and
+                not attr[1].startswith(refall_attr_name_prefix)):
+                raise BadGrammar(f"Only ref/refall to component element can have js_attr.")
             attr[0] = py_attr
             attr[2] = f'Element.ClientEmbed({attr[2]})'
 
@@ -256,6 +273,7 @@ class PyGenerator(BaseGenerator):
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
+        self.refalls = set()
         self.reset_client_embed()
         return self.visit(tree)
 
@@ -333,6 +351,7 @@ class PyGenerator(BaseGenerator):
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
+        self.refalls = set()
         self.reset_client_embed()
         attrs = concat_kv(attrs)
         return f'Element({name}, {{{", ".join(attrs)}}})'
@@ -446,11 +465,9 @@ class PyGenerator(BaseGenerator):
         elif isinstance(value, tuple):
             if value[0] == 'joint_embed':
                 _, quoted_literal, client_embed = value
-                if client_embed[0] == 'local_js_embed':
+                if client_embed[0] == 'js_embed':
                     count = self.inc_client_embed()
                     return [fsjs_attr, name, quoted_literal, str(count)]
-                elif client_embed[0] == 'jsop_embed':
-                    return [fsjsop_attr, name, quoted_literal, client_embed[1]]
                 else:
                     raise BadGrammar
             #elif value[0] == 'fry_js_embed':
@@ -465,20 +482,27 @@ class PyGenerator(BaseGenerator):
             elif value[0] == 'fry_embed':
                 _, embed = value
                 return [py_attr, name, embed]
-            elif value[0] == 'local_js_embed':
+            elif value[0] == 'js_embed':
                 count = self.inc_client_embed()
-                if name == ref_attr_name:
+                if name in (ref_attr_name, refall_attr_name):
+                    isall = name == refall_attr_name
                     # 将js变量名编码到ref name中
                     name = value[1].strip()
                     if not name.isidentifier():
                         raise BadGrammar(f"Ref name '{name}' is not a valid identifier")
-                    if name in self.refs:
-                        raise BadGrammar(f"Duplicated ref name '{name}'")
-                    self.refs.add(name)
-                    name = ref_attr_name_prefix + name
+                    if isall:
+                        if name in self.refs:
+                            raise BadGrammar(f"Ref name '{name}' exists, please use another name for 'refall'")
+                        self.refalls.add(name)
+                        name = refall_attr_name_prefix + name
+                    else:
+                        if name in self.refs or name in self.refalls:
+                            raise BadGrammar(f"Duplicated ref name '{name}', please use 'refall'")
+                        self.refs.add(name)
+                        name = ref_attr_name_prefix + name
                 return [js_attr, name, str(count)]
-            elif value[0] == 'jsop_embed':
-                return [jsop_attr, name, value[1]]
+            #elif value[0] == 'jsop_embed':
+            #    return [jsop_attr, name, value[1]]
             #elif value[0] == 'element':
             #    return [element_attr, name, value[1]]
             else:
@@ -541,12 +565,12 @@ class PyGenerator(BaseGenerator):
                 return embed
             elif frychild[0] == 'joint_embed':
                 _, quoted_literal, client_embed = frychild
-                if client_embed[0] == 'local_js_embed':
+                if client_embed[0] == 'js_embed':
                     attr = jstext_attr
                     value = str(self.inc_client_embed())
-                elif client_embed[0] == 'jsop_embed':
-                    attr = jsoptext_attr
-                    value = client_embed[1]
+                #elif client_embed[0] == 'jsop_embed':
+                #    attr = jsoptext_attr
+                #    value = client_embed[1]
                 else:
                     raise BadGrammar
                 attrs = [[attr, value],
@@ -582,7 +606,7 @@ class PyGenerator(BaseGenerator):
     # 脚本元素的元素名为script，代表了一个组件对应的js脚本，一个组件最多有一个脚本元素。
     # 脚本元素的属性作为js参数列表传给脚本代码，并且脚本代码需要在编译期生成，属性名需要在编译期可见，
     # 不能依赖python运行期的信息，所以脚本元素只支持如下几种格式的属性：
-    # * `name`                : 无值属性，主要用于定义一个局部变量，用来绑定DOM元素
+    # * `name`                : 无值属性，主要用于定义一个局部变量，用来绑定DOM元素或子组件对象
     # * `name="literal_value"`: 常量字符串在客户端传给js脚本
     #                           服务端：`data-name="literal_value"`
     #                           浏览器：`data-name="literal_value"`
@@ -592,23 +616,26 @@ class PyGenerator(BaseGenerator):
     # * `name={py_value}`     : python值作为字符串在客户端运行时传给js脚本，在客户端是一个常量字符串
     #                           服务端：`data-name=py_value`，python数据值
     #                           浏览器：`data-name="py_value"`，字符串值。
+    # 2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
+    # <del>
     # * `name=({py_value})`   : ClientEmbed值在客户端运行时传给本组件js脚本，是父组件的js值
     #                           服务端：`data-fryembed=[ClientEmbed]`，ClientEmbed值
     #                           浏览器：`data-fryembed="4/3-object-foo"`，父组件js值
+    # </del>
     # name不能以'fry'开头
     def visit_web_script(self, node, children):
         self.web_component_script = True
         _, _sep, _, _begin, attributes, _, _lessthan, _script, _end = children
         for attr in attributes:
             # TODO spread_attr是不是也可以用在这里？
-            if attr[0] not in (novalue_attr, literal_attr, py_attr, jsop_attr):
-                raise BadGrammar("script attributes can only be novalue_attr, literal_attr, py_attr or jsop_attr")
+            if attr[0] not in (novalue_attr, literal_attr, py_attr):
+                raise BadGrammar("script attributes can only be novalue_attr, literal_attr or py_attr")
             name = attr[1]
             if not name.isidentifier():
                 raise BadGrammar(f"Script argument name '{name}' is not valid identifier.")
             if attr[0] == novalue_attr:
-                if name not in self.refs:
-                    raise BadGrammar(f"Script argument name '{name}' is not a valid REF.")
+                if name not in self.refs and name not in self.refalls:
+                    raise BadGrammar(f"Script argument name '{name}' is not a valid REF or REFALL.")
                 continue
             atype, k, v = attr
             if k.startswith('fry'):
@@ -621,15 +648,12 @@ class PyGenerator(BaseGenerator):
 
     def visit_js_embed(self, node, children):
         self.web_component_script = True
-        return children[0]
-
-    def visit_local_js_embed(self, node, children):
         # 返回js script内容，在ref DOM元素时有用
-        return ('local_js_embed', node.text[1:-1])
+        return ('js_embed', node.text[1:-1])
 
-    def visit_jsop_embed(self, node, children):
-        _l, script, _r = children
-        return ('jsop_embed', script)
+    #def visit_jsop_embed(self, node, children):
+    #    _l, script, _r = children
+    #    return ('jsop_embed', script)
 
 
 def fry_to_py(source):

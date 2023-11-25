@@ -134,13 +134,15 @@ html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
 
 js_script = js_script_item*
 
-js_embed = jsop_embed / local_js_embed
-
-# 本组件内js嵌入值
-local_js_embed = '(' js_script ')'
-
-# JS Over Py embed，是父组件传过来的js嵌入值
-jsop_embed = '({' inner_fry_script '})'
+# 2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
+# js_embed = jsop_embed / local_js_embed
+# 
+# # 本组件内js嵌入值
+# local_js_embed = '(' js_script ')'
+# 
+# # JS Over Py embed，是父组件传过来的js嵌入值
+# jsop_embed = '({' inner_fry_script '})'
+js_embed = '(' js_script ')'
 
 js_parenthesis = '(' js_script ')'
 

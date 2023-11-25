@@ -4,18 +4,50 @@ from fryhcs.config import fryconfig
 
 class Page(object):
     def __init__(self):
+        # 记录当前已经处理的组件个数，也是当前正在处理的组件的ID
         self.component_count = 0
+        # 组件UUID（代表了js脚本）到组件实例ID的映射关系，uuid -> list of cid
         self.uuid2cids = {}
+        # 组件实例ID到子组件引用的映射关系, cid -> (refname -> childcid)
+        self.cid2childrefs = {}
+        # 组件实例ID到子组件全量引用的映射关系, cid -> (refname -> list of childcid)
+        self.cid2childrefalls = {}
 
     def add_component(self):
         self.component_count += 1
-        return self.component_count
+        cid = self.component_count
+        self.cid2childrefs[cid] = {} 
+        self.cid2childrefalls[cid] = {}
+        return cid
+
+    def add_ref(self, cid, refname, childcid):
+        childrefs = self.cid2childrefs[cid]
+        if refname in childrefs:
+            raise RuntimeError(f"More than one ref '{refname}', please use refall")
+        childrefs[refname] = childcid
+
+    def add_refall(self, cid, refname, childcid):
+        childrefalls = self.cid2childrefalls[cid]
+        if refname in childrefalls:
+            refall = childrefalls[refname]
+        else:
+            refall = set()
+            childrefalls[refname] = refall
+        if childcid in refall:
+            raise RuntimeError(f"More than one refall '{refname}' for child '{childcid}'")
+        refall.add(childcid)
+
+    def child_refs(self, cid):
+        return self.cid2childrefs.get(cid, {})
+
+    def child_refalls(self, cid):
+        return self.cid2childrefalls.get(cid, {})
 
     def set_script(self, cid, uuid): 
         if uuid in self.uuid2cids:
             cids = self.uuid2cids[uuid]
         else:
-            cids = set() 
+            cids = set()
             self.uuid2cids[uuid] = cids
         cids.add(cid)
 
@@ -46,7 +78,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     if not scripts:
         hydrate_script = ""
     else:
-        output = ["let hydrates = {};"]
+        output = []
         for i, uuid in enumerate(scripts):
             output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
             for cid in page.components_of_script(uuid):
@@ -55,47 +87,11 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
 
         hydrate_script = f"""
     <script type="module">
+      let hydrates = {{}};
       {all_scripts}
-      const componentScripts = document.querySelectorAll('script[data-fryid]');
-      let cid2script = {{}};
-      let cids = [];
-      for (const cscript of componentScripts) {{
-        cscript.fryargs = {{}};
-        for (const key in cscript.dataset) {{
-          if (!key.startsWith('fry'))
-            cscript.fryargs[key] = cscript.dataset[key];
-        }}
-        const cid = cscript.dataset.fryid;
-        cid2script[cid] = cscript;
-        cids.push(parseInt(cid));
-      }}
-      function collectRefs(element) {{
-        if ('fryembed' in element.dataset) {{
-          const embeds = element.dataset.fryembed;
-          for (const embed of embeds.split(' ')) {{
-            const cid = embed.split('/', 1)[0];
-            const scriptElement = cid2script[cid];
-            const prefix = cid + '/';
-            const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
-            const arg = args.join('-');
-            if (atype === 'ref') {{
-              scriptElement.fryargs[arg] = element;
-            }}
-          }}
-        }}
-        for (const child of element.children) {{
-          collectRefs(child);
-        }}
-      }}
-      const rootScript = cid2script['1'];
-      collectRefs(rootScript.parentElement);
-
-      // 从后往前(从里往外)执行
-      cids.sort((x,y)=>y-x);
-      for (const cid of cids) {{
-          const scid = ''+cid;
-          await hydrates[scid](cid2script[scid]);
-      }}
+      const scripts = document.querySelectorAll('script[data-fryid]');
+      import {{hydrate}} from "{static_url('js/fryhcs.js')}";
+      await hydrate(scripts, hydrates);
     </script>
 """
 
