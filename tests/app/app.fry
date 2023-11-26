@@ -13,6 +13,10 @@ def App():
                Count:
                <span text-red-600>[{initial_count}](count)</span>
              </p>
+             <p text-indigo-600 text-center mt-9>
+               Double:
+               <span text-red-600>[{initial_count*2}](doubleCount)</span>
+             </p>
              <div flex w-full justify-center>
                <button
                  @click=(increment)
@@ -22,9 +26,11 @@ def App():
              </div>
            </div>
            <script header initial={initial_count}>
-              import {signal} from "fryhcs"
+              import {signal, computed} from "fryhcs"
 
               let count = signal(initial)
+
+              let doubleCount = computed(()=>count.value*2)
 
               function increment() {
                   count.value ++;

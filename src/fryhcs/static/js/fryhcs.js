@@ -122,6 +122,119 @@ function effect(fn) {
 }
 
 
+// Computed是一个特殊的Signal，也是一个特殊的Effect。
+// * 对于依赖它的Effect或其他Computed，它是一个Signal，
+//   自己的值变化后，通知依赖它的Effect和其他Computed;
+// * 对于它所依赖的Signal或其他Computed，它是一个Effect，
+//   依赖变更后，它要跟着变更；
+class Computed {
+    constructor(fn) {
+        this.fn = fn;
+        this.rawValue = undefined;
+        this.active = false;
+        this.todispose = false;
+        this.disposed = false;
+        this.effectSet = new Set();
+        this.signalSet = new Set();
+    }
+
+    addEffect(effect) {
+        this.effectSet.add(effect);
+    }
+
+    removeEffect(effect) {
+        this.effectSet.delete(effect);
+    }
+
+    hasEffect(effect) {
+        return this.effectSet.has(effect);
+    }
+
+    peek() {
+        return this.rawValue;
+    }
+
+    get value() {
+        this.rawValue = this.fn();
+        const len = activeEffectStack.length;
+        if (len === 0) {
+            return this.rawValue;
+        }
+        const currentEffect = activeEffectStack[len-1];
+        if (!this.hasEffect(currentEffect)) {
+            this.effectSet.add(currentEffect);
+            currentEffect.addSignal(this);
+        }
+        return this.rawValue;
+    }
+
+    addSignal(signal) {
+        this.signalSet.add(signal);
+    }
+
+    removeSignal(signal) {
+        this.signalSet.delete(signal);
+    }
+
+    callback() {
+        if (this.active === true || this.disposed === true) {
+            return;
+        }
+        activeEffectStack.push(this);
+        this.active = true;
+        this.signalSet.clear();
+        let rawValue;
+        try {
+            rawValue = this.fn();
+            if (rawValue != this.rawValue) {
+                this.rawValue = rawValue;
+                const errs = [];
+                for (const effect of this.effectSet) {
+                    try {
+                        effect.callback();
+                    } catch (err) {
+                        errs.push([effect, err]);
+                    }
+                }
+                if (errs.length > 0) {
+                    throw errs;
+                }
+            }
+        } finally {
+            this.active = false;
+            activeEffectStack.pop();
+            if (this.todispose) {
+                this.dispose();
+            }
+        }
+    }
+
+    dispose() {
+        if (this.disposed) {
+            return;
+        }
+        if (this.active) {
+            this.todispose = true;
+            return;
+        }
+        for (const signal of this.signalSet) {
+            signal.removeEffect(this);
+        }
+        this.signalSet.clear();
+        for (const effect of this.effectSet) {
+            effect.removeSignal(this);
+        }
+        this.effectSet.clear();
+        this.todispose = false;
+        this.disposed = true;
+    }
+}
+
+function computed(fn) {
+    return new Computed(fn);
+}
+
+
 async function hydrate(scripts, hydrates) {
     let cid2script = {};
     let cids = [];
@@ -184,7 +297,12 @@ async function hydrate(scripts, hydrates) {
 
                     if (atype === 'text') {
                         // 设置html文本时需要进行响应式处理
-                        if (value instanceof Signal) {
+                        console.log(value)
+                        console.log(value instanceof Signal);
+                        if ((value instanceof Signal) || (value instanceof Computed)) {
+                            console.log("text:");
+                            console.log(value);
+                            console.log(value.value);
                             effect(() => element.textContent = value.value);
                         } else {
                             element.textContent = value;
@@ -193,7 +311,7 @@ async function hydrate(scripts, hydrates) {
                         element.addEventListener(arg, value);
                     } else if (atype === 'attr') {
                         // 设置html元素属性值时需要进行响应式处理
-                        if (value instanceof Signal) {
+                        if (value instanceof Signal || value instanceof Computed) {
                             effect(() => element.setAttribute(arg, value.value));
                         } else {
                             element.setAttribute(arg, value);
@@ -284,4 +402,4 @@ function event(component, type, options) {
 }
 
 
-export {signal, effect, hydrate, update, event}
+export {signal, effect, computed, hydrate, update, event}

@@ -175,7 +175,7 @@ js_static_import = js_simple_static_import / js_normal_static_import
 
 js_simple_static_import = ~r'\bimport\b' maybe_space js_simple_quote
 
-js_normal_static_import = ~r'\bimport\b' maybe_space js_import_identifiers maybe_space '\bfrom\b' maybe_space js_simple_quote
+js_normal_static_import = ~r'\bimport\b' maybe_space js_import_identifiers maybe_space ~r'\bfrom\b' maybe_space js_simple_quote
 
 js_import_identifiers = js_import_identifier js_other_import_identifiers
 
