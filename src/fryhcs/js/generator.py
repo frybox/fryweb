@@ -19,6 +19,7 @@ def compose_js(args, script, embeds):
         args = f'const {{ {", ".join(args)} }} = element$$.fryargs;'
 
     return f"""\
+export {{ hydrate as hydrateAll }} from "fryhcs";
 export const hydrate = async function (element$$, hydrate$$) {{
     {args}
     {script}

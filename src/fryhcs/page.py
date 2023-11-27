@@ -80,7 +80,11 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     else:
         output = []
         for i, uuid in enumerate(scripts):
-            output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
+            if i == 0:
+                output.append(f"import {{ hydrate as hydrate_{i}, hydrateAll }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
+            else:
+                output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
+
             for cid in page.components_of_script(uuid):
                 output.append(f"hydrates['{cid}'] = hydrate_{i};")
         all_scripts = '\n      '.join(output)
@@ -90,8 +94,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
       let hydrates = {{}};
       {all_scripts}
       const scripts = document.querySelectorAll('script[data-fryid]');
-      import {{hydrate}} from "{static_url('js/fryhcs.js')}";
-      await hydrate(scripts, hydrates);
+      await hydrateAll(scripts, hydrates);
     </script>
 """
 
