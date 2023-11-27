@@ -104,15 +104,16 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
                             for property, value in properties.items())
     equivs = sep.join(f'<meta http-equiv="{equiv}" content="{value}">'
                             for equiv, value in equivs.items())
-    importmap = f'''
-    <script type="importmap">
-      {{
-        "imports": {{
-          "fryhcs": "{static_url('js/fryhcs.js')}"
-        }}
-      }}
-    </script>
-    '''
+    # no need to use importmap
+    #importmap = f'''
+    #<script type="importmap">
+    #  {{
+    #    "imports": {{
+    #      "fryhcs": "{static_url('js/fryhcs.js')}"
+    #    }}
+    #  }}
+    #</script>
+    #'''
 
     if fryconfig.debug:
         script = """
@@ -167,7 +168,6 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     {properties}
     {equivs}
     <link rel="stylesheet" href="{static_url(fryconfig.css_url)}">
-    {importmap}
   </head>
   <body>
     {content}

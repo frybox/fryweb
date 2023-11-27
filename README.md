@@ -170,7 +170,7 @@ def index():
 
 ```
 
-### 3. Add js logic and reactive variable(signal):
+### 3. Add js logic and reactive variable(signal/computed):
 
 ```python
 from fryhcs import html, Element
@@ -179,30 +179,37 @@ from flask import Flask
 app = Flask(__name__)
 
 def App():
-    initial_count = 10
+    initial_count = 20
     return <div>
-             <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
+             <h1 ref=(header) text-cyan-500 hover:text-cyan-600 text-center mt-100px>
                Hello FryHCS!
              </h1>
              <p text-indigo-600 text-center mt-9>
                Count:
                <span text-red-600>[{initial_count}](count)</span>
              </p>
+             <p text-indigo-600 text-center mt-9>
+               Double:
+               <span text-red-600>[{initial_count*2}](doubleCount)</span>
+             </p>
              <div flex w-full justify-center>
-               <button type="button" @click=(increment)
-                 mt-9 px-2 rounded border
-                 bg-indigo-400 hover:bg-indigo-600>
+               <button
+                 @click=(increment)
+                 class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none">
                  Increment
                </button>
              </div>
            </div>
-           <script initial={initial_count}>
-              import {signal} from "fryhcs"
+           <script header initial={initial_count}>
+              import {signal, computed} from "fryhcs"
 
               let count = signal(initial)
 
+              let doubleCount = computed(()=>count.value*2)
+
               function increment() {
-                  count.value ++
+                  count.value ++;
+                  header.textContent = `Hello FryHCS(${count.value})`;
               }
            </script>
 
@@ -220,30 +227,33 @@ from flask import Flask
 app = Flask(__name__)
 
 def App():
-    initial_count = 10
-    return Element("div", {"call-client-script": ["db9292e32031f3a02ee988097c493ef49696927e", [("initial", (initial_count))]], "children": [Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(0), "children": [(initial_count)]})]})]}), Element("div", {"class": "flex w-full justify-center", "children": [Element("button", {"type": "button", "@click": Element.ClientEmbed(1), "class": "mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600", "children": ["Increment"]})]})]})
+    initial_count = 20
+    return Element("div", {"call-client-script": ["1171022438ea1f5e3d31f5fb191ca3c18adfda49", [("initial", (initial_count))]], "children": [Element("h1", {"ref:header": Element.ClientEmbed(0), "class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(1), "children": [f"""{initial_count}"""]})]})]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Double:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(2), "children": [f"""{initial_count*2}"""]})]})]}), Element("div", {"class": "flex w-full justify-center", "children": [Element("button", {"@click": Element.ClientEmbed(3), "class": "inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none", "children": ["Increment"]})]})]})
 
 @app.get('/')
 def index():
     return html(App, "Hello")
 ```
 
-Generated js script `static/js/components/db9292e32031f3a02ee988097c493ef49696927e.js`:
+Generated js script `static/js/components/.tmp/1171022438ea1f5e3d31f5fb191ca3c18adfda49.js`:
 
 ```js
 export { hydrate as hydrateAll } from "fryhcs";
 export const hydrate = async function (element$$, doHydrate$$) {
-    const { initial } = element$$.fryargs;
+    const { header, initial } = element$$.fryargs;
 
-              const {signal} = await import("fryhcs")
+              const {signal, computed} = await import("fryhcs")
 
               let count = signal(initial)
 
+              let doubleCount = computed(()=>count.value*2)
+
               function increment() {
-                  count.value ++
+                  count.value ++;
+                  header.textContent = `Hello FryHCS(${count.value})`;
               }
 
-    const embeds$$ = [count, increment];
+    const embeds$$ = [header, count, doubleCount, increment];
     doHydrate$$(element$$, embeds$$);
 };
 ```
@@ -257,31 +267,18 @@ Generated HTML:
     <meta charset="utf-8">
     <title>Hello</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
     <link rel="stylesheet" href="/static/css/styles.css">
-
-    <script type="importmap">
-      {
-        "imports": {
-          "fryhcs": "/static/js/fryhcs.js"
-        }
-      }
-    </script>
-
   </head>
   <body>
-    <div><script data-fryid="1" data-fryclass="app3:App" data-initial="10"></script><h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px">Hello FryHCS!</h1><p class="text-indigo-600 text-center mt-9">Count:<span class="text-red-600"><span data-fryembed="1/0-text">10</span></span></p><div class="flex w-full justify-center"><button type="button" class="mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600" data-fryembed="1/1-event-click">Increment</button></div></div>
+    <div><script data-fryid="1" data-fryclass="app:App" data-initial="20"></script><h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px" data-fryembed="1/0-ref-header">Hello FryHCS!</h1><p class="text-indigo-600 text-center mt-9">Count:<span class="text-red-600"><span data-fryembed="1/1-text">20</span></span></p><p class="text-indigo-600 text-center mt-9">Double:<span class="text-red-600"><span data-fryembed="1/2-text">40</span></span></p><div class="flex w-full justify-center"><button class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none" data-fryembed="1/3-event-click">Increment</button></div></div>
 
     <script type="module">
       let hydrates = {};
-      import { hydrate as hydrate_0, hydrateAll } from '/static/js/components/4e79a6666b7822a3666e9f5e7b5980d64d478fdd.js';
+      import { hydrate as hydrate_0, hydrateAll } from '/static/js/components/1171022438ea1f5e3d31f5fb191ca3c18adfda49.js';
       hydrates['1'] = hydrate_0;
       const scripts = document.querySelectorAll('script[data-fryid]');
       await hydrateAll(scripts, hydrates);
     </script>
-
 
   <script type="module">
     let serverId = null;
@@ -316,6 +313,63 @@ Generated HTML:
 
   </body>
 </html>
+```
+
+### 4. Reference html element and component element in js logic:
+
+```python
+from fryhcs import Element, html
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.get('/')
+def index():
+    return html(RefApp, title="test ref")
+
+def Refed():
+    return <div>
+      hello world
+    </div>
+    <script>
+      export default {
+          hello() {
+              console.log('hello hello')
+          }
+      }
+    </script>
+
+def RefApp():
+    return (
+    <div w-full h-100vh flex flex-col gap-y-10 justify-center items-center>
+      <p ref=(foo) text-indigo-600 text-6xl transition-transform duration-1500>
+        Hello World!
+      </p>
+      <p ref=(bar) text-cyan-600 text-6xl transition-transform duration-1500>
+        Hello FryHCS!
+      </p>
+      {<p refall=(foobar)>foobar</p> for i in range(3)}
+      <Refed ref=(refed) refall=(refeds)/>
+      {<Refed refall=(refeds) /> for i in range(2)}
+    </div>
+    <script foo bar foobar refed refeds>
+      setTimeout(()=>{
+        foo.style.transform = "skewY(180deg)";
+      }, 1000);
+      setTimeout(()=>{
+        bar.style.transform = "skewY(180deg)";
+      }, 2500);
+      for (const fb of foobar) {
+        console.log(fb);
+      }
+      refed.hello()
+      for (const r of refeds) {
+          r.hello()
+      }
+    </script>)
+
+if __name__ == '__main__':
+    print(html(RefApp))
 ```
 
 ## Command Line Tool `fry`
