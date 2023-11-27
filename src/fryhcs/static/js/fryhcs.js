@@ -297,12 +297,7 @@ async function hydrate(scripts, hydrates) {
 
                     if (atype === 'text') {
                         // 设置html文本时需要进行响应式处理
-                        console.log(value)
-                        console.log(value instanceof Signal);
                         if ((value instanceof Signal) || (value instanceof Computed)) {
-                            console.log("text:");
-                            console.log(value);
-                            console.log(value.value);
                             effect(() => element.textContent = value.value);
                         } else {
                             element.textContent = value;
@@ -337,7 +332,7 @@ async function hydrate(scripts, hydrates) {
         handle(rootElement);
     }
 
-    // 从后往前(从里往外)执行组件水和代码
+    // 从后往前(从里往外)执行组件水合代码
     cids.sort((x,y)=>y-x);
     for (const cid of cids) {
         const scid = ''+cid;
