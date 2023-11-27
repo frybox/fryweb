@@ -920,7 +920,16 @@ def topy_command(fryfile):
         sys.exit(1)
     with path.open('r') as f:
         data = f.read()
-    print(fry_to_py(data))
+    source = fry_to_py(data)
+    try:
+        from pygments.formatters.terminal import TerminalFormatter
+        from pygments.lexers import PythonLexer
+        from pygments import highlight
+        lexer = PythonLexer()
+        fmter = TerminalFormatter()
+        click.echo(highlight(source, lexer, fmter))
+    except ImportError:
+        click.echo(source)
 
 
 @click.command("tojs", short_help="Convert specified .fry file into .js file(s).")

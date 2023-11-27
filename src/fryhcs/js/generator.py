@@ -20,11 +20,11 @@ def compose_js(args, script, embeds):
 
     return f"""\
 export {{ hydrate as hydrateAll }} from "fryhcs";
-export const hydrate = async function (element$$, hydrate$$) {{
+export const hydrate = async function (element$$, doHydrate$$) {{
     {args}
     {script}
     const embeds$$ = [{', '.join(embeds)}];
-    hydrate$$(element$$, embeds$$);
+    doHydrate$$(element$$, embeds$$);
 }};
 """
 
