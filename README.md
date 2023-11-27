@@ -9,11 +9,11 @@ Fryhcs is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
 ## Features
 * Support fry extension to normal python file, similar to jsx, write html tags in python file.
-* Provide a fry loader for python import machanism, load and execute fry files directly.
+* Provide a fry loader for python import machanism, load and execute .fry files directly by CPython.
 * Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
 * Support django/flask framework.
 * Provide pygments lexer for fry.
-* Provide development server which supports server/browser auto reloading when file saved.
+* Provide a development server which supports server/browser auto reloading when file saved.
 * Provide a command line tool `fry`, build css/js, highlight and run fry file and run development server. 
 * Support plugin machanism, anyone can extends with her/his own custom css utilities.
 
@@ -36,7 +36,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     return <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
              Hello FryHCS!
            </h1>
@@ -49,7 +49,7 @@ def index():
 in the same directory as app.fry, run command:
 
 ```bash
-$ fry x2y app.fry
+$ fry topy app.fry
 ```
 
 check the generated python content:
@@ -60,7 +60,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     return Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]})
 
 @app.get('/')
@@ -71,7 +71,7 @@ def index():
 
 To generate CSS file `static/css/styles.css`, run command:
 ```bash
-$ fry x2css app.fry
+$ fry tocss app.fry
 ```
 
 Generated CSS:
@@ -100,7 +100,7 @@ Generated CSS:
 To serve this app, run command:
 
 ```bash
-$ fry serve --debug
+$ fry dev 
 ```
 
 Open browser, access `http://127.0.0.1:5000` to browse the page.
@@ -138,7 +138,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     initial_count = 10
     return <div>
              <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
@@ -160,7 +160,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     initial_count = 10
     return Element("div", {"children": [Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", (initial_count)]})]})
 
@@ -178,7 +178,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     initial_count = 10
     return <div>
              <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
@@ -186,7 +186,7 @@ def App(**props):
              </h1>
              <p text-indigo-600 text-center mt-9>
                Count:
-               <span text-red-600>{initial_count}(count)</span>
+               <span text-red-600>[{initial_count}](count)</span>
              </p>
              <div flex w-full justify-center>
                <button type="button" @click=(increment)
@@ -199,7 +199,7 @@ def App(**props):
            <script initial={initial_count}>
               import {signal} from "fryhcs"
 
-              count = signal(initial)
+              let count = signal(initial)
 
               function increment() {
                   count.value ++
@@ -219,7 +219,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def App(**props):
+def App():
     initial_count = 10
     return Element("div", {"call-client-script": ["db9292e32031f3a02ee988097c493ef49696927e", [("initial", (initial_count))]], "children": [Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(0), "children": [(initial_count)]})]})]}), Element("div", {"class": "flex w-full justify-center", "children": [Element("button", {"type": "button", "@click": Element.ClientEmbed(1), "class": "mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600", "children": ["Increment"]})]})]})
 
@@ -231,26 +231,21 @@ def index():
 Generated js script `static/js/components/db9292e32031f3a02ee988097c493ef49696927e.js`:
 
 ```js
-'fryfunctions$$' in window || (window.fryfunctions$$ = []);
-window.fryfunctions$$.push([document.currentScript, async function (script$$) {
-    const {hydrate: hydrate$$, collectrefs: collectrefs$$} = await import("fryhcs");
-    const rootElement$$ = script$$.parentElement;
-    const componentId$$ = script$$.dataset.fryid;
-    collectrefs$$(rootElement$$, script$$, componentId$$);
-    const initial = ("frydata" in script$$ && "initial" in script$$.frydata) ? script$$.frydata.initial : script$$.dataset.initial;
+export { hydrate as hydrateAll } from "fryhcs";
+export const hydrate = async function (element$$, doHydrate$$) {
+    const { initial } = element$$.fryargs;
 
-                const {signal} = await import("fryhcs")
+              const {signal} = await import("fryhcs")
 
-                count = signal(initial)
+              let count = signal(initial)
 
-                function increment() {
-                    count.value ++
-                }
+              function increment() {
+                  count.value ++
+              }
 
-    let embeds$$ = [count, increment];
-    hydrate$$(rootElement$$, componentId$$, embeds$$);
-}]);
-
+    const embeds$$ = [count, increment];
+    doHydrate$$(element$$, embeds$$);
+};
 ```
 
 Generated HTML:
@@ -258,48 +253,68 @@ Generated HTML:
 ```html
 <!DOCTYPE html>
 <html lang=en>
-    <head>
-        <meta charset="utf-8">
-        <title>Hello</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="/static/css/styles.css">
-        <script type="importmap">
+  <head>
+    <meta charset="utf-8">
+    <title>Hello</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <script type="importmap">
       {
         "imports": {
-          "fryhcs": "/static/js/fryhcs.js",
-          "components/": "/static/js/components/",
-          "@/": "/static/"
+          "fryhcs": "/static/js/fryhcs.js"
         }
       }
+    </script>
 
-        </script>
-    </head>
-    <body>
-        <div data-fryclass="app:App" data-fryid="1">
-            <script src="/static/js/components/db9292e32031f3a02ee988097c493ef49696927e.js" data-fryid="1" data-initial="10"></script>
-            <h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px">Hello FryHCS!</h1>
-            <p class="text-indigo-600 text-center mt-9">
-                Count:
-                <span class="text-red-600">
-                    <span data-fryembed="1/0-text">10</span>
-                </span>
-            </p>
-            <div class="flex w-full justify-center">
-                <button type="button" class="mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600" data-fryembed="1/1-event-click">Increment</button>
-            </div>
-        </div>
-        <script>
-            (async function() {
-                if ('fryfunctions$$'in window) {
-                    for (const [script,fn] of window.fryfunctions$$) {
-                        await fn(script);
-                    }
-                }
+  </head>
+  <body>
+    <div><script data-fryid="1" data-fryclass="app3:App" data-initial="10"></script><h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px">Hello FryHCS!</h1><p class="text-indigo-600 text-center mt-9">Count:<span class="text-red-600"><span data-fryembed="1/0-text">10</span></span></p><div class="flex w-full justify-center"><button type="button" class="mt-9 px-2 rounded border bg-indigo-400 hover:bg-indigo-600" data-fryembed="1/1-event-click">Increment</button></div></div>
+
+    <script type="module">
+      let hydrates = {};
+      import { hydrate as hydrate_0, hydrateAll } from '/static/js/components/4e79a6666b7822a3666e9f5e7b5980d64d478fdd.js';
+      hydrates['1'] = hydrate_0;
+      const scripts = document.querySelectorAll('script[data-fryid]');
+      await hydrateAll(scripts, hydrates);
+    </script>
+
+
+  <script type="module">
+    let serverId = null;
+    let eventSource = null;
+    let timeoutId = null;
+    function checkAutoReload() {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+        timeoutId = setTimeout(checkAutoReload, 1000);
+        if (eventSource !== null) eventSource.close();
+        eventSource = new EventSource("/_check_hotreload");
+        eventSource.addEventListener('open', () => {
+            console.log(new Date(), "Auto reload connected.");
+            if (timeoutId !== null) clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkAutoReload, 1000);
+        });
+        eventSource.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            if (serverId === null) {
+                serverId = data.serverId;
+            } else if (serverId !== data.serverId) {
+                if (eventSource !== null) eventSource.close();
+                if (timeoutId !== null) clearTimeout(timeoutId);
+                location.reload();
+                return;
             }
-            )();
-        </script>
-    </body>
+            if (timeoutId !== null) clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkAutoReload, 1000);
+        });
+    }
+    checkAutoReload();
+  </script>
+
+  </body>
 </html>
 ```
 
@@ -320,7 +335,7 @@ MIT License
 
 In fact, this project is created by the father of one son(**F**ang**R**ui) and one daughter(**F**ang**Y**i)...
 
-### 2. Why name the file format .fry
+### 2. Why is the file format named to be .fry
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already
 used in Cython, so it has to be renamed.
 
