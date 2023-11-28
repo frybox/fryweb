@@ -244,6 +244,9 @@ def check_html_element(name, attrs):
 #
 #   组件元素以大写字母开头的名字作为元素名，元素名代表一个组件函数。
 #   组件元素的属性作为python参数列表传给组件函数，所以组件元素只支持如下几种格式的属性：
+#   * `name`                : 无值属性，bool类型，存在为True，不存在为False
+#                             服务端：class中的值，或无值属性
+#                             浏览器：class中的值，或无值属性
 #   * `name="literal_value"`: 常量字符串在服务端传给子组件
 #                             服务端：常量字符串
 #                             浏览器：不可见
@@ -270,11 +273,14 @@ def check_html_element(name, attrs):
 def check_component_element(name, attrs):
     for attr in attrs:
         atype = attr[0]
-        if atype not in (spread_attr, literal_attr, py_attr, js_attr):
-            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have spread_attr, literal_attr, py_attr, js_attr")
+        if atype not in (novalue_attr, spread_attr, literal_attr, py_attr, js_attr):
+            raise BadGrammar(f"Invalid attr '{atype}': Component element can only have novalue_attr, spread_attr, literal_attr, py_attr, js_attr")
         if atype in (literal_attr, py_attr) and not attr[1].isidentifier():
             raise BadGrammar(f"Invalid attibute name '{attr[1]}' on Component element '{name}', identifier needed.")
-        if atype == js_attr:
+        if atype == novalue_attr:
+            attr[0] = py_attr
+            attr.append('True')
+        elif atype == js_attr:
             if (not attr[1].startswith(ref_attr_name_prefix) and
                 not attr[1].startswith(refall_attr_name_prefix)):
                 raise BadGrammar(f"Only ref/refall to component element can have js_attr.")
