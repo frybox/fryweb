@@ -54,4 +54,4 @@ Usage example:
             return f"Wrong argument to fryhcs topy command: {fryfile} is not readable"
         with path.open('r') as f:
             data = f.read()
-        return fry_to_py(data)
+        return fry_to_py(data, path)

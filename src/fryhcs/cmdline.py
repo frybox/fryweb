@@ -920,7 +920,7 @@ def topy_command(fryfile):
         sys.exit(1)
     with path.open('r') as f:
         data = f.read()
-    source = fry_to_py(data)
+    source = fry_to_py(data, path)
     try:
         from pygments.formatters.terminal import TerminalFormatter
         from pygments.lexers import PythonLexer

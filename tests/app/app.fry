@@ -27,6 +27,9 @@ def App():
            </div>
            <script header initial={initial_count}>
               import {signal, computed} from "fryhcs"
+              import {foo} from './js/foo.js'
+
+              foo()
 
               let count = signal(initial)
 

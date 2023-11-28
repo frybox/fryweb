@@ -12,7 +12,7 @@ PYXSOURCE_SUFFIXES = ['.fry', '.pyx']
 
 class PyxSourceFileLoader(SourceFileLoader):
     def source_to_code(self, data, path, *, _optimize=-1):
-        data = fry_to_py(data.decode())
+        data = fry_to_py(data.decode(), path)
         return super(SourceFileLoader, self).source_to_code(data, path, _optimize=_optimize)
 
 def install_path_hook():

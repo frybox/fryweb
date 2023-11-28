@@ -7,6 +7,7 @@ from fryhcs.fileiter import FileIter
 import re
 import os
 import subprocess
+import shutil
 
 
 # generate js content for fry component
@@ -30,6 +31,8 @@ export const hydrate = async function (element$$, doHydrate$$) {{
 
 
 class JSGenerator(BaseGenerator):
+    component_pattern = f"**/{'[0-9a-fA-Z]'*40}.js"
+
     def __init__(self, input_files, output_dir):
         super().__init__()
         self.fileiter = FileIter(input_files)
@@ -42,20 +45,28 @@ class JSGenerator(BaseGenerator):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
         if clean:
-            pattern = '[0-9a-f]'*40+'.js'
-            for f in self.output_dir.glob(pattern):
+            for f in self.output_dir.glob(self.component_pattern):
                 f.unlink(missing_ok=True)
             for f in self.tmp_dir.glob('*.js'):
                 f.unlink(missing_ok=True)
+        self.dependencies = set()
         count = 0
         for file in input_files:
-            with file.open('r') as f:
+            self.set_curr_file(file)
+            self.js_dir = self.tmp_dir / self.relative_dir
+            self.js_dir.mkdir(parents=True, exist_ok=True)
+            with self.curr_file.open('r') as f:
                 count += self.generate_one(f.read())
         self.bundle()
         return count
                 
     def bundle(self):
-        src = list(self.tmp_dir.glob('*.js'))
+        if self.dependencies:
+            for file, path in self.dependencies:
+                p = self.tmp_dir / path
+                p.mkdir(parents=True, exist_ok=True)
+                shutil.copy(file, p)
+        src = list(self.tmp_dir.glob(self.component_pattern))
         if not src:
             return
         this = Path(__file__).absolute().parent
@@ -63,14 +74,23 @@ class JSGenerator(BaseGenerator):
         env = os.environ.copy()
         if True:
             env['NODE_PATH'] = str(this / '..' / 'static' / 'js')
-            args = ['npx', 'esbuild', '--format=esm', '--bundle']
+            args = ['npx', 'esbuild', '--format=esm', '--bundle', f'--outbase={self.tmp_dir}']
         elif bun.is_file():
-            # 对于动态import的js，只修改地址，没有打包
+            # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
             args = [str(bun), 'build', '--external', 'fryhcs']
         args += ['--splitting', f'--outdir={self.output_dir}']
         args += [str(js) for js in src]
         subprocess.run(args, env=env)
+
+    def check_js_module(self, jsmodule):
+        if jsmodule[0] in "'\"":
+            jsmodule = jsmodule[1:-1]
+        if jsmodule.startswith('./') or jsmodule.startswith('../'):
+            jsfile = self.curr_dir / jsmodule
+            jsfile = jsfile.resolve(strict=True) # 如果js文件不存在，抛出异常
+            jsdir = jsfile.parent.relative_to(self.curr_root)
+            self.dependencies.add((str(jsfile), str(jsdir)))
 
     def generate_one(self, source):
         tree = grammar.parse(source)
@@ -84,7 +104,7 @@ class JSGenerator(BaseGenerator):
             args = c['args']
             script = c['script']
             embeds = c['embeds']
-            jspath = self.tmp_dir / f'{name}.js'
+            jspath = self.js_dir / f'{name}.js'
             with jspath.open('w') as f:
                 f.write(compose_js(args, script, embeds))
         return len(self.web_components)
@@ -189,10 +209,12 @@ class JSGenerator(BaseGenerator):
 
     def visit_js_simple_static_import(self, node, children):
         _, _, module_name = children
+        self.check_js_module(module_name)
         return f'await import({module_name})'
 
     def visit_js_normal_static_import(self, node, children):
         _import, _, identifiers, _, _from, _, module_name = children
+        self.check_js_module(module_name)
         value = ''
         namespace = identifiers.pop('*', '')
         if namespace:

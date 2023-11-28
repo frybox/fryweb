@@ -1,4 +1,5 @@
 from parsimonious import NodeVisitor, BadGrammar
+from pathlib import Path
 import sys
 import re
 import hashlib
@@ -36,6 +37,18 @@ class BaseGenerator(NodeVisitor):
         sha1 = hashlib.sha1()
         sha1.update(node.text.encode('utf-8'))
         return sha1.hexdigest()
+
+    def set_curr_file(self, file):
+        self.curr_file = Path(file).absolute().resolve(strict=True)
+        self.curr_dir  = self.curr_file.parent
+        self.curr_root = None
+        for p in self.curr_file.parents:
+            init = p / '__init__.py'
+            if not init.exists():
+                self.curr_root = p
+                break
+        self.relative_dir = self.curr_dir.relative_to(self.curr_root)
+
 
 
 #client_embed_attr_name = 'data-fryembed'
@@ -347,7 +360,7 @@ class PyGenerator(BaseGenerator):
         if self.web_component_script:
             uuid = self.get_uuid(node)
             args = [(k,v) for k,v in self.client_script_args.items()]
-            attrs.insert(0, [call_client_attr, uuid, args])
+            attrs.insert(0, [call_client_attr, f'{self.relative_dir / uuid}', args])
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
@@ -656,10 +669,11 @@ class PyGenerator(BaseGenerator):
     #    return ('jsop_embed', script)
 
 
-def fry_to_py(source):
+def fry_to_py(source, path):
     """
     fry文件内容转成py文件内容
     """
     tree = grammar.parse(source)
     generator = PyGenerator()
+    generator.set_curr_file(path)
     return generator.generate(tree)
