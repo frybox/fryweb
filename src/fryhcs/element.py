@@ -189,10 +189,21 @@ class Element(object):
 
         if inspect.isfunction(self.name):
             # 渲染函数组件元素流程：
-            # 1. 生成页面内组件实例唯一编号
+            # 1. 生成页面内组件实例对应的script元素，附加到页面后，
+            #    得到组件实例唯一编号。
             #    组件函数每执行一次，返回该组件的一个实例。页面中
             #    每个组件实例都有一个页面内唯一编号。
-            cnumber = page.add_component()
+            #    将组件名和组件实例ID附加到代表组件的script元素上，
+            #    script是用来记录当前组件信息的，包括组件id，名字，
+            #    以及后面可能的组件js参数
+            cname = component_name(self.name)
+            scriptprops = {
+                component_attr_name: cname,
+                children_attr_name: [],
+            }
+            cscript = Element('script', scriptprops, True)
+            cnumber = page.add_component(cscript)
+            scriptprops[component_id_attr_name] = cnumber
 
             # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录下来
             for key in list(self.props.keys()):
@@ -248,16 +259,9 @@ class Element(object):
             #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`属性上
             element.collect_client_embed(cnumber)
             
-            # 9. 将组件名和组件实例ID附加到html元素树树根元素下新增的第一个script元素上
-            cname = component_name(self.name)
-            scriptprops = {
-                component_id_attr_name: cnumber,
-                component_attr_name: cname,
-                children_attr_name: [],
-            }
-            children = element.props[children_attr_name]
-            # script是用来记录当前组件信息的，包括组件id，名字，以及后面可能的组件js参数
-            children.insert(0, Element('script', scriptprops, True))
+            # 9. 将组件实例ID附加到组件html元素树树根元素的组件id列表'data-fryid'上
+            cid = element.props.get(component_id_attr_name, '')
+            element.props[component_id_attr_name] = f'{cnumber} {cid}' if cid else str(cnumber)
 
             # 10. 将子组件实例的引用附加到script上
             refs = page.child_refs(cnumber)
@@ -273,7 +277,7 @@ class Element(object):
             # 11. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
-                page.set_script(cnumber, uuid)
+                page.set_jsid2cid(uuid, cnumber)
                 for k,v in args:
                     if isinstance(v, ClientEmbed):
                         # 不支持父组件实例传过来的js嵌入值
@@ -320,6 +324,7 @@ class Element(object):
         else:
             raise RenderException(f"invalid element name '{self.name}'")
 
+        element.page = page
         return element
 
 

@@ -235,9 +235,15 @@ function computed(fn) {
 }
 
 
-async function hydrate(scripts, hydrates) {
+async function hydrate(hydrates) {
+    // 0. 根据ID获取组件元素
+    function componentOf(cid) {
+        return document.querySelector(`[data-fryid="${cid}"]:not(script)`)
+    }
+
     // 1. 收集script属性传过来的服务端数据，设置到script元素上，
     //    并构建cid和script元素对应关系
+    const scripts = document.querySelectorAll('script[data-fryid]');
     let cid2script = {};
     let cids = [];
     for (const cscript of scripts) {
@@ -286,14 +292,13 @@ async function hydrate(scripts, hydrates) {
             collectRefs(child);
         }
     }
-    const rootScript = cid2script['1'];
-    collectRefs(rootScript.parentElement);
+    collectRefs(componentOf(1));
 
     // 3. 执行水合操作
     function doHydrate(script, embedValues) {
-        const rootElement = script.parentElement;
-        const componentId = script.dataset.fryid;
-        const prefix = '' + componentId + '/';
+        const cid = script.dataset.fryid;
+        const rootElement = componentOf(cid);
+        const prefix = '' + cid + '/';
         function handle(element) {
             if ('fryembed' in element.dataset) {
                 const embeds = element.dataset.fryembed;

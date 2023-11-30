@@ -4,18 +4,18 @@ from fryhcs.config import fryconfig
 
 class Page(object):
     def __init__(self):
-        # 记录当前已经处理的组件个数，也是当前正在处理的组件的ID
-        self.component_count = 0
-        # 组件UUID（代表了js脚本）到组件实例ID的映射关系，uuid -> list of cid
-        self.uuid2cids = {}
+        # 记录当前已经处理的组件script元素列表，列表长度是当前正在处理的组件的ID
+        self.components = []
+        # 组件UUID（代表了js脚本）到组件实例ID的映射关系，jsid -> list of cid
+        self.jsid2cids = {}
         # 组件实例ID到子组件引用的映射关系, cid -> (refname -> childcid)
         self.cid2childrefs = {}
         # 组件实例ID到子组件全量引用的映射关系, cid -> (refname -> list of childcid)
         self.cid2childrefalls = {}
 
-    def add_component(self):
-        self.component_count += 1
-        cid = self.component_count
+    def add_component(self, component):
+        self.components.append(component)
+        cid = len(self.components)
         self.cid2childrefs[cid] = {} 
         self.cid2childrefalls[cid] = {}
         return cid
@@ -43,20 +43,20 @@ class Page(object):
     def child_refalls(self, cid):
         return self.cid2childrefalls.get(cid, {})
 
-    def set_script(self, cid, uuid): 
-        if uuid in self.uuid2cids:
-            cids = self.uuid2cids[uuid]
+    def set_jsid2cid(self, jsid, cid): 
+        if jsid in self.jsid2cids:
+            cids = self.jsid2cids[jsid]
         else:
             cids = set()
-            self.uuid2cids[uuid] = cids
+            self.jsid2cids[jsid] = cids
         cids.add(cid)
 
     @property
-    def scripts(self):
-        return list(self.uuid2cids.keys())
+    def jsids(self):
+        return list(self.jsid2cids.keys())
 
-    def components_of_script(self, uuid):
-        return self.uuid2cids.get(uuid, [])
+    def components_of_script(self, jsid):
+        return self.jsid2cids.get(jsid, [])
 
 
 def render(element, page=None):
@@ -74,18 +74,19 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
 
     page = Page()
     content = render(content, page)
-    scripts = page.scripts
+    components = '\n    '.join(str(c) for c in page.components)
+    scripts = page.jsids
     if not scripts:
         hydrate_script = ""
     else:
         output = []
-        for i, uuid in enumerate(scripts):
+        for i, jsid in enumerate(scripts):
             if i == 0:
-                output.append(f"import {{ hydrate as hydrate_{i}, hydrateAll }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
+                output.append(f"import {{ hydrate as hydrate_{i}, hydrateAll }} from '{static_url(fryconfig.js_url)}{jsid}.js';")
             else:
-                output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{uuid}.js';")
+                output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{jsid}.js';")
 
-            for cid in page.components_of_script(uuid):
+            for cid in page.components_of_script(jsid):
                 output.append(f"hydrates['{cid}'] = hydrate_{i};")
         all_scripts = '\n      '.join(output)
 
@@ -93,8 +94,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     <script type="module">
       let hydrates = {{}};
       {all_scripts}
-      const scripts = document.querySelectorAll('script[data-fryid]');
-      await hydrateAll(scripts, hydrates);
+      await hydrateAll(hydrates);
     </script>
 """
 
@@ -117,36 +117,36 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
 
     if fryconfig.debug:
         script = """
-  <script type="module">
-    let serverId = null;
-    let eventSource = null;
-    let timeoutId = null;
-    function checkAutoReload() {
-        if (timeoutId !== null) clearTimeout(timeoutId);
-        timeoutId = setTimeout(checkAutoReload, 1000);
-        if (eventSource !== null) eventSource.close();
-        eventSource = new EventSource("{{autoReloadPath}}");
-        eventSource.addEventListener('open', () => {
-            console.log(new Date(), "Auto reload connected.");
-            if (timeoutId !== null) clearTimeout(timeoutId);
-            timeoutId = setTimeout(checkAutoReload, 1000);
-        });
-        eventSource.addEventListener('message', (event) => {
-            const data = JSON.parse(event.data);
-            if (serverId === null) {
-                serverId = data.serverId;
-            } else if (serverId !== data.serverId) {
-                if (eventSource !== null) eventSource.close();
-                if (timeoutId !== null) clearTimeout(timeoutId);
-                location.reload();
-                return;
-            }
-            if (timeoutId !== null) clearTimeout(timeoutId);
-            timeoutId = setTimeout(checkAutoReload, 1000);
-        });
-    }
-    checkAutoReload();
-  </script>
+    <script type="module">
+      let serverId = null;
+      let eventSource = null;
+      let timeoutId = null;
+      function checkAutoReload() {
+          if (timeoutId !== null) clearTimeout(timeoutId);
+          timeoutId = setTimeout(checkAutoReload, 1000);
+          if (eventSource !== null) eventSource.close();
+          eventSource = new EventSource("{{autoReloadPath}}");
+          eventSource.addEventListener('open', () => {
+              console.log(new Date(), "Auto reload connected.");
+              if (timeoutId !== null) clearTimeout(timeoutId);
+              timeoutId = setTimeout(checkAutoReload, 1000);
+          });
+          eventSource.addEventListener('message', (event) => {
+              const data = JSON.parse(event.data);
+              if (serverId === null) {
+                  serverId = data.serverId;
+              } else if (serverId !== data.serverId) {
+                  if (eventSource !== null) eventSource.close();
+                  if (timeoutId !== null) clearTimeout(timeoutId);
+                  location.reload();
+                  return;
+              }
+              if (timeoutId !== null) clearTimeout(timeoutId);
+              timeoutId = setTimeout(checkAutoReload, 1000);
+          });
+      }
+      checkAutoReload();
+    </script>
 """
         autoreload = script.replace('{{autoReloadPath}}', fryconfig.check_reload_url)
     else:
@@ -171,6 +171,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
   </head>
   <body>
     {content}
+    {components}
     {hydrate_script}
     {autoreload}
   </body>
