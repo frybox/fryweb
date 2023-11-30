@@ -236,6 +236,7 @@ function computed(fn) {
 
 
 async function hydrate(scripts, hydrates) {
+    // 1. 构建cid和script元素对应关系
     let cid2script = {};
     let cids = [];
     for (const cscript of scripts) {
@@ -248,6 +249,8 @@ async function hydrate(scripts, hydrates) {
         cid2script[cid] = cscript;
         cids.push(parseInt(cid));
     }
+
+    // 2. 收集所有html元素上的ref/refall信息，设置到所在组件的script元素上
     function collectRefs(element) {
         if ('fryembed' in element.dataset) {
             const embeds = element.dataset.fryembed;
@@ -275,6 +278,7 @@ async function hydrate(scripts, hydrates) {
     const rootScript = cid2script['1'];
     collectRefs(rootScript.parentElement);
 
+    // 3. 执行水合操作
     function doHydrate(script, embedValues) {
         const rootElement = script.parentElement;
         const componentId = script.dataset.fryid;
@@ -332,12 +336,13 @@ async function hydrate(scripts, hydrates) {
         handle(rootElement);
     }
 
-    // 从后往前(从里往外)执行组件水合代码
+    // 3.1 组件元素排序，从后往前(从里往外)执行组件水合代码
     cids.sort((x,y)=>y-x);
+
     for (const cid of cids) {
         const scid = ''+cid;
         const script = cid2script[scid];
-        // 处理子组件ref与refall
+        // 3.2 收集本组件中所有子组件元素的ref对象，设置到本组件的script元素上
         if ('fryref' in script.dataset) {
             const objects = script.dataset.fryref;
             for (const obj of objects.split(' ')) {
@@ -345,6 +350,7 @@ async function hydrate(scripts, hydrates) {
                 script.fryargs[arg] = cid2script[subid].fryobject;
             }
         }
+        // 3.3 收集本组件中所有子组件元素的refall对象，设置到本组件的script元素上
         if ('fryrefall' in script.dataset) {
             const objects = script.dataset.fryrefall;
             for (const obj of objects.split(' ')) {
@@ -352,8 +358,13 @@ async function hydrate(scripts, hydrates) {
                 script.fryargs[arg] = subids.map(subid=>cid2script[subid].fryobject);
             }
         }
-        // 执行本组件水合
-        await hydrates[scid](script, doHydrate);
+
+        // 3.4 执行本组件水合
+        const hydrateOne = hydrates[scid]
+        // 不是每个组件都有js脚本，纯服务端组件没有js脚本
+        if (hydrateOne) {
+            await hydrateOne(script, doHydrate);
+        }
     }
 }
 

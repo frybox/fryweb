@@ -158,6 +158,9 @@ def concat_kv(attrs):
 #                                            服务端：data-fry-script一项
 #                                            浏览器：data-fry-script一项
 # </del>
+# 2023.11.30 py和js中的simple_quote也放入css utility检查范围，更加方便简单，
+#            $style和$class这种复杂处理方式不再需要
+# <del>
 #   * `$name={py_value}`                   : python值在服务端渲染为常量赋值给属性name，传给浏览器引擎
 #                                            目前支持的name只有"style"($style), 用于使用utility指定元素内置style，
 #   * `$name='literal_value'`              : utility列表值在服务端转化为CSS，传给浏览器引擎
@@ -165,6 +168,7 @@ def concat_kv(attrs):
 #                                            目前支持的name只有"class"($class), 用于向CSSGenerator传递一些动态生成的、
 #                                            运行期间才能看到的utility, 实际渲染中$class被忽略
 #                                            注：$class不会出现在这里，在解析过程中就过滤掉了(see `visit_fry_kv_attribute`)
+# </del>
 #   * `name={py_value}`                    : python值在服务端渲染为常量传给浏览器引擎，不可以为ClientEmbed
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
@@ -194,12 +198,13 @@ def check_html_element(name, attrs):
         # 检查事件处理器
         if attr[1][0] == '@' and atype not in (js_attr, ):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
-        # 检查$style
-        if attr[1][0] == '$':
-            if attr[1] not in ('$style',):
-                raise BadGrammar("unsupported attribute name: '{attr[1]}'")
-            if attr[1] == '$style' and atype != py_attr:
-                raise BadGrammar(f"invalid attribute type '{atype}' for '$style' in html element '{name}': '{py_attr}' needed.")
+        # 2023.11.30: 不再支持$style
+        ## 检查$style
+        #if attr[1][0] == '$':
+        #    if attr[1] not in ('$style',):
+        #        raise BadGrammar("unsupported attribute name: '{attr[1]}'")
+        #    if attr[1] == '$style' and atype != py_attr:
+        #        raise BadGrammar(f"invalid attribute type '{atype}' for '$style' in html element '{name}': '{py_attr}' needed.")
         if atype == js_attr:
             if (attr[1][0] != '@' and
                 not attr[1].startswith(ref_attr_name_prefix) and
@@ -442,7 +447,7 @@ class PyGenerator(BaseGenerator):
         return node.text
 
     def visit_fry_attributes(self, node, children):
-        # 过滤掉$class="xxx"
+        # 过滤掉空属性
         return [ch for ch in children if ch]
 
     def visit_fry_spaced_attribute(self, node, children):
@@ -475,10 +480,11 @@ class PyGenerator(BaseGenerator):
 
     def visit_fry_kv_attribute(self, node, children):
         name, _, _, _, value = children
-        if name == '$class':
-            if not isinstance(value, str):
-                raise BadGrammar("'$class' can only have literal value")
-            return None 
+        # 2023.11.30: 不再支持$class和$style，将simple_quote识别为utility
+        #if name == '$class':
+        #    if not isinstance(value, str):
+        #        raise BadGrammar("'$class' can only have literal value")
+        #    return None 
         if isinstance(value, str):
             return [literal_attr, name, value]
         elif isinstance(value, tuple):

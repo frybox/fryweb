@@ -1,0 +1,37 @@
+from fryhcs import html, Element
+from flask import Flask
+from random import randint
+
+app = Flask(__name__)
+
+@app.get('/')
+def index():
+    return html(App, title="fryhcs CSS test")
+
+
+def App():
+    return (
+    <div flex flex-col gap-4 text-center>
+      <Content value={randint(0,2)} />
+      <Content value={randint(0,2)} />
+      <Content value={randint(0,2)} />
+    </div>
+    )
+
+def Content(value=0):
+    if value == 0:
+        css = ["bg-indigo-300", 'text-xl', 'text-cyan-600', 'hover:bg-indigo-600', 'hover:text-cyan-300']
+    elif value == 1:
+        css = ["bg-sky-300", 'text-xl', 'text-pink-600', 'hover:bg-sky-600', 'hover:text-pink-300']
+    elif value == 2:
+        css = ["bg-pink-300", 'text-xl', 'text-yellow-600', 'hover:bg-pink-600', 'hover:text-yellow-300']
+    else:
+        css = ["bg-purple-300", 'text-xl', 'text-green-600', 'hover:bg-purple-600', 'hover:text-green-300']
+
+    return (
+    <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs</span>
+    <script el>
+      const toggle = () => {
+          el.classList.toggle('font-mono')
+      }
+    </script>)

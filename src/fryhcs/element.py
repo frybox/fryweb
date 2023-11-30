@@ -1,5 +1,6 @@
 import inspect
 from fryhcs.utils import static_url, component_name
+from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
 import types
 
@@ -81,9 +82,12 @@ client_ref_attr_name = 'data-fryref'
 client_refall_attr_name = 'data-fryrefall'
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
+class_attr_name = 'class'
 style_attr_name = 'style'
-# 使用动态数据生成utility的属性名
-utility_attr_name = '$style'
+# 2023.11.30 py和js中的simple_quote也放入css utility检查范围，
+#            $style和$class这种复杂处理方式不再需要
+## 使用动态数据生成utility的属性名
+#utility_attr_name = '$style'
 # 引用属性名
 ref_attr_name = 'ref'
 ref_attr_name_prefix = 'ref:'
@@ -280,24 +284,35 @@ class Element(object):
         elif isinstance(self.name, str):
             props = {}
             style = {} 
+            classes = []
             for k in list(self.props.keys()):
                 v = self.props[k]
                 if k == children_attr_name:
                     props[k] = render_children(v, page)
                 elif isinstance(v, Element):
                     props[k] = v.render(page)
-                elif k == utility_attr_name:
-                    if isinstance(v, (list, tuple, types.GeneratorType)):
-                        v = ' '.join(v)
-                    elif not isinstance(v, str):
-                        raise RenderException(f"Invalid $style value: '{v}'")
-                    style = combine_style(style, convert_utilities(v))
-                elif k == style_attr_name:
-                    style = combine_style(style, v)
+                #elif k == utility_attr_name:
+                #    if isinstance(v, (list, tuple, types.GeneratorType)):
+                #        v = ' '.join(v)
+                #    elif not isinstance(v, str):
+                #        raise RenderException(f"Invalid $style value: '{v}'")
+                #    style = combine_style(style, convert_utilities(v))
+                #elif k == style_attr_name:
+                #    style = combine_style(style, v)
+                elif (v == '' or v is True) and not is_valid_html_attribute(self.name, k):
+                    classes.append(k)
                 else:
                     props[k] = v
-            if style:
-                props[style_attr_name] = style
+            if classes:
+                currclass = props.get(class_attr_name, '')
+                classes = ' '.join(classes)
+                if currclass:
+                    currclass += ' ' + classes
+                else:
+                    currclass = classes
+                props[class_attr_name] = currclass
+            #if style:
+            #    props[style_attr_name] = style
             element = Element(self.name, props, True)
         else:
             raise RenderException(f"invalid element name '{self.name}'")

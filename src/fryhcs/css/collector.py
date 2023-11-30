@@ -97,13 +97,22 @@ class CssVisitor(NodeVisitor):
         return node.text
 
     def visit_py_simple_quote(self, node, children):
-        return children[0]
+        # python中的简单字符串常量加入收集范围
+        key = children[0]
+        if not ' ' in key:
+            key = key[1:-1]
+            self.collect_kv(key, '')
 
     def visit_fry_simple_quote(self, node, children):
+        # 常量属性值
         return children[0]
 
     def visit_js_simple_quote(self, node, children):
-        return children[0]
+        # js中的简单字符串常量加入收集范围
+        key = children[0]
+        if not ' ' in key:
+            key = key[1:-1]
+            self.collect_kv(key, '')
 
     def visit_fry_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
