@@ -280,7 +280,10 @@ class Element(object):
                         #scriptprops[k] = v
                         raise RuntimeError(f"Js embed can't be used as script argument('{k}')")
                     else:
-                        scriptprops[f'data-{k}'] = v
+                        k = f'data-{k}'
+                        if isinstance(v, (int, float)):
+                            k += ':n'
+                        scriptprops[k] = v
         elif isinstance(self.name, str):
             props = {}
             style = {} 

@@ -236,14 +236,25 @@ function computed(fn) {
 
 
 async function hydrate(scripts, hydrates) {
-    // 1. 构建cid和script元素对应关系
+    // 1. 收集script属性传过来的服务端数据，设置到script元素上，
+    //    并构建cid和script元素对应关系
     let cid2script = {};
     let cids = [];
     for (const cscript of scripts) {
         cscript.fryargs = {};
         for (const key in cscript.dataset) {
-            if (!key.startsWith('fry'))
-                cscript.fryargs[key] = cscript.dataset[key];
+            if (!key.startsWith('fry')) {
+                if (key.indexOf(':') > 0) {
+                    let [name, type] = key.split(':');
+                    if (type === 'n') {
+                        cscript.fryargs[name] = Number(cscript.dataset[key]);
+                    } else {
+                        throw `Unknown data type '${type}' in '${key}'`
+                    }
+                } else {
+                    cscript.fryargs[key] = cscript.dataset[key];
+                }
+            }
         }
         const cid = cscript.dataset.fryid;
         cid2script[cid] = cscript;
