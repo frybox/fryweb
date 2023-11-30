@@ -659,9 +659,14 @@ class PyGenerator(BaseGenerator):
             if not name.isidentifier():
                 raise BadGrammar(f"Script argument name '{name}' is not valid identifier.")
             if attr[0] == novalue_attr:
-                if name not in self.refs and name not in self.refalls:
-                    raise BadGrammar(f"Script argument name '{name}' is not a valid REF or REFALL.")
-                continue
+                if name in self.refs or name in self.refalls:
+                    # ref数据在js中水合前生成，此处无需处理
+                    continue
+                # 假定所有不再refs/refalls中的都是传给js的同名py变量
+                # 将这些attr转化为py_attr:
+                # foo ==> foo={foo}
+                attr.append(attr[1])
+                attr[0] = py_attr
             atype, k, v = attr
             if k.startswith('fry'):
                 raise BadGrammar(f"Prefix 'fry' is reserved, <script> attribute name can't be started with 'fry'")
