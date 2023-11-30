@@ -4,6 +4,7 @@ from fryhcs.config import fryconfig
 
 import os
 import inspect
+import sys
 
 if fryconfig.django_ok:
     from django.template.autoreload import get_template_directories as django_template_directories
@@ -30,18 +31,24 @@ if fryconfig.django_ok:
         return dirs
 
 def fry_files():
-    input_files = []
+    paths = set()
     if fryconfig.django_ok:
         from django.apps import apps
+        paths.update(Path(ac.path).resolve() for ac in apps.get_app_configs())
         input_files = [(ac.path, '**/*.fry') for ac in apps.get_app_configs()]
     elif fryconfig.flask_ok:
         from flask import current_app
         try:
+            paths.add(Path(current_app.root_path).resolve())
             input_files = [(current_app.root_path, '**/*.fry')]
         except RuntimeError:
             pass
+    syspath = [Path(p).resolve() for p in sys.path]
+    paths.update(p.resolve() for p in syspath if p.is_dir())
+    input_files = [(str(p), '**/*.fry') for p in paths]
     if not input_files:
         raise RuntimeError('django or flask is not configured')
+
     return input_files
 
 def create_css_generator():
