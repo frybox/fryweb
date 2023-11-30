@@ -17,7 +17,7 @@ import shutil
 def compose_js(args, script, embeds):
     output = []
     if args:
-        args = f'const {{ {", ".join(args)} }} = element$$.fryargs;'
+        args = f'let {{ {", ".join(args)} }} = element$$.fryargs;'
 
     return f"""\
 export {{ hydrate as hydrateAll }} from "fryhcs";
