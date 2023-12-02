@@ -32,7 +32,7 @@ def RefApp():
       <Refed ref=(refed) refall=(refeds)/>
       {<Refed refall=(refeds) /> for i in range(2)}
     </div>
-    <script foo bar foobar refed refeds>
+    <script>
       setTimeout(()=>{
         foo.style.transform = "skewY(180deg)";
       }, 1000);

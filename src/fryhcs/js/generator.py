@@ -1,9 +1,10 @@
-from parsimonious import VisitationError
+from parsimonious import BadGrammar
 from pathlib import Path
 import sys
 from fryhcs.fry.grammar import grammar
 from fryhcs.fry.generator import BaseGenerator
 from fryhcs.fileiter import FileIter
+from fryhcs.element import ref_attr_name, refall_attr_name
 import re
 import os
 import subprocess
@@ -98,6 +99,8 @@ class JSGenerator(BaseGenerator):
         self.script = ''
         self.args = []
         self.embeds = []
+        self.refs = set()
+        self.refalls = set()
         self.visit(tree)
         for c in self.web_components:
             name = c['name']
@@ -132,12 +135,14 @@ class JSGenerator(BaseGenerator):
             uuid = self.get_uuid(node)
             self.web_components.append({
                 'name': uuid,
-                'args': self.args,
+                'args': [*self.refs, *self.refalls, *self.args],
                 'script': self.script,
                 'embeds': self.embeds})
         self.script = ''
         self.args = []
         self.embeds = []
+        self.refs = set()
+        self.refalls = set()
 
     def visit_fry_attributes(self, node, children):
         return [ch for ch in children if ch]
@@ -153,7 +158,16 @@ class JSGenerator(BaseGenerator):
         return None
 
     def visit_fry_kv_attribute(self, node, children):
-        name, _, _, _, _value = children
+        name, _, _, _, value = children
+        name, value = name.strip(), value.strip()
+        if name == ref_attr_name:
+            if value in self.refs or value in self.refalls:
+                raise BadGrammar(f"Duplicated ref name '{value}', please use 'refall'")
+            self.refs.add(value)
+        elif name == refall_attr_name:
+            if value in self.refs:
+                raise BadGrammar(f"Ref name '{value}' exists, please use another name for 'refall'")
+            self.refalls.add(value)
         return name
 
     def visit_fry_novalue_attribute(self, node, children):

@@ -631,7 +631,7 @@ class PyGenerator(BaseGenerator):
     # 脚本元素的元素名为script，代表了一个组件对应的js脚本，一个组件最多有一个脚本元素。
     # 脚本元素的属性作为js参数列表传给脚本代码，并且脚本代码需要在编译期生成，属性名需要在编译期可见，
     # 不能依赖python运行期的信息，所以脚本元素只支持如下几种格式的属性：
-    # * `name`                : 无值属性，主要用于定义一个局部变量，用来绑定DOM元素或子组件对象
+    # * `name`                : 无值属性，用于定义一个与python变量同名的js局部变量，相当于 name={name}
     # * `name="literal_value"`: 常量字符串在客户端传给js脚本
     #                           服务端：`data-name="literal_value"`
     #                           浏览器：`data-name="literal_value"`
@@ -658,13 +658,14 @@ class PyGenerator(BaseGenerator):
             name = attr[1]
             if not name.isidentifier():
                 raise BadGrammar(f"Script argument name '{name}' is not valid identifier.")
+            if name in self.client_script_args:
+                raise BadGrammar(f"Script argument name duplicated: '{name}'.")
+
+            if name in self.refs or name in self.refalls:
+                raise BadGrammar(f"Script argument name '{name}' duplicated with ref/refall names")
             if attr[0] == novalue_attr:
-                if name in self.refs or name in self.refalls:
-                    # ref数据在js中水合前生成，此处无需处理
-                    continue
-                # 假定所有不再refs/refalls中的都是传给js的同名py变量
-                # 将这些attr转化为py_attr:
-                # foo ==> foo={foo}
+                # 所有无值变量都是传给js的同名py变量
+                # 将这些attr转化为py_attr: foo ==> foo={foo}
                 attr.append(attr[1])
                 attr[0] = py_attr
             atype, k, v = attr

@@ -10,7 +10,7 @@ def RefApp():
         Hello FryHCS!
       </p>
     </div>
-    <script foo>
+    <script>
       setTimeout(()=>{
         foo.style.transform = "skewY(180deg)";
       }, 1000);
