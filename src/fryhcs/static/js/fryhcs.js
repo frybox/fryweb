@@ -238,7 +238,7 @@ function computed(fn) {
 async function hydrate(hydrates) {
     // 0. 根据ID获取组件元素
     function componentOf(cid) {
-        return document.querySelector(`[data-fryid="${cid}"]:not(script)`)
+        return document.querySelector(`[data-fryid~="${cid}"]:not(script)`)
     }
 
     // 1. 收集script属性传过来的服务端数据，设置到script元素上，
@@ -254,6 +254,8 @@ async function hydrate(hydrates) {
                     let [name, type] = key.split(':');
                     if (type === 'n') {
                         cscript.fryargs[name] = Number(cscript.dataset[key]);
+                    } else if (type === 'b') {
+                        cscript.fryargs[name] = cscript.dataset[key] === 'true' ? true : false;
                     } else {
                         throw `Unknown data type '${type}' in '${key}'`
                     }

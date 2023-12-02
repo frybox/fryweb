@@ -3,30 +3,35 @@ from flask import Flask
 
 app = Flask(__name__)
 
-def Sub2(v, create):
+def Sub2(v, create, children=[]):
     return (
     <div ref=(foo)>
       <p>Sub2: {v}</p>
       <p>Sub2: [{v}](value)</p>
+      {children}
     </div>
-    <script foo create={create}>
-      const value = create(10);
-      console.log(`sub2: ${foo}`);
+    <script create>
+      const value = 999;
+      console.log(`sub2: ${foo}, create: ${create}`);
     </script>)
 
-def Sub1(bar, create, children):
+def Sub1(bar, create, children=[]):
     return (
-    <Sub2 v={bar} create={create}/>
+    <Sub2 v={bar} create={create}>
+      {children}
+    </Sub2>
     <script>
       console.log('sub1')
     </script>)
 
 def App():
     return (
-    <Sub1 bar="from app" create=(create_signal)>
+    <Sub1 bar="from app" create={True}>
+      <p>App: [0](v)</p>
     </Sub1>
     <script>
       import {signal as create_signal} from 'fryhcs';
+      const v = create_signal(10);
       console.log("app");
     </script>)
 
