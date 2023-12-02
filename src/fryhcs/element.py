@@ -278,7 +278,6 @@ class Element(object):
             if calljs:
                 uuid, args = calljs
                 page.set_jsid2cid(uuid, cnumber)
-                print(args)
                 for k,v in args:
                     if isinstance(v, ClientEmbed):
                         # 不支持父组件实例传过来的js嵌入值
@@ -294,7 +293,6 @@ class Element(object):
                         elif isinstance(v, (int, float)):
                             k += ':n'
                         scriptprops[k] = v
-                print(scriptprops)
         elif isinstance(self.name, str):
             props = {}
             style = {} 

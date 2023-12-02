@@ -17,7 +17,7 @@ def Sub2(v, create, children=[]):
 
 def Sub1(bar, create, children=[]):
     return (
-    <Sub2 v={bar} create={create}>
+    <Sub2 v={bar} create>
       {children}
     </Sub2>
     <script>
@@ -26,7 +26,7 @@ def Sub1(bar, create, children=[]):
 
 def App():
     return (
-    <Sub1 bar="from app" create={True}>
+    <Sub1 bar="from app" create={False}>
       <p>App: [0](v)</p>
     </Sub1>
     <script>
