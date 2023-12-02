@@ -159,12 +159,14 @@ class JSGenerator(BaseGenerator):
 
     def visit_fry_kv_attribute(self, node, children):
         name, _, _, _, value = children
-        name, value = name.strip(), value.strip()
+        name = name.strip()
         if name == ref_attr_name:
+            value = value.strip()
             if value in self.refs or value in self.refalls:
                 raise BadGrammar(f"Duplicated ref name '{value}', please use 'refall'")
             self.refs.add(value)
         elif name == refall_attr_name:
+            value = value.strip()
             if value in self.refs:
                 raise BadGrammar(f"Ref name '{value}' exists, please use another name for 'refall'")
             self.refalls.add(value)
