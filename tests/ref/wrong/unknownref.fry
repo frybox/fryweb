@@ -1,12 +1,13 @@
 from fryhcs import Element
 
 def RefApp():
-    return (
-    <div>
-      <p ref=(foo)>
-        Hello World!
-      </p>
-    </div>
+    <template>
+      <div>
+        <p ref=(foo)>
+          Hello World!
+        </p>
+      </div>
+    </template>
     <script bar>
       setTimeout(()=>{
         foo.style.transform = "skewY(180deg)";
@@ -14,7 +15,7 @@ def RefApp():
       setTimeout(()=>{
         bar.style.transform = "skewY(180deg)";
       }, 2000);
-    </script>)
+    </script>
 
 if __name__ == '__main__':
     from fryhcs import render

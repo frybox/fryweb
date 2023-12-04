@@ -205,7 +205,11 @@ class Element(object):
             cnumber = page.add_component(cscript)
             scriptprops[component_id_attr_name] = cnumber
 
-            # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录下来
+            # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录到page
+            #    上，在生成父组件的script元素时加到data-fryref和data-fryrefall
+            #    上；同时将父组件传来的事件处理函数暂存，渲染完成后添加到
+            #    本组件树的树根元素上。
+            peventhandlers = []
             for key in list(self.props.keys()):
                 if key.startswith(refall_attr_name_prefix):
                     name = key.split(':', 1)[1]
@@ -221,6 +225,11 @@ class Element(object):
                     if pcid == 0:
                         raise RuntimeError("Invalid embed")
                     page.add_ref(pcid, name, cnumber)
+                elif key[0] == '@':
+                    name = key[1:]
+                    embed = self.props.pop(key)
+                    embed.embed_id = f'{embed.embed_id}-event-{name}'
+                    peventhandlers.append(embed)
 
             # 3. 执行组件函数，返回未渲染的原始组件元素树
             #    唯一不是合法python identifier的ref:jsname和refall:jsname已经在上一步
@@ -263,7 +272,13 @@ class Element(object):
             cid = element.props.get(component_id_attr_name, '')
             element.props[component_id_attr_name] = f'{cnumber} {cid}' if cid else str(cnumber)
 
-            # 10. 将子组件实例的引用附加到script上
+            # 10. 将父组件传来的事件处理函数记录到根元素上
+            embeds = element.props.get(client_embed_attr_name, [])
+            embeds += peventhandlers
+            if embeds:
+                element.props[client_embed_attr_name] = embeds
+
+            # 11. 将子组件实例的引用附加到script上
             refs = page.child_refs(cnumber)
             if refs:
                 refs = ' '.join(f'{name}-{ccid}' for name,ccid in refs.items())
@@ -274,7 +289,7 @@ class Element(object):
                 refalls = ' '.join(f'{name}-{ccids}' for name, ccids in refalls)
                 scriptprops[client_refall_attr_name] = refalls
 
-            # 11. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
+            # 12. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
                 page.set_jsid2cid(uuid, cnumber)

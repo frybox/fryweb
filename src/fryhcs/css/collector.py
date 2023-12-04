@@ -103,10 +103,6 @@ class CssVisitor(NodeVisitor):
             key = key[1:-1]
             self.collect_kv(key, '')
 
-    def visit_fry_simple_quote(self, node, children):
-        # 常量属性值
-        return children[0]
-
     def visit_js_simple_quote(self, node, children):
         # js中的简单字符串常量加入收集范围
         key = children[0]
@@ -177,6 +173,12 @@ class CssVisitor(NodeVisitor):
 
     #def visit_fry_js_embed(self, node, children):
     #    return None
+
+    def visit_single_f_string(self, node, children):
+        return node.text
+
+    def visit_double_f_string(self, node, children):
+        return node.text
 
     def visit_joint_embed(self, node, children):
         return None

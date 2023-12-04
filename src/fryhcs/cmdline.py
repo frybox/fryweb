@@ -916,7 +916,7 @@ def topy_command(fryfile):
     from fryhcs.fry.generator import fry_to_py
     path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fryfile}'.")
+        print(f"Error: can't open file '{fryfile}'.")
         sys.exit(1)
     with path.open('r') as f:
         data = f.read()
@@ -940,7 +940,7 @@ def tojs_command(fryfile, jsdir):
     from fryhcs.js.generator import JSGenerator
     path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fryfile}'.")
+        print(f"Error: can't open file '{fryfile}'.")
         sys.exit(1)
     generator = JSGenerator([fryfile], jsdir)
     count = generator.generate()
@@ -963,7 +963,7 @@ def tocss_command(plugin, fryfile, cssfile):
     from fryhcs.css.generator import CSSGenerator
     path = Path(fryfile)
     if not path.is_file():
-        print("Error: can't open file '{fryfile}'.")
+        print(f"Error: can't open file '{fryfile}'.")
         sys.exit(1)
     generator = CSSGenerator([fryfile], cssfile)
     generator.generate()

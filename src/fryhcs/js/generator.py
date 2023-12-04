@@ -32,7 +32,7 @@ export const hydrate = async function (element$$, doHydrate$$) {{
 
 
 class JSGenerator(BaseGenerator):
-    component_pattern = f"**/{'[0-9a-fA-Z]'*40}.js"
+    component_pattern = f"**/[A-Z]*-{'[0-9a-fA-Z]'*40}.js"
 
     def __init__(self, input_files, output_dir):
         super().__init__()
@@ -124,15 +124,13 @@ class JSGenerator(BaseGenerator):
     def visit_py_simple_quote(self, node, children):
         return children[0]
 
-    def visit_fry_simple_quote(self, node, children):
-        return children[0]
-
     def visit_js_simple_quote(self, node, children):
         return children[0]
 
-    def visit_fry_element_with_web_script(self, node, children):
+    def visit_fry_component(self, node, children):
+        cname, _fryscript, _template, _script = children
         if self.script or self.embeds:
-            uuid = self.get_uuid(node)
+            uuid = self.get_uuid(cname, node)
             self.web_components.append({
                 'name': uuid,
                 'args': [*self.refs, *self.refalls, *self.args],
@@ -143,6 +141,13 @@ class JSGenerator(BaseGenerator):
         self.embeds = []
         self.refs = set()
         self.refalls = set()
+
+    def visit_fry_component_header(self, node, children):
+        _def, _, cname, _ = children
+        return cname
+
+    def visit_fry_component_name(self, node, children):
+        return node.text
 
     def visit_fry_attributes(self, node, children):
         return [ch for ch in children if ch]
@@ -165,11 +170,13 @@ class JSGenerator(BaseGenerator):
             if value in self.refs or value in self.refalls:
                 raise BadGrammar(f"Duplicated ref name '{value}', please use 'refall'")
             self.refs.add(value)
+            return None
         elif name == refall_attr_name:
             value = value.strip()
             if value in self.refs:
                 raise BadGrammar(f"Ref name '{value}' exists, please use another name for 'refall'")
             self.refalls.add(value)
+            return None
         return name
 
     def visit_fry_novalue_attribute(self, node, children):
@@ -182,12 +189,25 @@ class JSGenerator(BaseGenerator):
         return children[0]
 
     def visit_web_script(self, node, children):
-        _, _sep, _, _begin, attributes, _, _lessthan, script, _end = children
+        _, _begin, attributes, _, _greaterthan, script, _end = children
         self.args = [k for k in attributes if k]
         self.script = script
 
     def visit_js_script(self, node, children):
         return ''.join(str(ch) for ch in children)
+
+    def visit_js_embed(self, node, children):
+        _, script, _ = children
+        self.embeds.append(script)
+        return script
+
+    def visit_js_parenthesis(self, node, children):
+        _, script, _ = children
+        return '(' + script + ')'
+
+    def visit_js_brace(self, node, children):
+        _, script, _ = children
+        return '{' + script + '}'
 
     def visit_js_script_item(self, node, children):
         return children[0]
@@ -206,19 +226,6 @@ class JSGenerator(BaseGenerator):
 
     def visit_js_template_normal(self, node, children):
         return node.text
-
-    def visit_js_embed(self, node, children):
-        _, script, _ = children
-        self.embeds.append(script)
-        return script
-
-    def visit_js_parenthesis(self, node, children):
-        _, script, _ = children
-        return '(' + script + ')'
-
-    def visit_js_brace(self, node, children):
-        _, script, _ = children
-        return '{' + script + '}'
 
     def visit_js_static_import(self, node, children):
         return children[0]

@@ -113,14 +113,14 @@ class FryVisitor(NodeVisitor):
     def visit_py_simple_quote(self, node, children):
         return py(children[0])
 
-    def visit_fry_simple_quote(self, node, children):
-        return s(children[0])
-
     def visit_js_simple_quote(self, node, children):
         return js(children[0])
 
     def visit_less_than_char(self, node, children):
         return py('<')
+
+    def visit_no_component_d_char(self, node, children):
+        return py('d')
 
     def visit_py_normal_code(self, node, children):
         return py(node.text)
@@ -128,8 +128,15 @@ class FryVisitor(NodeVisitor):
     def visit_inner_py_normal_code(self, node, children):
         return py(node.text)
 
-    def visit_fry_element_with_web_script(self, node, children):
+    def visit_fry_component(self, node, children):
         return children
+
+    def visit_fry_component_header(self, node, children):
+        return py(node.text)
+
+    def visit_fry_web_template(self, node, children):
+        l, ws1, element, ws2, r = children
+        return [en(l), w(ws1), element, w(ws2), en(r)]
 
     def visit_fry_root_element(self, node, children):
         return children[0]
@@ -203,11 +210,29 @@ class FryVisitor(NodeVisitor):
     #    return [fry_embed, w(s), js_embed]
 
     def visit_joint_embed(self, node, children):
-        lb, fs, rb, s, js = children
-        return [sep(lb), fs, sep(rb), w(s), js]
+        fs, s, js = children
+        return [fs, w(s), js]
         
-    def visit_f_string(self, node, children):
-        return fs(node.text)
+    def visit_bracket_f_string(self, node, children):
+        lb, body, rb = children
+        return [sep(lb), fs(body), sep(rb)]
+
+    def visit_bracket_f_string_body(self, node, children):
+        return node.text
+
+    def visit_single_f_string(self, node, children):
+        lb, body, rb = children
+        return [sep(lb), fs(body), sep(rb)]
+
+    def visit_single_f_string_body(self, node, children):
+        return node.text
+
+    def visit_double_f_string(self, node, children):
+        lb, body, rb = children
+        return [sep(lb), fs(body), sep(rb)]
+
+    def visit_double_f_string_body(self, node, children):
+        return node.text
 
     def visit_fry_text(self, node, children):
         return t(node.text)
@@ -219,8 +244,8 @@ class FryVisitor(NodeVisitor):
         return children
 
     def visit_web_script(self, node, children):
-        s1, comma, s2, ls, attrs, s3, r1, script, r2 = children
-        return [w(s1), p(comma), w(s2), ep('<'), en('script'), attrs, w(s3), ep(r1), script, ep('</'), en('script'), ep('>')]
+        s1, ls, attrs, s2, r1, script, r2 = children
+        return [w(s1), ep('<'), en('script'), attrs, w(s2), ep(r1), script, ep('</'), en('script'), ep('>')]
 
     def visit_html_comment(self, node, children):
         return (Comment.HtmlComment, node.text)

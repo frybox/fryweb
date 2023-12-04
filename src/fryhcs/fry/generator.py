@@ -11,7 +11,7 @@ from fryhcs.element import children_attr_name, call_client_script_attr_name, ref
 def escape(s):
     return s.replace('"', '\\"')
 
-def quote_f_string(s):
+def quote_bracket_f_string(s):
     if not '"""' in s:
         quote = '"""'
     elif not "'''" in s:
@@ -33,10 +33,10 @@ class BaseGenerator(NodeVisitor):
     def reset_client_embed(self):
         self.client_embed_count = 0
 
-    def get_uuid(self, node):
+    def get_uuid(self, cname, node):
         sha1 = hashlib.sha1()
         sha1.update(node.text.encode('utf-8'))
-        return sha1.hexdigest()
+        return f'{cname}-{sha1.hexdigest()}'
 
     def set_curr_file(self, file):
         self.curr_file = Path(file).absolute().resolve(strict=True)
@@ -219,6 +219,9 @@ def check_html_element(name, attrs):
             _, key, value = attr
             if value[0] in '\'"':
                 value = value[1:-1]
+            elif value[0] in 'fF' and value[1] in '\'"':
+                # f-string不能当做utility来处理
+                continue
         else:
             continue
         if key == 'class' and atype == literal_attr:
@@ -239,8 +242,10 @@ def check_html_element(name, attrs):
         value = class_attr[2]
         if value[0] in '\'"':
             value = value[1:-1]
+        elif value[0] in 'fF' and value[1] in '\'"':
+            value = value[2:-1]
         if value:
-            class_attr[2] = f'"{value} {classes}"'
+            class_attr[2] = f'f"{value} {classes}"'
         else:
             class_attr[2] = f'"{classes}"'
 
@@ -261,6 +266,7 @@ def check_html_element(name, attrs):
 #                             浏览器：不可见
 #   * `name=(js_value)`     : 目前只支持name为ref，此时js_value为父组件js代码的入参变量名,
 #                             值为子组件的js对象。
+#   * `@event=(js_handler)` : 传给子组件的js事件处理函数
 # 2023.11.24: 如下情况不再支持
 # <del>
 #   * `name=({jsop_value})` : 父组件js值在客户端运行时传给子组件
@@ -286,8 +292,9 @@ def check_component_element(name, attrs):
             attr.append(attr[1])
         elif atype == js_attr:
             if (not attr[1].startswith(ref_attr_name_prefix) and
-                not attr[1].startswith(refall_attr_name_prefix)):
-                raise BadGrammar(f"Only ref/refall to component element can have js_attr.")
+                not attr[1].startswith(refall_attr_name_prefix) and
+                not attr[1][0] == '@'):
+                raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr.")
             attr[0] = py_attr
             attr[2] = f'Element.ClientEmbed({attr[2]})'
 
@@ -310,7 +317,13 @@ class PyGenerator(BaseGenerator):
         return ''.join(str(ch) for ch in children)
 
     def visit_fry_script_item(self, node, children):
-        return children[0]
+        item = children[0]
+        if isinstance(item, tuple):
+            if item[0] == 'element':
+                return item[1]
+            else:
+                raise BadGrammar
+        return item 
 
     def visit_inner_fry_script_item(self, node, children):
         item = children[0]
@@ -349,14 +362,14 @@ class PyGenerator(BaseGenerator):
     def visit_py_simple_quote(self, node, children):
         return children[0]
 
-    def visit_fry_simple_quote(self, node, children):
-        return children[0]
-
     def visit_js_simple_quote(self, node, children):
         return children[0]
 
     def visit_less_than_char(self, node, children):
         return '<'
+
+    def visit_no_component_d_char(self, node, children):
+        return 'd'
 
     def visit_py_normal_code(self, node, children):
         return node.text
@@ -364,11 +377,11 @@ class PyGenerator(BaseGenerator):
     def visit_inner_py_normal_code(self, node, children):
         return node.text
 
-    def visit_fry_element_with_web_script(self, node, children):
-        element, _webscript = children
-        name, attrs = element
+    def visit_fry_component(self, node, children):
+        cname, fryscript, template, _jsscript = children
+        _type, name, attrs = template
         if self.web_component_script:
-            uuid = self.get_uuid(node)
+            uuid = self.get_uuid(cname, node)
             args = [(k,v) for k,v in self.client_script_args.items()]
             attrs.insert(0, [call_client_attr, f'{self.relative_dir / uuid}', args])
         self.web_component_script = False
@@ -377,13 +390,24 @@ class PyGenerator(BaseGenerator):
         self.refalls = set()
         self.reset_client_embed()
         attrs = concat_kv(attrs)
-        return f'Element({name}, {{{", ".join(attrs)}}})'
+        return f'def {cname}{fryscript}return Element({name}, {{{", ".join(attrs)}}})'
+
+    def visit_fry_component_header(self, node, children):
+        _def, _, cname, _ = children
+        return cname
+
+    def visit_fry_component_name(self, node, children):
+        return node.text
+
+    def visit_fry_web_template(self, node, children):
+        _l, _, element, _, _r = children
+        return element
 
     def visit_fry_root_element(self, node, children):
         name, attrs = children[0]
         if name == 'script':
-            raise BadGrammar("'script' can't be used as the normal element name") 
-        return name, attrs
+            raise BadGrammar("'script' can't be used as the normal element name")
+        return ('rootelement', name, attrs)
 
     def visit_fry_element(self, node, children):
         name, attrs = children[0]
@@ -612,11 +636,27 @@ class PyGenerator(BaseGenerator):
     #    return ('fry_js_embed', fry, js_embed)
 
     def visit_joint_embed(self, node, children):
-        _l, quoted_literal, _r, _, js_embed = children
+        quoted_literal, _, js_embed = children
         return ('joint_embed', quoted_literal, js_embed)
 
-    def visit_f_string(self, node, children):
-        return quote_f_string(node.text)
+    def visit_bracket_f_string(self, node, children):
+        _l, body, _r = children
+        return quote_bracket_f_string(body)
+
+    def visit_bracket_f_string_body(self, node, children):
+        return node.text
+
+    def visit_single_f_string(self, node, children):
+        if '{' in node.text:
+            return 'f' + node.text
+        else:
+            return node.text
+
+    def visit_double_f_string(self, node, children):
+        if '{' in node.text:
+            return 'f' + node.text
+        else:
+            return node.text
 
     def visit_fry_text(self, node, children):
         value = re.sub(r'(\s+)', lambda m: ' ', node.text).strip()
@@ -649,7 +689,7 @@ class PyGenerator(BaseGenerator):
     # name不能以'fry'开头
     def visit_web_script(self, node, children):
         self.web_component_script = True
-        _, _sep, _, _begin, attributes, _, _lessthan, _script, _end = children
+        _, _begin, attributes, _, _gt, _script, _end = children
         for attr in attributes:
             # TODO spread_attr是不是也可以用在这里？
             if attr[0] not in (novalue_attr, literal_attr, py_attr):

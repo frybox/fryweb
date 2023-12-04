@@ -80,44 +80,45 @@ def FunctionComponent(value, **props):
     list1 = ['color-white', 'color-blue']
     dict1 = {'id': 'aaa'}
 
-    return (
-    <div>
-      <div @click=(increment) @keydown=(increment)
-           class="class1"
-           keyvalue=[foo {a} bar](age)
-           hidden mt-8
-           id="special-div"
-           {*list1}
-           {**dict1}
-           data-value={value}
-           $class="foo bar foobar color-white color-blue value1 value2 value3">
+    <template>
+        <div>
+          <div @click=(increment) @keydown=(increment)
+               class="class1"
+               keyvalue=[foo {a} bar](age)
+               hidden mt-8
+               id="special-div"
+               {*list1}
+               {**dict1}
+               data-value={value}
+               $class="foo bar foobar color-white color-blue value1 value2 value3">
 
-        html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}
+            html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}
 
-        这是一个支持<span text-red>frycss</span>语法的div。下面是列表内容：
-        <ul>
-        {<li name={k}> {f"{k}: {v}"} </li>
-         for k, v in props.items() if len(k) > 5 }
-        </ul>
+            这是一个支持<span text-red>frycss</span>语法的div。下面是列表内容：
+            <ul>
+            {<li name={k}> {f"{k}: {v}"} </li>
+             for k, v in props.items() if len(k) > 5 }
+            </ul>
 
-        上述例子演示了html中嵌套python代码，python代码中又嵌套html，html中又
-        嵌套python代码...其中嵌入的python代码以大括号括起来。
+            上述例子演示了html中嵌套python代码，python代码中又嵌套html，html中又
+            嵌套python代码...其中嵌入的python代码以大括号括起来。
 
-        另外还可以看到，嵌入的代码可以是一个generator，嵌入python代码在编译时会自动加上一个小括号，
-        所以大括号中没必要再加一层小括号或中括号，可以直接写generator，非常方便。
+            另外还可以看到，嵌入的代码可以是一个generator，嵌入python代码在编译时会自动加上一个小括号，
+            所以大括号中没必要再加一层小括号或中括号，可以直接写generator，非常方便。
 
-        也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初始值: {b}](age)
-        
-        "fy中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
-        还可以有正常的html：
+            也可以在元素中嵌入前端的响应式内容，以类似markdown加链接的方式括起来：[初始值: {b}](age)
+            
+            "fy中元素内部字符串中的引号是字符串的一部分，所以其中的html元素仍被解析：<div>test</div>"
+            还可以有正常的html：
 
-        <div class="normal" style={{'display':'block'}}>
-          这是<span>正常内容</span>
+            <div class="normal" style={{'display':'block'}}>
+              这是<span>正常内容</span>
+            </div>
+          </div>
+          <!-- script的属性可以在js中以变量的形式直接使用，但所有属性值都是字符串，需要的话做一定转换,
+               如下面的initage。-->
         </div>
-      </div>
-      <!-- script的属性可以在js中以变量的形式直接使用，但所有属性值都是字符串，需要的话做一定转换,
-           如下面的initage。-->
-    </div>
+    </template>
     <script initage={a}>
       import {signal} from 'fryhcs';
 
@@ -126,32 +127,34 @@ def FunctionComponent(value, **props):
       function increment() {
           age.value ++;
       }
-    </script>)
+    </script>
 
 def FunctionComponent2(**props):
     print(f"FunctionComponent2: '{props}'")
     mylist = ('disabled', 'hidden', 'text-cyan-50')
     myprops = {k:v for k,v in props.items() if k != 'children'}
-    return (
+    <template>
       <div>
         <!--这是注释，不会生成到最终前端组件中 -->
         <!--下面组件引用了另一个组件，其中使用了对dict和list的扩展语法-->
         <FunctionComponent value="from FunctionComponent2" a='1' b={1+2} {**myprops} {*mylist}/>
-      </div>)
+      </div>
+    </template>
 
 def FunctionComponent3(**props):
     print(f"FunctionComponent3: '{props}'")
-    return (
+    <template>
       <div>
         <div>[初始值](value)</div>
       </div>
-      <script>
-        let value = 10;
+    </template>
+    <script>
+      let value = 10;
 
-        function increment() {
-            value ++;
-        }
-      </script>)
+      function increment() {
+          value ++;
+      }
+    </script>
 
 if __name__ == '__main__':
     from fryhcs import render

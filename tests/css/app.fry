@@ -10,13 +10,13 @@ def index():
 
 
 def App():
-    return (
-    <div flex flex-col gap-4 text-center>
-      <Content value={randint(0,2)} />
-      <Content value={randint(0,2)} />
-      <Content value={randint(0,2)} />
-    </div>
-    )
+    <template>
+      <div flex flex-col gap-4 text-center>
+        <Content value={randint(0,2)} />
+        <Content value={randint(0,2)} />
+        <Content value={randint(0,2)} />
+      </div>
+    </template>
 
 def Content(value=0):
     if value == 0:
@@ -28,10 +28,12 @@ def Content(value=0):
     else:
         css = ["bg-purple-300", 'text-xl', 'text-green-600', 'hover:bg-purple-600', 'hover:text-green-300']
 
-    return (
-    <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs</span>
-    <script el>
+    <template>
+      <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs</span>
+    </template>
+
+    <script>
       const toggle = () => {
           el.classList.toggle('font-mono')
       }
-    </script>)
+    </script>

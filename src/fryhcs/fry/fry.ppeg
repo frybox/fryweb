@@ -5,7 +5,7 @@ fry_script = fry_script_item*
 # fry script in html element definition
 inner_fry_script = inner_fry_script_item*
 
-fry_script_item = py_comment / triple_single_quote / triple_double_quote / py_simple_quote / fry_element_with_web_script / less_than_char / py_normal_code
+fry_script_item = py_comment / triple_single_quote / triple_double_quote / py_simple_quote / fry_component / fry_element / less_than_char / no_component_d_char / py_normal_code
 
 inner_fry_script_item = py_comment / inner_fry_brace / triple_single_quote / triple_double_quote / py_simple_quote / fry_element / less_than_char / inner_py_normal_code
 
@@ -24,22 +24,28 @@ single_quote = ~r"'(\\.|[^'\\])*'"
 double_quote = ~r'"(\\.|[^"\\])*"'
 
 py_simple_quote = single_quote / double_quote
-fry_simple_quote = single_quote / double_quote
 js_simple_quote = single_quote / double_quote
 
-less_than_char = '<'
+less_than_char = ~'<(?!template>)'
 
-py_normal_code = ~"[^#'\"<]+"
+no_component_d_char = 'd'
+
+py_normal_code = ~"[^#'\"<d]+"
 
 # inner_py_normal_code不能匹配到embedding中的右大括号
 inner_py_normal_code = ~"[^#'\"<{}]+"
 
-fry_element_with_web_script = fry_root_element maybe_web_script
+fry_component = fry_component_header inner_fry_script fry_web_template maybe_web_script
+
+fry_component_header = ~r'\bdef' space fry_component_name  &(maybe_space '(')
+
+fry_component_name = ~r'[A-Z][a-zA-Z0-9_]*'
+
+fry_web_template = '<template>' maybe_space fry_root_element maybe_space '</template>'
 
 # 所有元素要么是自闭合，要么是标签成对，不支持不自闭合的空元素，这点和html规范不同
 # https://html.spec.whatwg.org/#void-elements
 fry_root_element = fry_fragment / fry_self_closing_element / fry_paired_element
-
 fry_element = fry_fragment / fry_self_closing_element / fry_paired_element
 
 fry_fragment = '<>' fry_children '</>'
@@ -53,7 +59,7 @@ fry_start_tag = '<' fry_element_name fry_attributes maybe_space '>'
 # https://html.spec.whatwg.org/#end-tags
 fry_end_tag = '</' fry_element_name maybe_space '>'
 
-fry_element_name = ~r'[\w.-]+'
+fry_element_name = !"script" !"template" ~r'[\w.-]+'
 
 space = ~r'\s+'
 
@@ -85,7 +91,8 @@ fry_novalue_attribute = fry_attribute_name !(maybe_space '=')
 fry_attribute_name = ~r"([a-zA-Z0-9@#%$:._-]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of fry, and do not support unquoted attribute value
-# fry_simple_quote: 正常的单双引号属性值
+# single_f_string: 单引号f-string
+# double_f_string: 双引号f-string
 # joint_embed: [python f-string](js嵌入属性值)
 # fry_embed: {python嵌入属性值}
 # js_embed: (js嵌入属性值)
@@ -93,7 +100,7 @@ fry_attribute_name = ~r"([a-zA-Z0-9@#%$:._-]|/(?!>))+"
 # 2023.10.27:
 # 属性值去掉对fry_element的支持，不再完全跟随jsx，属性值支持fry_element后，html看起来很复杂。
 # 要支持将元素作为属性值的话，可以将fry_element赋值给一个python变量，使用fry_embed属性值
-fry_attribute_value = fry_simple_quote / joint_embed / fry_embed / js_embed 
+fry_attribute_value = single_f_string / double_f_string / joint_embed / fry_embed / js_embed 
 
 #fry_attr_value_embed = embed maybe_space maybe_client_embed maybe_space maybe_css_literal
 
@@ -112,13 +119,31 @@ fry_children = fry_child*
 #fry_child = embed_value / client_embed_value / web_component_script / html_comment / fry_element / fry_text / no_embed_char
 fry_child = joint_embed / fry_embed / html_comment / fry_element / fry_text / no_embed_char
 
-joint_embed = '[' f_string ']' maybe_space js_embed
+joint_embed = bracket_f_string maybe_space js_embed
 
-f_string = f_string_item*
+bracket_f_string = '[' bracket_f_string_body ']'
 
-f_string_item = simple_f_string / '{{' / '}}' / fry_embed
+bracket_f_string_body = bracket_f_string_item*
 
-simple_f_string = ~r"(\\.|[^\]{}\\])+"
+bracket_f_string_item = bracket_simple_f_string / '{{' / '}}' / fry_embed
+
+bracket_simple_f_string = ~r"(\\.|[^\]{}\\])+"
+
+single_f_string = "'" single_f_string_body "'"
+
+single_f_string_body = single_f_string_item*
+
+single_f_string_item = single_simple_f_string / '{{' / '}}' / fry_embed
+
+single_simple_f_string = ~r"(\\.|[^'{}\\])+"
+
+double_f_string = '"' double_f_string_body '"'
+
+double_f_string_body = double_f_string_item*
+
+double_f_string_item = double_simple_f_string / '{{' / '}}' / fry_embed
+
+double_simple_f_string = ~r'(\\.|[^"{}\\])+'
 
 # 多个空格缩减为1个，丢弃只有空格的字符串，单双引号是正常字符
 fry_text = ~r"[^<>{}[\]]+"
@@ -127,7 +152,7 @@ no_embed_char = ~r"[{}[\]]"
 
 maybe_web_script =  web_script?
 
-web_script = maybe_space ~",?" maybe_space '<script' fry_attributes maybe_space '>' js_script "</script>"
+web_script = maybe_space '<script' fry_attributes maybe_space '>' js_script "</script>"
 #web_component_script = '<script' fry_attributes maybe_space '>' js_script "</script>"
 
 html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
