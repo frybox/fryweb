@@ -269,32 +269,25 @@ async function hydrate(hydrates) {
         cids.push(parseInt(cid));
     }
 
-    // 2. 收集所有html元素上的ref/refall信息，设置到所在组件的script元素上
-    function collectRefs(element) {
-        if ('fryembed' in element.dataset) {
-            const embeds = element.dataset.fryembed;
-            for (const embed of embeds.split(' ')) {
-                const cid = embed.split('/', 1)[0];
-                const scriptElement = cid2script[cid];
-                const prefix = cid + '/';
-                const [_embedId, atype, ...args] = embed.substr(prefix.length).split('-');
-                const arg = args.join('-');
-                if (atype === 'ref') {
-                    scriptElement.fryargs[arg] = element;
-                } else if (atype === 'refall') {
-                    if (arg in scriptElement.fryargs) {
-                        scriptElement.fryargs[arg].push(element);
-                    } else {
-                        scriptElement.fryargs[arg] = [element];
-                    }
+    // 2. 收集所有*html元素*的ref/refall信息，设置到所在组件的script元素上
+    const embedElements = document.querySelectorAll('[data-fryref]:not(script)');
+    for (const element of embedElements) {
+        const refs = element.dataset.fryref;
+        for (const ref of refs.split(' ')) {
+            const [name, cid] = ref.split('-');
+            const scriptElement = cid2script[cid];
+            if (name.endsWith(':a')) {
+                const rname = name.slice(0, -2);
+                if (rname in scriptElement.fryargs) {
+                    scriptElement.fryargs[rname].push(element);
+                } else {
+                    scriptElement.fryargs[rname] = [element];
                 }
+            } else {
+                scriptElement.fryargs[name] = element;
             }
         }
-        for (const child of element.children) {
-            collectRefs(child);
-        }
     }
-    collectRefs(componentOf(1));
 
     // 3. 执行水合操作
     function doHydrate(script, embedValues) {
@@ -360,24 +353,21 @@ async function hydrate(hydrates) {
     for (const cid of cids) {
         const scid = ''+cid;
         const script = cid2script[scid];
-        // 3.2 收集本组件中所有子组件元素的ref对象，设置到本组件的script元素上
+        // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的script元素上
         if ('fryref' in script.dataset) {
             const objects = script.dataset.fryref;
             for (const obj of objects.split(' ')) {
-                const [arg, subid] = obj.split('-');
-                script.fryargs[arg] = cid2script[subid].fryobject;
-            }
-        }
-        // 3.3 收集本组件中所有子组件元素的refall对象，设置到本组件的script元素上
-        if ('fryrefall' in script.dataset) {
-            const objects = script.dataset.fryrefall;
-            for (const obj of objects.split(' ')) {
                 const [arg, ...subids] = obj.split('-');
-                script.fryargs[arg] = subids.map(subid=>cid2script[subid].fryobject);
+                if (arg.endsWith(':a')) {
+                    const name = arg.slice(0, -2);
+                    script.fryargs[name] = subids.map(subid=>cid2script[subid].fryobject);
+                } else {
+                    script.fryargs[arg] = cid2script[subids[0]].fryobject;
+                }
             }
         }
 
-        // 3.4 执行本组件水合
+        // 3.3 执行本组件水合
         const hydrateOne = hydrates[scid]
         // 不是每个组件都有js脚本，纯服务端组件没有js脚本
         if (hydrateOne) {

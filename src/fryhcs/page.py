@@ -8,40 +8,26 @@ class Page(object):
         self.components = []
         # 组件UUID（代表了js脚本）到组件实例ID的映射关系，jsid -> list of cid
         self.jsid2cids = {}
-        # 组件实例ID到子组件引用的映射关系, cid -> (refname -> childcid)
+        # 组件实例ID到子组件引用/引用列表的映射关系, cid -> (refname -> childcid | list of childcid)
         self.cid2childrefs = {}
-        # 组件实例ID到子组件全量引用的映射关系, cid -> (refname -> list of childcid)
-        self.cid2childrefalls = {}
 
     def add_component(self, component):
         self.components.append(component)
         cid = len(self.components)
         self.cid2childrefs[cid] = {} 
-        self.cid2childrefalls[cid] = {}
         return cid
 
     def add_ref(self, cid, refname, childcid):
         childrefs = self.cid2childrefs[cid]
         if refname in childrefs:
-            raise RuntimeError(f"More than one ref '{refname}', please use refall")
-        childrefs[refname] = childcid
-
-    def add_refall(self, cid, refname, childcid):
-        childrefalls = self.cid2childrefalls[cid]
-        if refname in childrefalls:
-            refall = childrefalls[refname]
+            refs = childrefs[refname]
         else:
-            refall = set()
-            childrefalls[refname] = refall
-        if childcid in refall:
-            raise RuntimeError(f"More than one refall '{refname}' for child '{childcid}'")
-        refall.add(childcid)
+            refs = set()
+            childrefs[refname] = refs
+        refs.add(childcid)
 
     def child_refs(self, cid):
         return self.cid2childrefs.get(cid, {})
-
-    def child_refalls(self, cid):
-        return self.cid2childrefalls.get(cid, {})
 
     def set_jsid2cid(self, jsid, cid): 
         if jsid in self.jsid2cids:

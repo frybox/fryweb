@@ -166,17 +166,22 @@ class JSGenerator(BaseGenerator):
         name, _, _, _, value = children
         name = name.strip()
         if name == ref_attr_name:
-            value = value.strip()
+            _type, script = value
+            value = script.strip()
             if value in self.refs or value in self.refalls:
                 raise BadGrammar(f"Duplicated ref name '{value}', please use 'refall'")
             self.refs.add(value)
             return None
         elif name == refall_attr_name:
-            value = value.strip()
+            _type, script = value
+            value = script.strip()
             if value in self.refs:
                 raise BadGrammar(f"Ref name '{value}' exists, please use another name for 'refall'")
             self.refalls.add(value)
             return None
+        elif isinstance(value, tuple) and value[0] == 'js_embed':
+            script = value[1]
+            self.embeds.append(script)
         return name
 
     def visit_fry_novalue_attribute(self, node, children):
@@ -188,6 +193,12 @@ class JSGenerator(BaseGenerator):
     def visit_fry_attribute_value(self, node, children):
         return children[0]
 
+    def visit_joint_embed(self, node, children):
+        _f_string, _, jsembed = children
+        _name, script = jsembed
+        self.embeds.append(script)
+        return None
+
     def visit_web_script(self, node, children):
         _, _begin, attributes, _, _greaterthan, script, _end = children
         self.args = [k for k in attributes if k]
@@ -198,8 +209,7 @@ class JSGenerator(BaseGenerator):
 
     def visit_js_embed(self, node, children):
         _, script, _ = children
-        self.embeds.append(script)
-        return script
+        return ('js_embed', script)
 
     def visit_js_parenthesis(self, node, children):
         _, script, _ = children

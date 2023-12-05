@@ -55,6 +55,19 @@ def convert_utilities(utilities):
     return result
 
 
+class ClientRef(object):
+    def __init__(self, name):
+        self.name = name
+        self.component = 0
+
+    def hook(self, component):
+        if self.component == 0:
+            self.component = component
+
+    def __str__(self):
+        return f'{self.name}-{self.component}'
+
+
 class ClientEmbed(object):
     def __init__(self, embed_id):
         self.embed_id = embed_id
@@ -76,10 +89,14 @@ component_attr_name = 'data-fryclass'
 component_id_attr_name = 'data-fryid'
 # js嵌入值的html元素属性名
 client_embed_attr_name = 'data-fryembed'
-# 子组件实例对象引用的元素属性名
+# 引用的元素属性名：
+# 1. 对子组件元素的引用，放在本组件的`<script>`元素上
+# 2. 对html元素的引用，放在该html元素上
+# 3. 通过ref引用的元素，生成'name-id'结构
+# 4. 通过refall引用的元素列表，生成'name:a-id'(html元素)或'name:a-id1-id2...'(子组件元素)
+# 5. 对于子组件元素的引用, 'name-id'中的id是被引用子组件的id
+# 6. 对于html元素的引用，'name-id'中的id是引用自己的组件的id
 client_ref_attr_name = 'data-fryref'
-# 子组件实例对象引用列表的元素属性名
-client_refall_attr_name = 'data-fryrefall'
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 class_attr_name = 'class'
@@ -90,10 +107,8 @@ style_attr_name = 'style'
 #utility_attr_name = '$style'
 # 引用属性名
 ref_attr_name = 'ref'
-ref_attr_name_prefix = 'ref:'
 # 引用列表属性名
 refall_attr_name = 'refall'
-refall_attr_name_prefix = 'refall:'
 
 class Element(object):
 
@@ -133,7 +148,7 @@ class Element(object):
 
     def hook_client_embed(self, component):
         def hook(v):
-            if isinstance(v, ClientEmbed):
+            if isinstance(v, (ClientEmbed, ClientRef)):
                 v.hook(component)
             elif isinstance(v, list): #tuple和GeneratorType都已转化为list
                 for lv in v:
@@ -146,12 +161,14 @@ class Element(object):
         hook(self.props)
 
     def collect_client_embed(self, component):
+        # 本函数中处理的component已经过渲染，所有element全是html element
         def collect(e):
             children = e.props.get(children_attr_name, [])
             for ch in children:
                 if isinstance(ch, Element):
                     collect(ch)
             embeds = e.props.get(client_embed_attr_name, [])
+            refs = e.props.get(client_ref_attr_name, [])
             for key in list(e.props.keys()):
                 if key in (client_embed_attr_name, children_attr_name):
                     continue
@@ -165,18 +182,17 @@ class Element(object):
                         value.embed_id = f'{value.embed_id}-attr-{key[2:]}'
                     elif key == '*':
                         value.embed_id = f'{value.embed_id}-text'
-                    elif key.startswith(refall_attr_name_prefix):
-                        name = key.split(':', 1)[1]
-                        value.embed_id = f"{value.embed_id}-refall-{name}"
-                    elif key.startswith(ref_attr_name_prefix):
-                        name = key.split(':', 1)[1]
-                        value.embed_id = f"{value.embed_id}-ref-{name}"
                     else:
                         raise RenderException(f"Invalid client embed key '{key}' for element '{e.name}'")
                     embeds.append(value)
                     e.props.pop(key)
+                elif isinstance(value, ClientRef) and value.component == component:
+                    refs.append(value)
+                    e.props.pop(key)
             if embeds:
                 e.props[client_embed_attr_name] = embeds
+            if refs:
+                e.props[client_ref_attr_name] = refs
         collect(self)
 
     def render(self, page):
@@ -206,30 +222,22 @@ class Element(object):
             scriptprops[component_id_attr_name] = cnumber
 
             # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录到page
-            #    上，在生成父组件的script元素时加到data-fryref和data-fryrefall
-            #    上；同时将父组件传来的事件处理函数暂存，渲染完成后添加到
+            #    上，在生成父组件的script元素时加到data-fryref上；
+            #    同时将父组件传来的事件处理函数暂存，渲染完成后添加到
             #    本组件树的树根元素上。
             peventhandlers = []
-            for key in list(self.props.keys()):
-                if key.startswith(refall_attr_name_prefix):
-                    name = key.split(':', 1)[1]
-                    embed = self.props.pop(key)
-                    pcid = embed.component
+            for key, value in list(self.props.items()):
+                if isinstance(value, ClientRef):
+                    self.props.pop(key)
+                    pcid = value.component
                     if pcid == 0:
-                        raise RuntimeError("Invalid embed")
-                    page.add_refall(pcid, name, cnumber)
-                elif key.startswith(ref_attr_name_prefix):
-                    name = key.split(':', 1)[1]
-                    embed = self.props.pop(key)
-                    pcid = embed.component
-                    if pcid == 0:
-                        raise RuntimeError("Invalid embed")
-                    page.add_ref(pcid, name, cnumber)
+                        raise RuntimeError(f"Invalid ClientRef {value.name}")
+                    page.add_ref(pcid, value.name, cnumber)
                 elif key[0] == '@':
                     name = key[1:]
-                    embed = self.props.pop(key)
-                    embed.embed_id = f'{embed.embed_id}-event-{name}'
-                    peventhandlers.append(embed)
+                    self.props.pop(key)
+                    value.embed_id = f'{value.embed_id}-event-{name}'
+                    peventhandlers.append(value)
 
             # 3. 执行组件函数，返回未渲染的原始组件元素树
             #    唯一不是合法python identifier的ref:jsname和refall:jsname已经在上一步
@@ -265,7 +273,8 @@ class Element(object):
             element.cid = cnumber
 
             # 8. 此时已hook到组件实例的js嵌入值已挂载到html元素树上的合适
-            #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`属性上
+            #    位置，将这些js嵌入值收集到`client_embed_attr_name('data-fryembed')`
+            #    和`client_ref_attr_name('data-fryref')`属性上
             element.collect_client_embed(cnumber)
             
             # 9. 将组件实例ID附加到组件html元素树树根元素的组件id列表'data-fryid'上
@@ -278,16 +287,12 @@ class Element(object):
             if embeds:
                 element.props[client_embed_attr_name] = embeds
 
-            # 11. 将子组件实例的引用附加到script上
+            # 11. 将子组件实例的引用附加到script上(ref和refall都编码到refs中了)
             refs = page.child_refs(cnumber)
             if refs:
-                refs = ' '.join(f'{name}-{ccid}' for name,ccid in refs.items())
+                refs = [(name, '-'.join(str(ccid) for ccid in ccids)) for name, ccids in refs.items()]
+                refs = ' '.join(f'{name}-{ccids}' for name, ccids in refs)
                 scriptprops[client_ref_attr_name] = refs
-            refalls = page.child_refalls(cnumber)
-            if refalls:
-                refalls = [(name, '-'.join(str(ccid) for ccid in ccids)) for name, ccids in refalls.items()]
-                refalls = ' '.join(f'{name}-{ccids}' for name, ccids in refalls)
-                scriptprops[client_refall_attr_name] = refalls
 
             # 12. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
@@ -384,3 +389,4 @@ class Element(object):
 
 
 Element.ClientEmbed = ClientEmbed
+Element.ClientRef = ClientRef

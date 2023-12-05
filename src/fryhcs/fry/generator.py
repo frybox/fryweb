@@ -6,7 +6,7 @@ import hashlib
 from fryhcs.fry.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
-from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, ref_attr_name_prefix, refall_attr_name, refall_attr_name_prefix
+from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -90,8 +90,15 @@ def concat_kv(attrs):
                 _, name, value = attr
                 ats.append(f'"{name}": {value}')
             elif atype == js_attr:
-                _, name, jscount = attr
-                ats.append(f'"{name}": Element.ClientEmbed({jscount})')
+                _, name, jsvalue = attr
+                # 对于ref/refall，只要保持名字与其他属性不冲突即可，前面加上
+                # 一个冒号，如ref=(foo)，属性名即为":foo"，此名不会使用
+                if name == ref_attr_name:
+                    ats.append(f'":{jsvalue}": Element.ClientRef("{jsvalue}")')
+                elif name == refall_attr_name:
+                    ats.append(f'":{jsvalue}": Element.ClientRef("{jsvalue}:a")')
+                else:
+                    ats.append(f'"{name}": Element.ClientEmbed({jsvalue})')
             #elif atype == jsop_attr:
             #    _, name, value = attr
             #    ats.append(f'"{name}": {value}')
@@ -206,12 +213,19 @@ def check_html_element(name, attrs):
         #    if attr[1] == '$style' and atype != py_attr:
         #        raise BadGrammar(f"invalid attribute type '{atype}' for '$style' in html element '{name}': '{py_attr}' needed.")
         if atype == js_attr:
-            if (attr[1][0] != '@' and
-                not attr[1].startswith(ref_attr_name_prefix) and
-                not attr[1].startswith(refall_attr_name_prefix)):
+            if attr[1][0] == '@':
+                attr[0] = py_attr
+                attr[2] = f'Element.ClientEmbed({attr[2]})'
+            elif attr[1] == ref_attr_name:
+                attr[0] = py_attr
+                attr[1] = f':{attr[2]}'
+                attr[2] = f'Element.ClientRef("{attr[2]}")'
+            elif attr[1] == refall_attr_name:
+                attr[0] = py_attr
+                attr[1] = f':{attr[2]}'
+                attr[2] = f'Element.ClientRef("{attr[2]}:a")'
+            else:
                 raise BadGrammar(f"js_attr type can only be specified for event handler or ref/refall, not '{attr[1]}'")
-            attr[0] = py_attr
-            attr[2] = f'Element.ClientEmbed({attr[2]})'
         if atype == novalue_attr:
             key = attr[1]
             value = ''
@@ -291,12 +305,19 @@ def check_component_element(name, attrs):
             attr[0] = py_attr
             attr.append(attr[1])
         elif atype == js_attr:
-            if (not attr[1].startswith(ref_attr_name_prefix) and
-                not attr[1].startswith(refall_attr_name_prefix) and
-                not attr[1][0] == '@'):
-                raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr.")
-            attr[0] = py_attr
-            attr[2] = f'Element.ClientEmbed({attr[2]})'
+            if attr[1][0] == '@':
+                attr[0] = py_attr
+                attr[2] = f'Element.ClientEmbed({attr[2]})'
+            elif attr[1] == ref_attr_name:
+                attr[0] = py_attr
+                attr[1] = f':{attr[2]}'
+                attr[2] = f'Element.ClientRef("{attr[2]}")'
+            elif attr[1] == refall_attr_name:
+                attr[0] = py_attr
+                attr[1] = f':{attr[2]}'
+                attr[2] = f'Element.ClientRef("{attr[2]}:a")'
+            else:
+                raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr, not '{attr[1]}'.")
 
 class PyGenerator(BaseGenerator):
     def generate(self, tree):
@@ -411,8 +432,6 @@ class PyGenerator(BaseGenerator):
 
     def visit_fry_element(self, node, children):
         name, attrs = children[0]
-        if name == 'script':
-            raise BadGrammar("'script' can't be used as the normal element name") 
         attrs = concat_kv(attrs)
         return ('element', f'Element({name}, {{{", ".join(attrs)}}})')
 
@@ -531,24 +550,22 @@ class PyGenerator(BaseGenerator):
                 _, embed = value
                 return [py_attr, name, embed]
             elif value[0] == 'js_embed':
-                count = self.inc_client_embed()
                 if name in (ref_attr_name, refall_attr_name):
                     isall = name == refall_attr_name
-                    # 将js变量名编码到ref name中
-                    name = value[1].strip()
-                    if not name.isidentifier():
-                        raise BadGrammar(f"Ref name '{name}' is not a valid identifier")
+                    v = value[1].strip()
+                    if not v.isidentifier():
+                        raise BadGrammar(f"Ref name '{v}' is not a valid identifier")
                     if isall:
-                        if name in self.refs:
-                            raise BadGrammar(f"Ref name '{name}' exists, please use another name for 'refall'")
-                        self.refalls.add(name)
-                        name = refall_attr_name_prefix + name
+                        if v in self.refs:
+                            raise BadGrammar(f"Ref name '{v}' exists, please use another name for 'refall'")
+                        self.refalls.add(v)
                     else:
-                        if name in self.refs or name in self.refalls:
-                            raise BadGrammar(f"Duplicated ref name '{name}', please use 'refall'")
-                        self.refs.add(name)
-                        name = ref_attr_name_prefix + name
-                return [js_attr, name, str(count)]
+                        if v in self.refs or v in self.refalls:
+                            raise BadGrammar(f"Duplicated ref name '{v}', please use 'refall'")
+                        self.refs.add(v)
+                else:
+                    v = self.inc_client_embed()
+                return [js_attr, name, str(v)]
             #elif value[0] == 'jsop_embed':
             #    return [jsop_attr, name, value[1]]
             #elif value[0] == 'element':
