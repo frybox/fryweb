@@ -129,7 +129,7 @@ class JSGenerator(BaseGenerator):
 
     def visit_fry_component(self, node, children):
         cname, _fryscript, _template, _script = children
-        if self.script or self.embeds:
+        if self.script or self.embeds or self.refs or self.refalls:
             uuid = self.get_uuid(cname, node)
             self.web_components.append({
                 'name': uuid,
