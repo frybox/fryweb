@@ -155,7 +155,7 @@ maybe_web_script =  web_script?
 web_script = maybe_space '<script' fry_attributes maybe_space '>' js_script "</script>"
 #web_component_script = '<script' fry_attributes maybe_space '>' js_script "</script>"
 
-html_comment = '<!--' ~'-(?!->)|[^-]*' '-->'
+html_comment = '<!--' ~'(-(?!->)|[^-])*' '-->'
 
 js_script = js_script_item*
 
