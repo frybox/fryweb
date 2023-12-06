@@ -80,6 +80,17 @@ class FryConfig():
         return Path('.')
 
     @property
+    def config_root(self):
+        if self.django_ok:
+            root_dir = getattr(django_settings, 'BASE_DIR', '')
+        if self.flask_ok:
+            root_dir = flask_app.root_path
+        if root_dir:
+            return Path(root_dir).resolve()
+        else:
+            return Path('.').resolve()
+
+    @property
     def plugins(self):
         return self.item('FRYHCS_PLUGINS', [])
 

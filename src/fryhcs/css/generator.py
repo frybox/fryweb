@@ -3,6 +3,7 @@ import os
 
 from .style import CSS
 from .collector import Collector
+from fryhcs.config import fryconfig
 
 
 class CSSGenerator():
@@ -49,13 +50,18 @@ class CSSGenerator():
         # 2. generate and write css
         self.output_file.parent.mkdir(parents=True, exist_ok=True)
         preflight = os.path.join(os.path.dirname(__file__), 'preflight.css')
+        preflight = Path(preflight)
         with self.output_file.open('a' if incremental else 'w') as f:
             if not incremental:
-                with open(preflight, 'r') as pf:
+                with preflight.open('r') as pf:
                     f.write(pf.read())
                 from fryhcs.css.plugin import plugin_basecss
                 basecss = plugin_basecss()
                 f.write(basecss)
+                preflight = fryconfig.config_root / 'preflight.css'
+                if preflight.is_file():
+                    with preflight.open('r') as pf:
+                        f.write(pf.read())
             csses = []
             for key, value in collector.all_attrs():
                 css = CSS(key, value)

@@ -80,7 +80,7 @@ utilities = {
         'text-transform': 'var(--btn-text-case, uppercase)',
 
 # 考虑到性能，不支持在@apply的utility中引用变量（如下面的border-<color>）
-# utility中引用变量能极大简化插件编写，但会让fy转css的过程计算量增加非常多，
+# utility中引用变量能极大简化插件编写，但会让fry转css的过程计算量增加非常多，
 # 因为插件加载过程中@apply的utility包含变量时无法转化为样式，只能在某个具体utility转
 # css时才能转样式，而这个utility所依赖的utility又会依赖其他utility，这个链条
 # 会非常长。
