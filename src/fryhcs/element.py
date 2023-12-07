@@ -125,7 +125,6 @@ class Element(object):
             return inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
     def get_style(self, style_name):
-        print(f'element.get_style({style_name})')
         if 'style' in self.props:
             return self.props['style'].get(style_name, None)
         utilities = []
