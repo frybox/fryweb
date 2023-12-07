@@ -10,6 +10,9 @@ def index():
 
 
 def App():
+    c = <Content class="text-cyan-600 h-500px"/>
+    print(c.get_style('color'))
+    print(c.get_style('height'))
     <template>
       <div flex flex-col gap-4 text-center>
         <Content value={randint(0,2)} />
@@ -37,3 +40,7 @@ def Content(value=0):
           el.classList.toggle('font-mono')
       }
     </script>
+
+if __name__ == '__main__':
+    from fryhcs import render
+    render(App)

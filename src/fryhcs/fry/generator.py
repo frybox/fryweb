@@ -196,8 +196,6 @@ def concat_kv(attrs):
 #   * `{*python_list}`                     : python列表值，服务端渲染为常量传给浏览器引擎
 #   * `{**python_dict}`                    : python字典值，服务端渲染为常量传给浏览器引擎
 def check_html_element(name, attrs):
-    classes = []
-    class_attr = None
     for attr in attrs:
         atype = attr[0]
         if atype not in (novalue_attr, literal_attr, js_attr, py_attr, fsjs_attr, spread_attr):
@@ -226,42 +224,6 @@ def check_html_element(name, attrs):
                 attr[2] = f'Element.ClientRef("{attr[2]}:a")'
             else:
                 raise BadGrammar(f"js_attr type can only be specified for event handler or ref/refall, not '{attr[1]}'")
-        if atype == novalue_attr:
-            key = attr[1]
-            value = ''
-        elif atype == literal_attr:
-            _, key, value = attr
-            if value[0] in '\'"':
-                value = value[1:-1]
-            elif value[0] in 'fF' and value[1] in '\'"':
-                # f-string不能当做utility来处理
-                continue
-        else:
-            continue
-        if key == 'class' and atype == literal_attr:
-            class_attr = attr
-            continue
-        if is_valid_html_attribute(name, key):
-            continue
-        values = value.split()
-        if not values:
-            values = ['']
-        classes.extend(CSS(key, value).to_class() for value in values) 
-        attr[0] = no_attr
-    if classes:
-        classes = ' '.join(classes)
-        if not class_attr:
-            class_attr = [literal_attr, 'class', '""']
-            attrs.append(class_attr)
-        value = class_attr[2]
-        if value[0] in '\'"':
-            value = value[1:-1]
-        elif value[0] in 'fF' and value[1] in '\'"':
-            value = value[2:-1]
-        if value:
-            class_attr[2] = f'f"{value} {classes}"'
-        else:
-            class_attr[2] = f'"{classes}"'
 
 
 # 检查并预处理组件元素的属性

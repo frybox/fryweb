@@ -170,6 +170,12 @@ class CSS():
         style = (key, value)
         self.styles.append(style)
 
+    def get_style(self, key):
+        for k, v in self.styles:
+            if k == key:
+                return v
+        return None
+
     def new_addon(self, key='', value='', generate=False):
         addon = CSS(key, value, generate)
         self.addons.append(addon)

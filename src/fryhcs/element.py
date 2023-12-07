@@ -124,6 +124,23 @@ class Element(object):
         else:
             return inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
+    def get_style(self, style_name):
+        print(f'element.get_style({style_name})')
+        if 'style' in self.props:
+            return self.props['style'].get(style_name, None)
+        utilities = []
+        if not self.rendered:
+            for k, v in self.props.items():
+                if (v == '' or v is True) and not is_valid_html_attribute(self.name, k):
+                    utilities.append(k)
+        if 'class' in self.props:
+            utilities += self.props['class'].split(' ')
+        for utility in utilities:
+            value = CSS(value=utility).get_style(style_name)
+            if value:
+                return value
+        return None
+
     def tolist(self):
         def convert(v):
             if isinstance(v, (tuple, types.GeneratorType)):
@@ -223,7 +240,7 @@ class Element(object):
 
             # 2. 将本组件上定义的给父组件js脚本用的ref/refall记录到page
             #    上，在生成父组件的script元素时加到data-fryref上；
-            #    同时将父组件传来的事件处理函数暂存，渲染完成后添加到
+            #    同时将父组件传来的@event事件处理函数暂存，渲染完成后添加到
             #    本组件树的树根元素上。
             peventhandlers = []
             for key, value in list(self.props.items()):
@@ -240,7 +257,7 @@ class Element(object):
                     peventhandlers.append(value)
 
             # 3. 执行组件函数，返回未渲染的原始组件元素树
-            #    唯一不是合法python identifier的ref:jsname和refall:jsname已经在上一步
+            #    唯一不是合法python identifier的ref(:jsname)、refall(:jsname)和已经在上一步
             #    删除，此时self.props的key应该都是合法的python identifier，可以
             #    **self.props用来给函数调用传参。
             #    元素树中的js嵌入值以ClientEmbed对象表示，元素树中
@@ -315,7 +332,7 @@ class Element(object):
                         scriptprops[k] = v
         elif isinstance(self.name, str):
             props = {}
-            style = {} 
+            #style = {} 
             classes = []
             for k in list(self.props.keys()):
                 v = self.props[k]
@@ -331,8 +348,15 @@ class Element(object):
                 #    style = combine_style(style, convert_utilities(v))
                 #elif k == style_attr_name:
                 #    style = combine_style(style, v)
-                elif (v == '' or v is True) and not is_valid_html_attribute(self.name, k):
+                elif is_valid_html_attribute(self.name, k):
+                    props[k] = v
+                elif v is True:
                     classes.append(k)
+                elif isinstance(v, str):
+                    values = v.split()
+                    if not values:
+                        values = ['']
+                    classes.extend(CSS(k, value).to_class() for value in values) 
                 else:
                     props[k] = v
             if classes:
