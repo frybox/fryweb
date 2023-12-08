@@ -89,8 +89,7 @@ def FunctionComponent(value, **props):
                id="special-div"
                {*list1}
                {**dict1}
-               data-value={value}
-               $class="foo bar foobar color-white color-blue value1 value2 value3">
+               data-value={value}>
 
             html中可以嵌入后端渲染的变量内容，以大括号括起来，这部分内容也可以在js中修改，后跟小括号括起来的js内容：{content1}
 

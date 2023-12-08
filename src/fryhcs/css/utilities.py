@@ -106,7 +106,7 @@ def convert_color(args):
         len(args[0]) in (3, 4, 6, 8)):
         return '#' + args[0]
 
-    # tailwind风格的颜色，支持透明度
+    # tailwind风格的颜色，支持后跟'/75'这样添加透明度
     values = {
         'none':        'none',
         'inherit':     'inherit',
@@ -362,7 +362,7 @@ def convert_color(args):
     if len(color_opacity) == 1:
         # 属性名中不能出现'/'符号，所以如果用无值属性时，应该用pink-900@25
         # 这样的方法，不能用pink-900/25这种方式，后者只能用于class值或属性值中
-        # 2023-10-19: 当前fy语法中，属性名可以包含'/'，所以可以使用pink-900/25
+        # 2023-10-19: 当前fry语法中，属性名可以包含'/'，所以可以使用pink-900/25
         #             以下逻辑暂时保留
         color_opacity = value.split('@')
         if len(color_opacity) == 1:

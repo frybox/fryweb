@@ -175,3 +175,11 @@ types = {
         "value": lambda v: f"var(--{v})",
     },
 }
+
+color_schemes = {
+    'daisy-light': {
+        'type': 'light',
+        'variables': {
+        },
+    },
+}

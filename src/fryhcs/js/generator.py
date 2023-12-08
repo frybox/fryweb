@@ -159,6 +159,13 @@ class JSGenerator(BaseGenerator):
     def visit_fry_attribute(self, node, children):
         return children[0]
 
+    def visit_same_name_attribute(self, node, children):
+        _l, _, identifier, _, _r = children
+        return identifier
+
+    def visit_py_identifier(self, node, children):
+        return node.text
+
     def visit_fry_embed_spread_attribute(self, node, children):
         return None
 

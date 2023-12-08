@@ -182,6 +182,13 @@ class FryVisitor(NodeVisitor):
     def visit_fry_attribute(self, node, children):
         return children[0]
 
+    def visit_same_name_attribute(self, node, children):
+        l, s1, identifier, s2, r = children
+        return [sep(l), py(s1), py(identifier), py(s2), sep(r)]
+
+    def visit_py_identifier(self, node, children):
+        return node.text
+
     def visit_fry_embed_spread_attribute(self, node, children):
         l, s1, m, s2, script, r = children
         return [sep(l), py(s1), py(m), py(s2), script, sep(r)]

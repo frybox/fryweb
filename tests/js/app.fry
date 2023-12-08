@@ -11,14 +11,14 @@ def Sub2(v, create, children=[]):
         {children}
       </div>
     </template>
-    <script create>
+    <script {create}>
       const value = 999;
       console.log(`sub2: ${foo}, create: ${create}`);
     </script>
 
 def Sub1(bar, create, children=[]):
     <template>
-      <Sub2 v={bar} create>
+      <Sub2 v={bar} {create}>
         {children}
       </Sub2>
     </template>

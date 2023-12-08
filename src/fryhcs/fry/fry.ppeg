@@ -73,7 +73,11 @@ fry_spaced_attribute = maybe_space fry_attribute
 
 # 去掉对client_embed_attribute的支持，event_attribute是kv_attribute的一种
 #fry_attribute = fry_embed_spread_attribute / fry_client_embed_attribute / fry_event_attribute / fry_kv_attribute / fry_novalue_attribute
-fry_attribute = fry_embed_spread_attribute / fry_kv_attribute / fry_novalue_attribute
+fry_attribute = same_name_attribute / fry_embed_spread_attribute / fry_kv_attribute / fry_novalue_attribute
+
+same_name_attribute = '{' maybe_space py_identifier maybe_space '}'
+
+py_identifier = ~r"[a-zA-Z][a-zA-Z0-9_]*"
 
 fry_embed_spread_attribute = '{' maybe_space ~'[*]{1,2}' maybe_space inner_fry_script '}'  #maybe_space maybe_css_literal
 

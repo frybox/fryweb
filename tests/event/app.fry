@@ -9,10 +9,10 @@ def index():
 
 def App():
     <template>
-      <div flex flex-col justify-center items-center>
-        <h1 text-center text-sky-600>Test Event to Client Component:[0](count)</h1>
-        <EventButton @click=(onClick) />
-      </div>
+    <div flex flex-col justify-center items-center>
+      <h1 text-center text-sky-600>Test Event to Client Component:[0](count)</h1>
+      <EventButton @click=(onClick) />
+    </div>
     </template>
     <script>
         import { signal } from 'fryhcs'
@@ -25,7 +25,7 @@ def App():
 
 def EventButton():
     <template>
-      <div text-center bg-indigo-300 hover:bg-indigo-600 w-100px h-30px mt-10 cursor-pointer>
-        Click Me!
-      </div>
+    <div text-center bg-indigo-300 hover:bg-indigo-600 w-100px h-30px mt-10 cursor-pointer>
+      Click Me!
+    </div>
     </template>

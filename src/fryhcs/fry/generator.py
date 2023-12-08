@@ -85,7 +85,7 @@ def concat_kv(attrs):
                 ats.append(f'"{name}": {value}')
             elif atype == novalue_attr:
                 name = attr[1]
-                ats.append(f'"{name}": ""')
+                ats.append(f'"{name}": True')
             elif atype == py_attr:
                 _, name, value = attr
                 ats.append(f'"{name}": {value}')
@@ -177,6 +177,7 @@ def concat_kv(attrs):
 #                                            注：$class不会出现在这里，在解析过程中就过滤掉了(see `visit_fry_kv_attribute`)
 # </del>
 #   * `name={py_value}`                    : python值在服务端渲染为常量传给浏览器引擎，不可以为ClientEmbed
+#   * `{name}`                             : `name={name}`的简写
 #                                            服务端：`name=py_value`，python数据值
 #                                            浏览器：`name="py_value"`，字符串值，如果是ClientEmbed时生成data-fry-script一项
 # 2023.11.16: 如下两种情况不再支持：
@@ -238,6 +239,7 @@ def check_html_element(name, attrs):
 #                             服务端：常量字符串
 #                             浏览器：不可见
 #   * `name={py_value}`     : python值在服务端运行时传给子组件，可以是各种类型数据，但不包括ClientEmbed
+#   * `{name}`              : `name={name}`的简写
 #                             服务端：python数据
 #                             浏览器：不可见
 #   * `name=(js_value)`     : 目前只支持name为ref，此时js_value为父组件js代码的入参变量名,
@@ -263,9 +265,9 @@ def check_component_element(name, attrs):
         if atype in (literal_attr, py_attr) and not attr[1].isidentifier():
             raise BadGrammar(f"Invalid attibute name '{attr[1]}' on Component element '{name}', identifier needed.")
         if atype == novalue_attr:
-            # 组件元素的无值参数等同于同名python变量 name => name={name}
+            # 组件元素的无值参数等同于值为True变量 name => name={True}
             attr[0] = py_attr
-            attr.append(attr[1])
+            attr.append('True')
         elif atype == js_attr:
             if attr[1][0] == '@':
                 attr[0] = py_attr
@@ -464,6 +466,13 @@ class PyGenerator(BaseGenerator):
     def visit_fry_attribute(self, node, children):
         return children[0]
 
+    def visit_same_name_attribute(self, node, children):
+        _l, _, identifier, _, _r = children
+        return [py_attr, identifier, identifier]
+
+    def visit_py_identifier(self, node, children):
+        return node.text
+
     def visit_fry_embed_spread_attribute(self, node, children):
         _lbrace, _, stars, _, script, _rbrace = children
         if stars.text == '*':
@@ -657,6 +666,7 @@ class PyGenerator(BaseGenerator):
     #                           服务端：`data-name='literal_value'`
     #                           浏览器：`data-name="literal_value"`
     # * `name={py_value}`     : python值作为字符串在客户端运行时传给js脚本，在客户端是一个常量字符串
+    # * `{name}`              : `name={name}`的简写
     #                           服务端：`data-name=py_value`，python数据值
     #                           浏览器：`data-name="py_value"`，字符串值。
     # 2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
@@ -682,9 +692,9 @@ class PyGenerator(BaseGenerator):
             if name in self.refs or name in self.refalls:
                 raise BadGrammar(f"Script argument name '{name}' duplicated with ref/refall names")
             if attr[0] == novalue_attr:
-                # 所有无值变量都是传给js的同名py变量
-                # 将这些attr转化为py_attr: foo ==> foo={foo}
-                attr.append(attr[1])
+                # 所有无值变量都是值为True的变量
+                # 将这些attr转化为py_attr: foo ==> foo={True}
+                attr.append('True')
                 attr[0] = py_attr
             atype, k, v = attr
             if k.startswith('fry'):
