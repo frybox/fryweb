@@ -27,7 +27,16 @@ class Page(object):
         refs.add(childcid)
 
     def child_refs(self, cid):
-        return self.cid2childrefs.get(cid, {})
+        origin = self.cid2childrefs.get(cid, {})
+        refs = {}
+        for name, ids in origin.items():
+            if name.endswith(':a'):
+                refs[name[:-2]] = list(ids)
+            else:
+                if len(ids) != 1:
+                    raise RuntimeError(f"More than ONE ref value for '{name}'.")
+                refs[name] = ids.pop()
+        return refs
 
     def set_jsid2cid(self, jsid, cid): 
         if jsid in self.jsid2cids:

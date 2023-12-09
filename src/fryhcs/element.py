@@ -3,6 +3,7 @@ from fryhcs.utils import static_url, component_name
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
 import types
+import json
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -83,24 +84,22 @@ class ClientEmbed(object):
         else:
             return f'{self.component}/{self.embed_id}'
 
-# 组件名称的html元素属性名
-component_attr_name = 'data-fryclass'
 # 组件实例ID的html元素属性名
 component_id_attr_name = 'data-fryid'
 # js嵌入值的html元素属性名
 client_embed_attr_name = 'data-fryembed'
-# 引用的元素属性名：
-# 1. 对子组件元素的引用，放在本组件的`<script>`元素上
-# 2. 对html元素的引用，放在该html元素上
-# 3. 通过ref引用的元素，生成'name-id'结构
-# 4. 通过refall引用的元素列表，生成'name:a-id'(html元素)或'name:a-id1-id2...'(子组件元素)
-# 5. 对于子组件元素的引用, 'name-id'中的id是被引用子组件的id
-# 6. 对于html元素的引用，'name-id'中的id是引用自己的组件的id
+# html元素引用的元素属性名，放在该html元素上
+# 1. 通过ref引用的元素，生成'name-id'结构
+# 2. 通过refall引用的元素列表，生成'name:a-id'
+# 3. 对于html元素的引用，'name-id'中的id是引用自己的组件的id
+# 4. 对于子组件元素的引用，放到父组件script的json格式的textContent中
 client_ref_attr_name = 'data-fryref'
+
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 class_attr_name = 'class'
 style_attr_name = 'style'
+type_attr_name = 'type'
 # 2023.11.30 py和js中的simple_quote也放入css utility检查范围，
 #            $style和$class这种复杂处理方式不再需要
 ## 使用动态数据生成utility的属性名
@@ -120,7 +119,7 @@ class Element(object):
 
     def is_component(self):
         if self.rendered:
-            return component_attr_name in self.props
+            return component_id_attr_name in self.props
         else:
             return inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
@@ -190,7 +189,7 @@ class Element(object):
                     continue
                 value = e.props.get(key)
                 if isinstance(value, ClientEmbed) and value.component == component:
-                    if e.name == 'script':
+                    if e.name == 'script': # 暂时保留，已不支持
                         value.embed_id = f'{value.embed_id}-object-{key}'
                     elif key[0] == '@':
                         value.embed_id = f'{value.embed_id}-event-{key[1:]}'
@@ -228,9 +227,8 @@ class Element(object):
             #    将组件名和组件实例ID附加到代表组件的script元素上，
             #    script是用来记录当前组件信息的，包括组件id，名字，
             #    以及后面可能的组件js参数
-            cname = component_name(self.name)
             scriptprops = {
-                component_attr_name: cname,
+                type_attr_name: 'text/x-frydata',
                 children_attr_name: [],
             }
             cscript = Element('script', scriptprops, True)
@@ -304,31 +302,16 @@ class Element(object):
                 element.props[client_embed_attr_name] = embeds
 
             # 11. 将子组件实例的引用附加到script上(ref和refall都编码到refs中了)
-            refs = page.child_refs(cnumber)
-            if refs:
-                refs = [(name, '-'.join(str(ccid) for ccid in ccids)) for name, ccids in refs.items()]
-                refs = ' '.join(f'{name}-{ccids}' for name, ccids in refs)
-                scriptprops[client_ref_attr_name] = refs
+            data = {}
+            data['name'] = component_name(self.name)
+            data['refs'] = page.child_refs(cnumber)
 
             # 12. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
                 page.set_jsid2cid(uuid, cnumber)
-                for k,v in args:
-                    if isinstance(v, ClientEmbed):
-                        # 不支持父组件实例传过来的js嵌入值
-                        #scriptprops[k] = v
-                        raise RuntimeError(f"Js embed can't be used as script argument('{k}')")
-                    else:
-                        k = f'data-{k}'
-                        # True/False是bool类型，同时也是int类型，因为bool是int的子类。
-                        # 所以要先判断bool，再判断int
-                        if isinstance(v, bool):
-                            k += ':b'
-                            v = 'true' if v else 'false'
-                        elif isinstance(v, (int, float)):
-                            k += ':n'
-                        scriptprops[k] = v
+                data['args'] = {k:v for k,v in args}
+            scriptprops[children_attr_name].append(json.dumps(data))
         elif isinstance(self.name, str):
             props = {}
             #style = {} 

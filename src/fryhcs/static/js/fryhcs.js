@@ -247,23 +247,9 @@ async function hydrate(hydrates) {
     let cid2script = {};
     let cids = [];
     for (const cscript of scripts) {
-        cscript.fryargs = {};
-        for (const key in cscript.dataset) {
-            if (!key.startsWith('fry')) {
-                if (key.indexOf(':') > 0) {
-                    let [name, type] = key.split(':');
-                    if (type === 'n') {
-                        cscript.fryargs[name] = Number(cscript.dataset[key]);
-                    } else if (type === 'b') {
-                        cscript.fryargs[name] = cscript.dataset[key] === 'true' ? true : false;
-                    } else {
-                        throw `Unknown data type '${type}' in '${key}'`
-                    }
-                } else {
-                    cscript.fryargs[key] = cscript.dataset[key];
-                }
-            }
-        }
+        const data = JSON.parse(cscript.textContent);
+        cscript.fryargs = Object.assign({}, data.args);
+        cscript.fryrefs = Object.assign({}, data.refs);
         const cid = cscript.dataset.fryid;
         cid2script[cid] = cscript;
         cids.push(parseInt(cid));
@@ -332,9 +318,6 @@ async function hydrate(hydrates) {
                             element.frydata = {};
                         }
                         element.frydata[arg] = value;
-                    } else if (atype === 'ref' || atype === 'refall') {
-                        // 这是定义ref的地方，已经在collectrefs中为ref变量赋值，所以：
-                        // assert element === value
                     } else {
                         console.log("invalid attribute type: ", atype);
                     }
@@ -354,16 +337,12 @@ async function hydrate(hydrates) {
         const scid = ''+cid;
         const script = cid2script[scid];
         // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的script元素上
-        if ('fryref' in script.dataset) {
-            const objects = script.dataset.fryref;
-            for (const obj of objects.split(' ')) {
-                const [arg, ...subids] = obj.split('-');
-                if (arg.endsWith(':a')) {
-                    const name = arg.slice(0, -2);
-                    script.fryargs[name] = subids.map(subid=>cid2script[subid].fryobject);
-                } else {
-                    script.fryargs[arg] = cid2script[subids[0]].fryobject;
-                }
+        for (const name in script.fryrefs) {
+            const value = script.fryrefs[name];
+            if (Array.isArray(value)) {
+                script.fryargs[name] = value.map(subid=>cid2script[subid].fryobject);
+            } else {
+                script.fryargs[name] = cid2script[value].fryobject;
             }
         }
 
