@@ -9,10 +9,12 @@ def index():
     return html(App, title="My Editor")
 
 def App():
-    return (
+    <template>
     <div ref=(root) h-100vh text-lg>
     </div>
-    <script root>
+    </template>
+
+    <script>
       import {EditorView, basicSetup} from "codemirror"
       import {keymap} from "@codemirror/view"
       import {indentWithTab} from "@codemirror/commands"
@@ -32,16 +34,20 @@ def App():
             language(),
             theme,
           ],
-          parent: root
+          parent: root,
+          lineNumbers: true,
+          showIndentGuilde: true,
       })
-    </script>)
+    </script>
 
 
 def App1():
-    return (
+    <template>
     <div ref=(root) h-100vh border-5 border-cyan-600 bg-indigo-100>
     </div>
-    <script root>
+    </template>
+
+    <script>
       import {EditorState} from "@codemirror/state"
       import {EditorView, keymap} from "@codemirror/view"
       import {defaultKeymap} from "@codemirror/commands"
@@ -60,5 +66,5 @@ def App1():
         state: startState,
         parent: root
       })
-    </script>)
+    </script>
 

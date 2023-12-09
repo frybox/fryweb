@@ -398,8 +398,17 @@ if __name__ == '__main__':
 
 ## Flask Integration
 
+## FastAPI Integration
+
+
 ## License
 MIT License
+
+## Road Map
+* [ ] support component fetch from backend
+* [ ] support component CRUD from frontend
+* [ ] support multiple UI design systems
+
 
 ## FAQ
 ### 1. Why named fryhcs
