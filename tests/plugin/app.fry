@@ -13,20 +13,20 @@ def App():
         </h1>
         <p text-indigo-600 text-center mt-9>
           Count:
-          <span text-red-600>[{initial_count}](count)</span>
+          <span text-cool/30>[{initial_count}](count)</span>
         </p>
         <div flex w-full justify-center>
           <button btn btn-success
-            @click=(increment)>
+                  @click=(increment)>
             Increment
           </button>
         </div>
       </div>
     </template>
-    <script initial={initial_count}>
+    <script {initial_count}>
        import {signal} from "fryhcs";
  
-       let count = signal(initial);
+       let count = signal(initial_count);
  
        function increment() {
            count.value ++;

@@ -9,6 +9,7 @@ class PluginError(Exception):
 base_csses = []
 static_utilities = {}
 dynamic_utilities = {}
+semantic_colors = {}
 
 def load_plugins():
     for pid, plugin in enumerate(fryconfig.plugins):
@@ -20,6 +21,7 @@ def load_plugin(pid, plugin):
     base_css = getattr(plugin, 'base_css', {})
     utilities = getattr(plugin, 'utilities', {})
     types = getattr(plugin, 'types', {})
+    colors = getattr(plugin, 'colors', {})
 
     if base_css:
         base_csses.append(base_css)
@@ -28,6 +30,9 @@ def load_plugin(pid, plugin):
 
     for name, content in utilities.items():
         load_utility(name, content, types, pid, level)
+
+    if colors:
+        semantic_colors.update(colors)
 
 # utility1: "btn-<color:state-color>-focus"
 # return1:  "btn-(info|success|warning|error)-focus", [("color", lambda v: f"var(--{v})")]
@@ -159,6 +164,9 @@ def plugin_utility(utility_args):
             clone.update_values(args)
             return clone
     return None 
+
+def plugin_color(arg):
+    return semantic_colors.get(arg, None)
 
 def plugin_basecss():
     output = []

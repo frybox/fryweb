@@ -374,13 +374,18 @@ def convert_color(args):
         color, opacity = color_opacity
     else:
         return None
-    color = values.get(color)
-    if not color:
-        return None
+    c = values.get(color)
+    if not c:
+        from fryhcs.css.plugin import plugin_color
+        color = plugin_color(color)
+        if not color:
+            return None
+    else:
+        color = c
     if not opacity:
         return color
     if opacity.isdigit() and 0<=int(opacity)<=100:
-        return color.replace(')', f' / {int(opacity)/100})')
+        return re.sub(r'\)$', f' / {int(opacity)/100})', color)
     return None
         
 def opacity_to(color, opacity):

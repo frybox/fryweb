@@ -34,6 +34,7 @@ base_css = {
         "--animation-input":   "0",
         "--btn-focus-scale":   "1",
         "--tab-radius":        "0",
+        "--cool":              "65 65 65",
     },
     "@keyframes button-pop": {
       "0%": {
@@ -84,7 +85,7 @@ utilities = {
 # 因为插件加载过程中@apply的utility包含变量时无法转化为样式，只能在某个具体utility转
 # css时才能转样式，而这个utility所依赖的utility又会依赖其他utility，这个链条
 # 会非常长。
-# 不支持引用变量后，插件加载时其中定义的utility直接编译到样式，fy中的utility转css会加快很多。
+# 不支持引用变量后，插件加载时其中定义的utility直接编译到样式，fry中的utility转css会加快很多。
 #        '@utility:&-<color:brand-color>': {
 #            '@apply': 'border-<color> bg-<color> text-<color>-content outline-<color>',
 #            'hover-hover:hover:&, active:&': {
@@ -176,10 +177,6 @@ types = {
     },
 }
 
-color_schemes = {
-    'daisy-light': {
-        'type': 'light',
-        'variables': {
-        },
-    },
+colors = {
+    'cool': 'rgb(var(--cool))',
 }
