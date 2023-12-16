@@ -1,4 +1,3 @@
-import inspect
 from fryhcs.utils import static_url, component_name
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
@@ -121,7 +120,7 @@ class Element(object):
         if self.rendered:
             return component_id_attr_name in self.props
         else:
-            return inspect.isfunction(self.name) #or inspect.isclass(self.name)
+            return callable(self.name) #inspect.isfunction(self.name) #or inspect.isclass(self.name)
 
     def get_style(self, style_name):
         if 'style' in self.props:
@@ -218,7 +217,7 @@ class Element(object):
         if self.rendered:
             return self
 
-        if inspect.isfunction(self.name):
+        if callable(self.name): #inspect.isfunction(self.name):
             # 渲染函数组件元素流程：
             # 1. 生成页面内组件实例对应的script元素，附加到页面后，
             #    得到组件实例唯一编号。
