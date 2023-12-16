@@ -166,7 +166,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
   </head>
   <body>
     {content}
-    <div type="display:none;">
+    <div style="display:none;">
     {components}
     </div>
     {hydrate_script}

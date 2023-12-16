@@ -16,7 +16,7 @@ def App():
           <span text-cool/30>[{initial_count}](count)</span>
         </p>
         <div flex w-full justify-center>
-          <button btn btn-success
+          <button btn btn-cool
                   @click=(increment)>
             Increment
           </button>

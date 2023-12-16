@@ -20,149 +20,168 @@ def load_plugins():
 def load_plugin(pid, plugin):
     base_css = getattr(plugin, 'base_css', {})
     utilities = getattr(plugin, 'utilities', {})
-    types = getattr(plugin, 'types', {})
+    #types = getattr(plugin, 'types', {})
     colors = getattr(plugin, 'colors', {})
 
     if base_css:
         base_csses.append(base_css)
 
-    level = 0
-
-    for name, content in utilities.items():
-        load_utility(name, content, types, pid, level)
-
     if colors:
         semantic_colors.update(colors)
 
-# utility1: "btn-<color:state-color>-focus"
-# return1:  "btn-(info|success|warning|error)-focus", [("color", lambda v: f"var(--{v})")]
-# utility2: "btn"
-# return2:  "btn", []
-def parse_name(utility, types):
-    r = '<([0-9a-zA-Z_-]+)(?::([0-9a-zA-Z_-]+))?>'
-    vs = []
-    lb = 0
-    names = [] 
-    for m in re.finditer(r, utility):
-        begin, end = m.span()
-        name, t = m.groups()
-        if t is None:
-            t = 'DEFAULT'
-        tt = types[t]
-        names.append(utility[lb:begin])
-        names.append('(')
-        names.append(tt['re'])
-        names.append(')')
-        vs.append((name, tt['value']))
-        lb = end
-    names.append(utility[lb:])
-    return (''.join(names), vs)
+    level = 0
+    for name, content in prepare_utilities(utilities):
+        #load_utility(name, content, types, pid, level)
+        load_utility(name, content, pid, level)
+        level += 1
 
-def prepare_content(content):
-    newcontent = {}
+
+def prepare_utilities(utilities):
+    newlist = []
+    newdict = {}
     def add(n, v):
         n = n.strip()
-        if not n in newcontent:
-            newcontent[n] = v
-        elif isinstance(v, dict) and isinstance(newcontent[n], dict):
-            newcontent[n].update(v)
+        if ':' in n:
+            raise RuntimeError(f"Custom utility should not has modifiers: '{n}'")
+        if not n in newdict:
+            newdict[n] = v
+            newlist.append((n,v))
         else:
-            raise PluginError(f"Duplicate name '{n}'")
-    for name, value in content.items():
+            newdict[n] += v
+    for name, *value in utilities:
         if ',' in name:
             for n in name.split(','):
-                add(n, value)
+                add(n, value[:])
         else:
             add(name, value)
-    return newcontent
+    return newlist
+
+
+# 2023.12.16 新定义的utility名中暂不支持变量，有了colors后，变量意义已经不大了。
+## utility1: "btn-<color:state-color>-focus"
+## return1:  "btn-(info|success|warning|error)-focus", [("color", lambda v: f"var(--{v})")]
+## utility2: "btn"
+## return2:  "btn", []
+#def parse_name(utility, types):
+#    r = '<([0-9a-zA-Z_-]+)(?::([0-9a-zA-Z_-]+))?>'
+#    vs = []
+#    lb = 0
+#    names = [] 
+#    for m in re.finditer(r, utility):
+#        begin, end = m.span()
+#        name, t = m.groups()
+#        if t is None:
+#            t = 'DEFAULT'
+#        tt = types[t]
+#        names.append(utility[lb:begin])
+#        names.append('(')
+#        names.append(tt['re'])
+#        names.append(')')
+#        vs.append((name, tt['value']))
+#        lb = end
+#    names.append(utility[lb:])
+#    return (''.join(names), vs)
+
+
+def prepare_content(content):
+    newlist = []
+    for name, *value in content:
+        if ',' in name:
+            for n in name.split(','):
+                newlist.append((n.strip(), value))
+        else:
+            newlist.append((name.strip(), value))
+    return newlist
 
 
 def load_subutilities(prefix, content):
-    defaultcss = CSS(key=prefix, value='dummy')
+    dummy = None
     subcsses = []
-    for key, value in content.items():
+    for key, *value in content:
         if key == '@apply':
-            if not isinstance(value, str):
-                raise PluginError(f"@apply can only have string value, not '{value}'.")
+            dummy = None
+            if not all(isinstance(v, str) for v in value):
+                raise PluginError(f"@apply can only have string values, not '{value}'.")
+            value = ' '.join(value)
             subutils = value.split()
             subcsses += [CSS(key=prefix, value=v) for v in subutils]
-        elif '&' in key:
+        elif '&' in key or ',' in key:
             raise PluginError(f"Subutilities can't have this kind of key: '{key}'")
-        elif isinstance(value, str):
-            defaultcss.add_style(key, value)
+        elif len(value) == 1 and isinstance(value[0], str):
+            if not dummy:
+                dummy = CSS(key=prefix, value='dummy')
+                subcsses.append(dummy)
+            dummy.add_style(key, value[0])
         else:
             raise PluginError(f"Invalid '{name}': '{value}'")
-    subcsses.insert(0, defaultcss)
     return subcsses
 
-def load_utility(name, content, types, pid, level):
-    regexp, variables = parse_name(name, types)
+#def load_utility(name, content, types, pid, level):
+def load_utility(name, content, pid, level):
+    #regexp, variables = parse_name(name, types)
     content = prepare_content(content)
+    dummy = None
     defaultcss = CSS()
-    defaultcss.selector = regexp
-    defaultcss._variables = variables
+    #defaultcss.selector = regexp
+    #defaultcss._variables = variables
+    defaultcss.selector = name
     defaultcss.plugin_order = pid
     defaultcss.level_order = level
     subcsses = []
-    for key, value in content.items():
+    for key, value in content:
         if key == '@apply':
-            if not isinstance(value, str):
-                raise PluginError(f"@apply can only have string value, not '{value}'.")
+            dummy = None
+            if not all(isinstance(v, str) for v in value):
+                raise PluginError(f"@apply can only have string values, not '{value}'.")
+            value = ' '.join(value)
             subutils = value.split()
             subcsses += [CSS(value=v) for v in subutils]
-        elif key.startswith('@utility:'):
-            if not isinstance(value, dict):
-                raise PluginError(f"New sub-utility '{key}' should have dict value.")
-            key = key.split(':',1)[1].strip()
-            key = key.replace('&', name)
-            load_utility(key, value, types, pid, level+1)
         elif key.endswith(':&'):
+            dummy = None
             if '&' in key[:-2]:
                 raise PluginError(f"Invalid format for '{key}'.")
             subcsses += load_subutilities(key[:-2], value)
-        elif isinstance(value, str):
-            defaultcss.add_style(key, value)
+        elif len(value) == 1 and isinstance(value[0], str):
+            if not dummy:
+                dummy = CSS()
+                subcsses.append(dummy)
+            dummy.add_style(key, value[0])
         else:
             raise PluginError(f"Invalid '{name}': '{value}'")
-    csses = {}
+    csses = defaultcss.addons
+    lastkey = None
     for css in subcsses:
         key = (css.selector_template, *css.wrappers)
-        if key in csses:
-            csses[key].styles += css.styles
+        if key == lastkey:
+            csses[-1].styles += css.styles
         else:
-            csses[key] = css
-    defaultkey = (defaultcss.selector_template, *defaultcss.wrappers)
-    if defaultkey in csses:
-        css = csses.pop(defaultkey)
-        defaultcss.styles += css.styles
-    for css in sorted(csses.values(), key=lambda c: c.order):
-        defaultcss.add_addon(css)
-    if defaultcss._variables:
-        dynamic_utilities[defaultcss.selector] = defaultcss
-    else:
-        static_utilities[defaultcss.selector] = defaultcss
+            csses.append(css)
+            lastkey = key
+    static_utilities[defaultcss.selector] = defaultcss
+
 
 def plugin_utility(utility_args):
     utility = '-'.join(utility_args)
     if utility in static_utilities:
         clone = static_utilities[utility].clone()
         return clone
-    for regexp in dynamic_utilities.keys():
-        # 动态utility可能有负号，负号被放到utility之前，处理负号的情况
-        negative = ''
-        if utility[0] == '-':
-            negative = '-'
-            utility = utility[1:]
-        match = re.fullmatch(regexp, utility)
-        if match:
-            du = dynamic_utilities[regexp]
-            values = match.groups()
-            args = {'NEGATIVE': negative}
-            for val, var in zip(values, du._variables):
-                args[var[0]] = var[1](val)
-            clone = du.clone()
-            clone.update_values(args)
-            return clone
+    # 2023.12.16 暂不支持动态utility，有了colors后动态utility意义已经不大了
+    #for regexp in dynamic_utilities.keys():
+    #    # 动态utility可能有负号，负号被放到utility之前，处理负号的情况
+    #    negative = ''
+    #    if utility[0] == '-':
+    #        negative = '-'
+    #        utility = utility[1:]
+    #    match = re.fullmatch(regexp, utility)
+    #    if match:
+    #        du = dynamic_utilities[regexp]
+    #        values = match.groups()
+    #        args = {'NEGATIVE': negative}
+    #        for val, var in zip(values, du._variables):
+    #            args[var[0]] = var[1](val)
+    #        clone = du.clone()
+    #        clone.update_values(args)
+    #        return clone
     return None 
 
 def plugin_color(arg):
