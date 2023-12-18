@@ -18,10 +18,10 @@ def load_plugins():
             load_plugin(pid, module)
 
 def load_plugin(pid, plugin):
-    base_css = getattr(plugin, 'base_css', {})
-    utilities = getattr(plugin, 'utilities', {})
-    #types = getattr(plugin, 'types', {})
-    colors = getattr(plugin, 'colors', {})
+    base_css = getattr(plugin, 'base_css', lambda:{})()
+    utilities = getattr(plugin, 'utilities', lambda:{})()
+    #types = getattr(plugin, 'types', lambda:{})()
+    colors = getattr(plugin, 'colors', lambda:{})()
 
     if base_css:
         base_csses.append(base_css)
