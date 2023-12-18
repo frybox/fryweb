@@ -140,13 +140,13 @@ def add_modifier(css, modifier):
     def convert_template(template):
         if isinstance(template, tuple):
             template, screen_order = template
-            self.screen_order.append(screen_order)
+            css.screen_order.append(screen_order)
         return template
 
     def convert_re_template(template, group1, group2):
         if isinstance(template, tuple):
             template, screen_order = template
-            self.screen_order.append(screen_order)
+            css.screen_order.append(screen_order)
         return template
 
     if modifier in selector_modifiers:
