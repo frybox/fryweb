@@ -23,16 +23,16 @@ def App():
 
 def Content(value=0):
     if value == 0:
-        css = ["bg-indigo-300", 'text-xl', 'text-cyan-600', 'hover:bg-indigo-600', 'hover:text-cyan-300']
+        css = ["bg-indigo-300", 'text-xl', 'text-cyan-a9', 'hover:bg-indigo-600', 'hover:text-cyan-a10']
     elif value == 1:
-        css = ["bg-sky-300", 'text-xl', 'text-pink-600', 'hover:bg-sky-600', 'hover:text-pink-300']
+        css = ["bg-sky-300", 'text-xl', 'text-pink-dark-5', 'hover:bg-sky-600', 'hover:text-pink-dark-a6']
     elif value == 2:
-        css = ["bg-pink-300", 'text-xl', 'text-yellow-600', 'hover:bg-pink-600', 'hover:text-yellow-300']
+        css = ["bg-pink-300", 'text-xl', 'text-yellow-9', 'hover:bg-pink-600', 'hover:text-yellow-10']
     else:
         css = ["bg-purple-300", 'text-xl', 'text-green-600', 'hover:bg-purple-600', 'hover:text-green-300']
 
     <template>
-      <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs</span>
+      <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs({value})</span>
     </template>
 
     <script>
