@@ -15,7 +15,7 @@ def App():
     print(c.get_style('height'))
     <template>
       <div flex flex-col gap-4 text-center>
-        <Content value={randint(0,2)} />
+        <Content value={randint(0,2)} class="mb-4 mt-8" />
         <Content value={randint(0,2)} />
         <Content value={randint(0,2)} />
       </div>

@@ -6,6 +6,7 @@ import re
 from fryhcs.fileiter import FileIter
 from fryhcs.fry.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
+from fryhcs.element import class_attr_name
 
 class BaseCollector():
     ignored_tags = ('head', 'title', 'meta', 'style', 'link', 'script', 'template')
@@ -112,25 +113,35 @@ class CssVisitor(NodeVisitor):
 
     def visit_fry_self_closing_element(self, node, children):
         _, name, attrs, _, _ = children
-        if not name[0].islower():
-            return
-        for attr in attrs:
-            if not isinstance(attr, tuple):
-                raise BadGrammar
-            if is_valid_html_attribute(name, attr[0]):
-                continue
-            self.collect_kv(attr[0], attr[1])
+        if name[0].islower():
+            for attr in attrs:
+                if not isinstance(attr, tuple):
+                    raise BadGrammar
+                if is_valid_html_attribute(name, attr[0]):
+                    continue
+                self.collect_kv(attr[0], attr[1])
+        else:
+            for attr in attrs:
+                if not isinstance(attr, tuple):
+                    raise BadGrammar
+                if attr[0] == '':
+                    self.collect_kv('', attr[1])
 
     def visit_fry_start_tag(self, node, children):
         _, start_name, attrs, _, _ = children
-        if not start_name[0].islower():
-            return
-        for attr in attrs:
-            if not isinstance(attr, tuple):
-                raise BadGrammar
-            if is_valid_html_attribute(start_name, attr[0]):
-                continue
-            self.collect_kv(attr[0], attr[1])
+        if start_name[0].islower():
+            for attr in attrs:
+                if not isinstance(attr, tuple):
+                    raise BadGrammar
+                if is_valid_html_attribute(start_name, attr[0]):
+                    continue
+                self.collect_kv(attr[0], attr[1])
+        else:
+            for attr in attrs:
+                if not isinstance(attr, tuple):
+                    raise BadGrammar
+                if attr[0] == '':
+                    self.collect_kv('', attr[1])
 
     def visit_fry_element_name(self, node, children):
         return node.text
@@ -154,7 +165,7 @@ class CssVisitor(NodeVisitor):
 
     def visit_fry_kv_attribute(self, node, children):
         name, _, _, _, value = children
-        if name in ('$class', 'class'):
+        if name == class_attr_name:
             # 将class名字设置为空字符串，is_valid_html_attribute返回false
             # 否则不会收集相关utilities。
             name = ''
