@@ -146,6 +146,76 @@ html_element_attributes = set([
     ('wbr',        ()),
     ])
 
+svg_elements = set([
+    #'a',
+    'animate',
+    'animateMotion',
+    'animateTransform',
+    #'audio',
+    #'canvas',
+    'circle',
+    'clipPath',
+    'defs',
+    'desc',
+    'discard',
+    'ellipse',
+    'feBlend',
+    'feColorMatrix',
+    'feComponentTransfer',
+    'feComposite',
+    'feConvolveMatrix',
+    'feDiffuseLighting',
+    'feDisplacementMap',
+    'feDistantLight',
+    'feDropShadow',
+    'feFlood',
+    'feFuncA',
+    'feFuncB',
+    'feFuncG',
+    'feFuncR',
+    'feGaussianBlur',
+    'feImage',
+    'feMerge',
+    'feMergeNode',
+    'feMorphology',
+    'feOffset',
+    'fePointLight',
+    'feSpecularLighting',
+    'feSpotLight',
+    'feTile',
+    'feTurbulence',
+    'filter',
+    'foreignObject',
+    'g',
+    #'iframe',
+    'image',
+    'line',
+    'linearGradient',
+    'marker',
+    'mask',
+    'metadata',
+    'mpath',
+    'path',
+    'pattern',
+    'polygon',
+    'polyline',
+    'radialGradient',
+    'rect',
+    #'script',
+    'set',
+    'stop',
+    #'style',
+    'svg',
+    'switch',
+    'symbol',
+    'text',
+    'textPath',
+    'title',
+    'tspan',
+    'unknown',
+    'use',
+])
+
 html_elements = set(e for e, _ in html_element_attributes)
 
 html_element_attribute_pairs = set((e, a) for e, al in html_element_attributes for a in al)
@@ -207,10 +277,11 @@ def is_valid_html_element(e):
     return e in html_elements or '-' in e
 
 def is_valid_html_attribute(e, a):
-    return (a in html_global_attributes or
-            a[:5] in ('data-', 'aria-') or
-            '-' in e                    or
-            e in ('math', 'svg')        or
+    return (a in html_global_attributes  or
+            a[:5] in ('data-', 'aria-')  or
+            '-' in e                     or
+            e in svg_elements            or
+            e in ('math', )              or
             (e, a) in html_element_attribute_pairs
            )
 
