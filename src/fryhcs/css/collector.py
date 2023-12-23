@@ -89,7 +89,7 @@ class CssVisitor(NodeVisitor):
                 self.collect_kv(key, value)
 
     def generic_visit(self, node, children):
-        return children or node
+        return None
 
     def visit_single_quote(self, node, children):
         return node.text
@@ -116,6 +116,7 @@ class CssVisitor(NodeVisitor):
         if name[0].islower():
             for attr in attrs:
                 if not isinstance(attr, tuple):
+                    print(f'attr type {type(attr)}: {attr}')
                     raise BadGrammar
                 if is_valid_html_attribute(name, attr[0]):
                     continue
@@ -123,6 +124,7 @@ class CssVisitor(NodeVisitor):
         else:
             for attr in attrs:
                 if not isinstance(attr, tuple):
+                    print(f'attr type {type(attr)}: {attr}')
                     raise BadGrammar
                 if attr[0] == '':
                     self.collect_kv('', attr[1])
@@ -156,13 +158,6 @@ class CssVisitor(NodeVisitor):
     def visit_fry_attribute(self, node, children):
         return children[0]
 
-    def visit_fry_embed_spread_attribute(self, node, children):
-        return None
-
-    #def visit_fry_client_embed_attribute(self, node, children):
-    #    _value, _, css_literal = children
-    #    return css_literal
-
     def visit_fry_kv_attribute(self, node, children):
         name, _, _, _, value = children
         if name == class_attr_name:
@@ -182,23 +177,11 @@ class CssVisitor(NodeVisitor):
     def visit_fry_attribute_value(self, node, children):
         return children[0]
 
-    #def visit_fry_js_embed(self, node, children):
-    #    return None
-
     def visit_single_f_string(self, node, children):
         return node.text
 
     def visit_double_f_string(self, node, children):
         return node.text
-
-    def visit_joint_embed(self, node, children):
-        return None
-
-    def visit_fry_embed(self, node, children):
-        return None
-
-    def visit_js_embed(self, node, children):
-        return None
 
 class ParserCollector(BaseCollector):
     def collect_from_content(self, data):
