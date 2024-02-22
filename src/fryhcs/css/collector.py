@@ -129,6 +129,17 @@ class CssVisitor(NodeVisitor):
                 if attr[0] == '':
                     self.collect_kv('', attr[1])
 
+    def visit_fry_void_element(self, node, children):
+        _, name, attrs, _, _ = children
+        for attr in attrs:
+            if not isinstance(attr, tuple):
+                print(f'attr type {type(attr)}: {attr}')
+                raise BadGrammar
+            # void_element必定是html元素
+            if is_valid_html_attribute(name, attr[0]):
+                continue
+            self.collect_kv(attr[0], attr[1])
+
     def visit_fry_start_tag(self, node, children):
         _, start_name, attrs, _, _ = children
         if start_name[0].islower():
@@ -146,6 +157,9 @@ class CssVisitor(NodeVisitor):
                     self.collect_kv('', attr[1])
 
     def visit_fry_element_name(self, node, children):
+        return node.text
+
+    def visit_fry_void_element_name(self, node, children):
         return node.text
 
     def visit_fry_attributes(self, node, children):

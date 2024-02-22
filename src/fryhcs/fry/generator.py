@@ -416,6 +416,15 @@ class PyGenerator(BaseGenerator):
         #attrs.append([children_attr,[]])
         return (name, attrs)
 
+    def visit_fry_void_element(self, node, children):
+        _, name, attrs, _, _ = children
+        if not name:
+            raise BadGrammar
+        # void element都是html元素
+        check_html_element(name, attrs)
+        name = f'"{name}"'
+        return (name, attrs)
+
     def visit_fry_paired_element(self, node, children):
         start, fry_children, end = children
         start_name, attrs = start
@@ -444,6 +453,9 @@ class PyGenerator(BaseGenerator):
         return name
 
     def visit_fry_element_name(self, node, children):
+        return node.text
+
+    def visit_fry_void_element_name(self, node, children):
         return node.text
 
     def visit_space(self, node, children):

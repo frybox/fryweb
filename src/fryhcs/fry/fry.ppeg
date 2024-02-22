@@ -43,14 +43,17 @@ fry_component_name = ~r'[A-Z][a-zA-Z0-9_]*'
 
 fry_web_template = '<template>' maybe_space fry_root_element maybe_space '</template>'
 
-# 所有元素要么是自闭合，要么是标签成对，不支持不自闭合的空元素，这点和html规范不同
+# 2024.2.22: <del>所有元素要么是自闭合，要么是标签成对，不支持不自闭合的空元素，这点和html规范不同</del>
+# 2024.2.22: 要尽量和html规范保持一致，不要增加大家的学习成本。所以支持不自闭合的空元素：
 # https://html.spec.whatwg.org/#void-elements
-fry_root_element = fry_fragment / fry_self_closing_element / fry_paired_element
-fry_element = fry_fragment / fry_self_closing_element / fry_paired_element
+fry_root_element = fry_fragment / fry_self_closing_element / fry_void_element / fry_paired_element
+fry_element = fry_fragment / fry_self_closing_element / fry_void_element / fry_paired_element
 
 fry_fragment = '<>' fry_children '</>'
 
 fry_self_closing_element = '<' fry_element_name fry_attributes maybe_space '/>'
+
+fry_void_element = '<' fry_void_element_name fry_attributes maybe_space '>'
 
 fry_paired_element = fry_start_tag fry_children fry_end_tag
 
@@ -60,6 +63,8 @@ fry_start_tag = '<' fry_element_name fry_attributes maybe_space '>'
 fry_end_tag = '</' fry_element_name maybe_space '>'
 
 fry_element_name = !"script" !"template" ~r'[\w.-]+'
+
+fry_void_element_name = 'area' / 'base' / 'br' / 'col' / 'embed' / 'hr' / 'img' / 'input' / 'link' / 'meta' / 'source' / 'track' / 'wbr'
 
 space = ~r'\s+'
 

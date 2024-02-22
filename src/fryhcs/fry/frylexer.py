@@ -152,6 +152,10 @@ class FryVisitor(NodeVisitor):
         l, name, attrs, s, r = children
         return [ep(l), name, attrs, w(s), ep(r)]
 
+    def visit_fry_void_element(self, node, children):
+        l, name, attrs, s, r = children
+        return [ep(l), name, attrs, w(s), ep(r)]
+
     def visit_fry_paired_element(self, node, children):
         return children
 
@@ -164,6 +168,9 @@ class FryVisitor(NodeVisitor):
         return [ep(l), name, w(s), ep(r)]
 
     def visit_fry_element_name(self, node, children):
+        return en(node.text)
+
+    def visit_fry_void_element_name(self, node, children):
         return en(node.text)
 
     def visit_space(self, node, children):

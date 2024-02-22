@@ -1,0 +1,50 @@
+from fryhcs import html, Element
+from flask import Flask
+
+app = Flask(__name__)
+
+def App():
+    initial_count = 20
+    <template>
+       <div>
+         <h1 ref=(header) text-cyan-500 hover:text-cyan-600 text-center mt-100px>
+           Hello FryHCS!
+         </h1>
+         <hr>
+         <p text-indigo-600 text-center mt-9 title="hello {initial_count}">
+           Count:
+           <span text-red-600>[{initial_count}](count)</span>
+         </p>
+         <hr/>
+         <input type="hidden" name="aaa" value="bbb">
+         <p text-indigo-600 text-center mt-9>
+           Double:
+           <span text-red-600>[{initial_count*2}](doubleCount)</span>
+         </p>
+         <hr />
+         <input type="hidden" name="ccc" value="ddd" />
+         <div flex w-full justify-center>
+           <button
+             @click=(increment)
+             class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none">
+             Increment
+           </button>
+         </div>
+       </div>
+   </template>
+   <script initial={initial_count}>
+      import {signal, computed} from "fryhcs"
+
+      let count = signal(initial)
+
+      let doubleCount = computed(()=>count.value*2)
+
+      function increment() {
+          count.value ++;
+          header.textContent = `Hello FryHCS(${count.value})`;
+      }
+   </script>
+
+@app.get('/')
+def index():
+    return html(App, "Hello")

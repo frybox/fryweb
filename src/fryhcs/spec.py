@@ -146,6 +146,22 @@ html_element_attributes = set([
     ('wbr',        ()),
     ])
 
+void_elements = set([
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'source',
+    'track',
+    'wbr',
+])
+
 svg_elements = set([
     #'a',
     'animate',
@@ -269,6 +285,9 @@ html_events = set([
     'visibilitychange',
     ])
 
+
+def is_void_element(e):
+    return e in void_elements
 
 def is_valid_html_event(e):
     return e in html_events
