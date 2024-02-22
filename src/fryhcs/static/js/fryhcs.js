@@ -235,33 +235,28 @@ function computed(fn) {
 }
 
 
-async function hydrate(hydrates) {
-    // 0. 根据ID获取组件元素
-    function componentOf(cid) {
-        return document.querySelector(`[data-fryid~="${cid}"]:not(script)`)
-    }
-
-    // 1. 收集script属性传过来的服务端数据，设置到script元素上，
-    //    并构建cid和script元素对应关系
-    const scripts = document.querySelectorAll('script[data-fryid]');
-    let cid2script = {};
+/*
+** hydrate the DOM tree in the specified containerDOM using the components args
+** containerDOM: container dom element
+** components:   map of cid -> {fryid: cid, fryname: name, fryurl: url, fryargs: args, fryrefs: refs}
+**               这里的每个component可以是普通对象，也可以是一个代表组件的script元素
+**               水合时只要求其有fryid/fryname/fryurl/fryargs/fryrefs这几个属性即可。
+**               第一次html全量水合时是script元素，动态加载的组件是普通对象。
+*/
+async function hydrate(containerDOM, components) {
+    // 1. 收集cid列表
     let cids = [];
-    for (const cscript of scripts) {
-        const data = JSON.parse(cscript.textContent);
-        cscript.fryargs = Object.assign({}, data.args);
-        cscript.fryrefs = Object.assign({}, data.refs);
-        const cid = cscript.dataset.fryid;
-        cid2script[cid] = cscript;
+    for (const cid in components) {
         cids.push(parseInt(cid));
     }
 
     // 2. 收集所有*html元素*的ref/refall信息，设置到所在组件的script元素上
-    const embedElements = document.querySelectorAll('[data-fryref]:not(script)');
+    const embedElements = containerDOM.querySelectorAll('[data-fryref]:not(script)');
     for (const element of embedElements) {
         const refs = element.dataset.fryref;
         for (const ref of refs.split(' ')) {
             const [name, cid] = ref.split('-');
-            const scriptElement = cid2script[cid];
+            const scriptElement = components[cid];
             if (name.endsWith(':a')) {
                 const rname = name.slice(0, -2);
                 if (rname in scriptElement.fryargs) {
@@ -277,8 +272,8 @@ async function hydrate(hydrates) {
 
     // 3. 执行水合操作
     function doHydrate(script, embedValues) {
-        const cid = script.dataset.fryid;
-        const rootElement = componentOf(cid);
+        const cid = script.fryid;
+        const rootElement = containerDOM.querySelector(`[data-fryid~="${cid}"]:not(script)`);
         const prefix = '' + cid + '/';
         function handle(element) {
             if ('fryembed' in element.dataset) {
@@ -335,64 +330,77 @@ async function hydrate(hydrates) {
 
     for (const cid of cids) {
         const scid = ''+cid;
-        const script = cid2script[scid];
-        // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的script元素上
-        for (const name in script.fryrefs) {
-            const value = script.fryrefs[name];
+        let comp = components[scid];
+        // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的comp元素上
+        for (const name in comp.fryrefs) {
+            const value = comp.fryrefs[name];
             if (Array.isArray(value)) {
-                script.fryargs[name] = value.map(subid=>cid2script[subid].fryobject);
+                comp.fryargs[name] = value.map(subid=>components[subid].fryobject);
             } else {
-                script.fryargs[name] = cid2script[value].fryobject;
+                comp.fryargs[name] = components[value].fryobject;
             }
         }
 
         // 3.3 执行本组件水合
-        const hydrateOne = hydrates[scid]
         // 不是每个组件都有js脚本，纯服务端组件没有js脚本
-        if (hydrateOne) {
-            await hydrateOne(script, doHydrate);
+        if (typeof comp.fryurl !== 'undefined') {
+            const { hydrate } = await import(comp.fryurl);
+            await hydrate(comp, doHydrate);
         }
     }
 }
 
 
-function update(components, props, options) {
-}
-
-
-const default_options = {
-    bubbles: false,
-    cancelable: false,
-    composed: false,
-}
-
-function event(component, type, options) {
-    const elements = document.querySelectorAll(`[data-fryclass~="${component}"]`);
-    if (elements.length == 0) {
-        return;
+async function getRemote(url, cname, args) {
+    const sargs = JSON.stringify(args);
+    let fullurl = url;
+    if (url.startsWith('/')) {
+        fullurl = window.location.origin + url;
     }
-    let opts = {};
-    for (const option in options) {
-        const value = options[option];
-        if (option in default_options) {
-            opts[option] = value;
-        } else {
-            if (!('detail' in opts)) {
-                opts['detail'] = {};
-            }
-            opts['detail'][option] = value;
+    const loc = new URL(fullurl);
+    loc.search = new URLSearchParams({name: cname, args: sargs}).toString();
+    const response = await fetch(loc);
+    const data = await response.json();
+    if (data.code === 0) {
+        let root = document.createElement('div');
+        root.innerHTML = data.dom;
+        const components = {};
+        for (const comp of data.components) {
+            components[comp.fryid] = comp;
         }
-    }
-    let ev;
-    if ('detail' in opts) {
-        ev = new CustomEvent(type, opts);
-    } else {
-        ev = new Event(type, opts);
-    }
-    for (const element of elements) {
-        element.dispatchEvent(ev);
+        return {containerDOM: root, components: components}
     }
 }
 
 
-export {signal, effect, computed, hydrate, update, event}
+async function postRemote(url, cname, args) {
+    let fullurl = url;
+    if (url.startsWith('/')) {
+        fullurl = window.location.origin + url;
+    }
+    const sargs = JSON.stringify(args);
+    const rdata = new FormData();
+    rdata.append('name', cname);
+    rdata.append('args', sargs);
+    const response = await fetch(fullurl, {method: 'POST', body: rdata});
+    const data = await response.json();
+    if (data.code === 0) {
+        let root = document.createElement('div');
+        root.innerHTML = data.dom;
+        const components = {};
+        for (const comp of data.components) {
+            components[comp.fryid] = comp;
+        }
+        return {containerDOM: root, components: components}
+    }
+}
+
+
+export {
+    signal,
+    effect,
+    computed,
+    hydrate,
+    getRemote,
+    postRemote,
+}

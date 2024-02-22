@@ -81,6 +81,7 @@ class FryConfig():
 
     @property
     def config_root(self):
+        root_dir = None
         if self.django_ok:
             root_dir = getattr(django_settings, 'BASE_DIR', '')
         if self.flask_ok:

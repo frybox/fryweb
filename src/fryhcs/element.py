@@ -1,8 +1,8 @@
 from fryhcs.utils import static_url, component_name
+from fryhcs.config import fryconfig
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
 import types
-import json
 
 def escape(s):
     return s.replace('"', '\\"')
@@ -226,13 +226,8 @@ class Element(object):
             #    将组件名和组件实例ID附加到代表组件的script元素上，
             #    script是用来记录当前组件信息的，包括组件id，名字，
             #    以及后面可能的组件js参数
-            scriptprops = {
-                type_attr_name: 'text/x-frydata',
-                children_attr_name: [],
-            }
-            cscript = Element('script', scriptprops, True)
-            cnumber = page.add_component(cscript)
-            scriptprops[component_id_attr_name] = cnumber
+            component = {}
+            cnumber = page.add_component(component)
 
             # 2. 预处理父组件传来的ref/refall/@event/class
             #    2.1 将本组件上定义的给父组件js脚本用的ref/refall记录到page
@@ -316,16 +311,15 @@ class Element(object):
                 element.props[class_attr_name] = selfclass
 
             # 12. 将子组件实例的引用附加到script上(ref和refall都编码到refs中了)
-            data = {}
-            data['name'] = component_name(self.name)
-            data['refs'] = page.child_refs(cnumber)
+            component['fryname'] = component_name(self.name)
+            component['fryrefs'] = page.child_refs(cnumber)
 
             # 13. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
-                page.set_jsid2cid(uuid, cnumber)
-                data['args'] = {k:v for k,v in args}
-            scriptprops[children_attr_name].append(json.dumps(data))
+                component['fryurl'] = f'{static_url(fryconfig.js_url)}{uuid}.js'
+                component['fryargs'] = {k:v for k,v in args}
+                page.hasjs = True
         elif isinstance(self.name, str):
             props = {}
             #style = {} 

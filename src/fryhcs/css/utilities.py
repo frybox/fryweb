@@ -174,6 +174,7 @@ def merge_value(args, negative=False):
     return value.replace('_', ' ')
 
 
+IGNORES = set(['css', 'args', 'argc', 'neg', 'from_plugin', 'utility_method', 'is_utility', 'add_style'])
 class Utility():
     def __init__(self, css):
         args = css.utility_args
@@ -208,6 +209,9 @@ class Utility():
         }
         name = self.args[0]
 
+        if name in IGNORES:
+            return None
+
         # 去掉负值的情况
         name = name[1:] if name[0] == '-' else name 
 
@@ -221,7 +225,7 @@ class Utility():
 
     def __call__(self):
         method = self.utility_method()
-        if not method:
+        if not callable(method):
             return False
         return method()
 

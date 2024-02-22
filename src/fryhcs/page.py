@@ -1,19 +1,21 @@
-from fryhcs.element import Element
+from fryhcs.element import Element, component_id_attr_name, children_attr_name, type_attr_name
 from fryhcs.utils import static_url
 from fryhcs.config import fryconfig
+from importlib import import_module
+import json
 
 class Page(object):
     def __init__(self):
         # 记录当前已经处理的组件script元素列表，列表长度是当前正在处理的组件的ID
         self.components = []
-        # 组件UUID（代表了js脚本）到组件实例ID的映射关系，jsid -> list of cid
-        self.jsid2cids = {}
         # 组件实例ID到子组件引用/引用列表的映射关系, cid -> (refname -> childcid | list of childcid)
         self.cid2childrefs = {}
+        self.hasjs = False
 
     def add_component(self, component):
         self.components.append(component)
         cid = len(self.components)
+        component['fryid'] = cid
         self.cid2childrefs[cid] = {} 
         return cid
 
@@ -38,58 +40,68 @@ class Page(object):
                 refs[name] = ids.pop()
         return refs
 
-    def set_jsid2cid(self, jsid, cid): 
-        if jsid in self.jsid2cids:
-            cids = self.jsid2cids[jsid]
-        else:
-            cids = set()
-            self.jsid2cids[jsid] = cids
-        cids.add(cid)
 
-    @property
-    def jsids(self):
-        return list(self.jsid2cids.keys())
-
-    def components_of_script(self, jsid):
-        return self.jsid2cids.get(jsid, [])
-
-
-def render(element, page=None):
-    if not page:
-        page = Page()
+def render(element, props={}):
+    page = Page()
     if isinstance(element, Element):
         element = element.render(page)
     elif callable(element) and getattr(element, '__name__', 'anonym')[0].isupper():
-        element = Element(element).render(page)
+        element = Element(element, props).render(page)
+    elif isinstance(element, str):
+        if '.' in element:
+            module, _, comp = element.rpartition('.')
+            module = import_module(module)
+            component = getattr(module, comp)
+            if callable(component) and comp[0].isupper():
+                element = Element(component, props).render(page)
+        elif element and element[0].islower():
+            element = Element(element, props).render(page)
     return element
 
 
-def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewport="width=device-width, initial-scale=1.0", metas={}, properties={}, equivs={}):
+def html(content='div', title='', lang='en', rootclass='', charset='utf-8', viewport="width=device-width, initial-scale=1.0", metas={}, properties={}, equivs={}):
     sep = '\n    '
-
-    page = Page()
-    content = render(content, page)
-    components = '\n    '.join(str(c) for c in page.components)
-    scripts = page.jsids
-    if not scripts:
+    main_content = render(content)
+    page = main_content.page
+    components = []
+    for c in page.components:
+        content = {
+            'name': c['fryname'],
+            'refs': c['fryrefs'],
+            'args': c['fryargs'],
+            'url':  c['fryurl'],
+        }
+        scriptprops = {
+            type_attr_name: 'text/x-frydata',
+            children_attr_name: [json.dumps(content)],
+            component_id_attr_name: c['fryid'],
+        }
+        comp = Element('script', scriptprops, True)
+        components.append(str(comp))
+    components = '\n    '.join(components)
+    if not page.hasjs:
         hydrate_script = ""
     else:
-        output = []
-        for i, jsid in enumerate(scripts):
-            if i == 0:
-                output.append(f"import {{ hydrate as hydrate_{i}, hydrateAll }} from '{static_url(fryconfig.js_url)}{jsid}.js';")
-            else:
-                output.append(f"import {{ hydrate as hydrate_{i} }} from '{static_url(fryconfig.js_url)}{jsid}.js';")
-
-            for cid in page.components_of_script(jsid):
-                output.append(f"hydrates['{cid}'] = hydrate_{i};")
-        all_scripts = '\n      '.join(output)
-
         hydrate_script = f"""
     <script type="module">
-      let hydrates = {{}};
-      {all_scripts}
-      await hydrateAll(hydrates);
+      let components = {{}};
+      const scripts = document.querySelectorAll('script[data-fryid]');
+      let firsturl = undefined;
+      for (const script of scripts) {{
+        const cid = script.dataset.fryid;
+        script.fryid = cid;
+        const data = JSON.parse(script.textContent);
+        script.fryname = data.name;
+        script.fryurl  = data.url;
+        if (typeof firsturl === 'undefined') {{
+            firsturl = data.url;
+        }}
+        script.fryargs = Object.assign({{}}, data.args);
+        script.fryrefs = Object.assign({{}}, data.refs);
+        components[cid] = script;
+      }}
+      const {{ hydrateAll }} = await import(firsturl);
+      await hydrateAll(document.body, components);
     </script>
 """
 
@@ -165,7 +177,7 @@ def html(content='', title='', lang='en', rootclass='', charset='utf-8', viewpor
     <link rel="stylesheet" href="{static_url(fryconfig.css_url)}">
   </head>
   <body>
-    {content}
+    {main_content}
     <div style="display:none;">
     {components}
     </div>
