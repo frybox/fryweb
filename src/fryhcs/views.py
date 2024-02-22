@@ -4,7 +4,7 @@ from django.conf import settings
 
 from fryhcs.reload import event_stream, mime_type
 
-from fryhcs import Render
+from fryhcs import render
 
 import logging
 import uuid
