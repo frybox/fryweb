@@ -14,7 +14,7 @@ def component():
     args = request.args.get('args')
     print(name, args)
     args = json.loads(args)
-    element = render(name, args)
+    element = render(name, **args)
     page = element.page
     return jsonify({
         'code': 0,

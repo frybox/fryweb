@@ -35,7 +35,7 @@ def component(request):
     name = data.get('name')
     args = data.get('args')
     args = json.loads(args)
-    element = render(name, args)
+    element = render(name, **args)
     page = element.page
     return JsonResponse({
         'code': 0,

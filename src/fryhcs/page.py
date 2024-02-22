@@ -41,21 +41,21 @@ class Page(object):
         return refs
 
 
-def render(element, props={}):
+def render(element, **kwargs):
     page = Page()
     if isinstance(element, Element):
         element = element.render(page)
     elif callable(element) and getattr(element, '__name__', 'anonym')[0].isupper():
-        element = Element(element, props).render(page)
+        element = Element(element, kwargs).render(page)
     elif isinstance(element, str):
         if '.' in element:
             module, _, comp = element.rpartition('.')
             module = import_module(module)
             component = getattr(module, comp)
             if callable(component) and comp[0].isupper():
-                element = Element(component, props).render(page)
+                element = Element(component, kwargs).render(page)
         elif element and element[0].islower():
-            element = Element(element, props).render(page)
+            element = Element(element, kwargs).render(page)
     return element
 
 
