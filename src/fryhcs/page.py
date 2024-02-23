@@ -59,7 +59,17 @@ def render(element, **kwargs):
     return element
 
 
-def html(content='div', title='', lang='en', rootclass='', charset='utf-8', viewport="width=device-width, initial-scale=1.0", metas={}, properties={}, equivs={}):
+def html(content='div',
+         title='',
+         lang='en',
+         rootclass='',
+         charset='utf-8',
+         viewport="width=device-width, initial-scale=1.0",
+         metas={},
+         properties={},
+         equivs={},
+         autoreload=True,
+        ):
     sep = '\n    '
     main_content = render(content)
     page = main_content.page
@@ -122,7 +132,7 @@ def html(content='div', title='', lang='en', rootclass='', charset='utf-8', view
     #</script>
     #'''
 
-    if fryconfig.debug:
+    if fryconfig.debug and autoreload:
         script = """
     <script type="module">
       let serverId = null;
