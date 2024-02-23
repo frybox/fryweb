@@ -368,12 +368,13 @@ async function getRemote(url, cname, args) {
         for (const comp of data.components) {
             components[comp.fryid] = comp;
         }
-        return {containerDOM: root, components: components}
+        await hydrate(root, components);
+        return root.firstElementChild;
     }
 }
 
 
-async function postRemote(url, cname, args) {
+async function postRemote(url, cname, args, csrftoken) {
     let fullurl = url;
     if (url.startsWith('/')) {
         fullurl = window.location.origin + url;
@@ -382,7 +383,12 @@ async function postRemote(url, cname, args) {
     const rdata = new FormData();
     rdata.append('name', cname);
     rdata.append('args', sargs);
-    const response = await fetch(fullurl, {method: 'POST', body: rdata});
+    let postargs = {method: 'POST', body: rdata};
+    if (csrftoken) {
+        postargs.headers = {'X-CSRFToken': csrftoken};
+        postargs.mode = 'same-origin';
+    }
+    const response = await fetch(fullurl, postargs);
     const data = await response.json();
     if (data.code === 0) {
         let root = document.createElement('div');
@@ -391,7 +397,8 @@ async function postRemote(url, cname, args) {
         for (const comp of data.components) {
             components[comp.fryid] = comp;
         }
-        return {containerDOM: root, components: components}
+        await hydrate(root, components);
+        return root.firstElementChild;
     }
 }
 

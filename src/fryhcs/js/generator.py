@@ -74,6 +74,8 @@ class JSGenerator(BaseGenerator):
         bun = this / 'bun' 
         env = os.environ.copy()
         if True:
+            # 2024.2.23: bun不成熟，使用esbuild打包
+            # esbuild支持通过环境变量NODE_PATH设置import查找路径
             env['NODE_PATH'] = str(this / '..' / 'static' / 'js')
             args = ['npx', 'esbuild', '--format=esm', '--bundle', f'--outbase={self.tmp_dir}']
         elif bun.is_file():

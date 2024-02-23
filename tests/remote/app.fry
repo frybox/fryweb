@@ -31,11 +31,10 @@ def App():
       </div>
     </template>
     <script {url}>
-      import { getRemote, hydrate } from 'fryhcs';
+      import { getRemote } from 'fryhcs';
       const double = async () => {
-        const {containerDOM, components} = await getRemote(url, 'app.Double', {v: 100});
-        await hydrate(containerDOM, components);
-        container.appendChild(containerDOM.firstElementChild);
+        const dom = await getRemote(url, 'app.Double', {v: 100});
+        container.appendChild(dom);
       }
     </script>
 
