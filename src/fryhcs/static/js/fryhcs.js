@@ -364,11 +364,7 @@ async function getRemote(url, cname, args) {
     if (data.code === 0) {
         let root = document.createElement('div');
         root.innerHTML = data.dom;
-        const components = {};
-        for (const comp of data.components) {
-            components[comp.fryid] = comp;
-        }
-        await hydrate(root, components);
+        await hydrate(root, data.components);
         return root.firstElementChild;
     }
 }
@@ -393,11 +389,7 @@ async function postRemote(url, cname, args, csrftoken) {
     if (data.code === 0) {
         let root = document.createElement('div');
         root.innerHTML = data.dom;
-        const components = {};
-        for (const comp of data.components) {
-            components[comp.fryid] = comp;
-        }
-        await hydrate(root, components);
+        await hydrate(root, data.components);
         return root.firstElementChild;
     }
 }

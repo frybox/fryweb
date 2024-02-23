@@ -7,14 +7,14 @@ import json
 class Page(object):
     def __init__(self):
         # 记录当前已经处理的组件script元素列表，列表长度是当前正在处理的组件的ID
-        self.components = []
+        self.components = {}
         # 组件实例ID到子组件引用/引用列表的映射关系, cid -> (refname -> childcid | list of childcid)
         self.cid2childrefs = {}
         self.hasjs = False
 
     def add_component(self, component):
-        self.components.append(component)
-        cid = len(self.components)
+        cid = len(self.components) + 1
+        self.components[cid] = component
         component['fryid'] = cid
         self.cid2childrefs[cid] = {} 
         return cid
@@ -64,7 +64,7 @@ def html(content='div', title='', lang='en', rootclass='', charset='utf-8', view
     main_content = render(content)
     page = main_content.page
     components = []
-    for c in page.components:
+    for c in page.components.values():
         content = {
             'name': c['fryname'],
             'refs': c['fryrefs'],
