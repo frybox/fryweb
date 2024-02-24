@@ -68,6 +68,7 @@ def html(content='div',
          metas={},
          properties={},
          equivs={},
+         bg='',
          autoreload=True,
         ):
     sep = '\n    '
@@ -121,6 +122,14 @@ def html(content='div',
                             for property, value in properties.items())
     equivs = sep.join(f'<meta http-equiv="{equiv}" content="{value}">'
                             for equiv, value in equivs.items())
+    basestyle = ''
+    if bg:
+        basestyle = f'''
+        <style>
+          body {{
+            background-color: {bg};
+          }}
+        </style>'''
     # no need to use importmap
     #importmap = f'''
     #<script type="importmap">
@@ -185,6 +194,7 @@ def html(content='div',
     {properties}
     {equivs}
     <link rel="stylesheet" href="{static_url(fryconfig.css_url)}">
+    {basestyle}
   </head>
   <body>
     {main_content}
