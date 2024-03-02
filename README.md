@@ -414,7 +414,7 @@ MIT License
 ### 1. Why named fryhcs
 **FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
 
-In fact, this project is created by the father of one son(**F**ang**R**ui) and one daughter(**F**ang**Y**i)...
+In fact, this project is created by the father of one boy(**F**ang**R**ui) and one girl(**F**ang**Y**i)...
 
 ### 2. Why is the file format named to be .fry
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already
