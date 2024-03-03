@@ -68,53 +68,91 @@ def html(content='div',
          metas={},
          properties={},
          equivs={},
-         bg='',
          autoreload=True,
         ):
     sep = '\n    '
     main_content = render(content)
     page = main_content.page
+    if main_content.name == 'body':
+        body = main_content
+    else:
+        body = Element('body', dict(children=[main_content]), True)
     components = []
     for c in page.components.values():
         content = {
             'name': c['fryname'],
             'refs': c['fryrefs'],
-            'args': c['fryargs'],
-            'url':  c['fryurl'],
         }
+        if 'fryurl' in c:
+            content['url'] = c['fryurl']
+            content['args'] = c['fryargs']
         scriptprops = {
             type_attr_name: 'text/x-frydata',
             children_attr_name: [json.dumps(content)],
             component_id_attr_name: c['fryid'],
         }
         comp = Element('script', scriptprops, True)
-        components.append(str(comp))
-    components = '\n    '.join(components)
-    if not page.hasjs:
-        hydrate_script = ""
-    else:
-        hydrate_script = f"""
-    <script type="module">
-      let components = {{}};
+        components.append(comp)
+    if components:
+        components = Element('div', dict(style=dict(display='none'), children=components), True)
+        body.props[children_attr_name].append(components)
+    if page.hasjs:
+        script = """
+      let components = {};
       const scripts = document.querySelectorAll('script[data-fryid]');
       let firsturl = undefined;
-      for (const script of scripts) {{
+      for (const script of scripts) {
         const cid = script.dataset.fryid;
         script.fryid = cid;
         const data = JSON.parse(script.textContent);
         script.fryname = data.name;
         script.fryurl  = data.url;
-        if (typeof firsturl === 'undefined') {{
+        if (typeof firsturl === 'undefined') {
             firsturl = data.url;
-        }}
-        script.fryargs = Object.assign({{}}, data.args);
-        script.fryrefs = Object.assign({{}}, data.refs);
+        }
+        script.fryargs = Object.assign({}, data.args);
+        script.fryrefs = Object.assign({}, data.refs);
         components[cid] = script;
-      }}
-      const {{ hydrateAll }} = await import(firsturl);
-      await hydrateAll(document.body, components);
-    </script>
+      }
+      const { hydrateAll } = await import(firsturl);
+      await hydrateAll(document.documentElement, components);
 """
+        hydrate_script = Element('script', dict(type='module', children=[script]), True)
+        body.props[children_attr_name].append(hydrate_script)
+
+    if fryconfig.debug and autoreload:
+        script = f"""
+      let serverId = null;
+      let eventSource = null;
+      let timeoutId = null;
+      function checkAutoReload() {{
+          if (timeoutId !== null) clearTimeout(timeoutId);
+          timeoutId = setTimeout(checkAutoReload, 1000);
+          if (eventSource !== null) eventSource.close();
+          eventSource = new EventSource("{fryconfig.check_reload_url}");
+          eventSource.addEventListener('open', () => {{
+              console.log(new Date(), "Auto reload connected.");
+              if (timeoutId !== null) clearTimeout(timeoutId);
+              timeoutId = setTimeout(checkAutoReload, 1000);
+          }});
+          eventSource.addEventListener('message', (event) => {{
+              const data = JSON.parse(event.data);
+              if (serverId === null) {{
+                  serverId = data.serverId;
+              }} else if (serverId !== data.serverId) {{
+                  if (eventSource !== null) eventSource.close();
+                  if (timeoutId !== null) clearTimeout(timeoutId);
+                  location.reload();
+                  return;
+              }}
+              if (timeoutId !== null) clearTimeout(timeoutId);
+              timeoutId = setTimeout(checkAutoReload, 1000);
+          }});
+      }}
+      checkAutoReload();
+"""
+        autoreload = Element('script', dict(type='module', children=[script]), True)
+        body.props[children_attr_name].append(autoreload)
 
     metas = sep.join(f'<meta name="{name}" content="{value}">'
                        for name, value in metas.items())
@@ -122,14 +160,6 @@ def html(content='div',
                             for property, value in properties.items())
     equivs = sep.join(f'<meta http-equiv="{equiv}" content="{value}">'
                             for equiv, value in equivs.items())
-    basestyle = ''
-    if bg:
-        basestyle = f'''
-        <style>
-          body {{
-            background-color: {bg};
-          }}
-        </style>'''
     # no need to use importmap
     #importmap = f'''
     #<script type="importmap">
@@ -140,43 +170,6 @@ def html(content='div',
     #  }}
     #</script>
     #'''
-
-    if fryconfig.debug and autoreload:
-        script = """
-    <script type="module">
-      let serverId = null;
-      let eventSource = null;
-      let timeoutId = null;
-      function checkAutoReload() {
-          if (timeoutId !== null) clearTimeout(timeoutId);
-          timeoutId = setTimeout(checkAutoReload, 1000);
-          if (eventSource !== null) eventSource.close();
-          eventSource = new EventSource("{{autoReloadPath}}");
-          eventSource.addEventListener('open', () => {
-              console.log(new Date(), "Auto reload connected.");
-              if (timeoutId !== null) clearTimeout(timeoutId);
-              timeoutId = setTimeout(checkAutoReload, 1000);
-          });
-          eventSource.addEventListener('message', (event) => {
-              const data = JSON.parse(event.data);
-              if (serverId === null) {
-                  serverId = data.serverId;
-              } else if (serverId !== data.serverId) {
-                  if (eventSource !== null) eventSource.close();
-                  if (timeoutId !== null) clearTimeout(timeoutId);
-                  location.reload();
-                  return;
-              }
-              if (timeoutId !== null) clearTimeout(timeoutId);
-              timeoutId = setTimeout(checkAutoReload, 1000);
-          });
-      }
-      checkAutoReload();
-    </script>
-"""
-        autoreload = script.replace('{{autoReloadPath}}', fryconfig.check_reload_url)
-    else:
-        autoreload = ''
 
     if rootclass:
         rootclass = f' class="{rootclass}"'
@@ -194,15 +187,7 @@ def html(content='div',
     {properties}
     {equivs}
     <link rel="stylesheet" href="{static_url(fryconfig.css_url)}">
-    {basestyle}
   </head>
-  <body>
-    {main_content}
-    <div style="display:none;">
-    {components}
-    </div>
-    {hydrate_script}
-    {autoreload}
-  </body>
+  {body}
 </html>
 '''
