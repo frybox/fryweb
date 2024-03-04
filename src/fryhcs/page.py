@@ -60,6 +60,7 @@ def render(element, **kwargs):
 
 
 def html(content='div',
+         args={},
          title='',
          lang='en',
          rootclass='',
@@ -71,7 +72,7 @@ def html(content='div',
          autoreload=True,
         ):
     sep = '\n    '
-    main_content = render(content)
+    main_content = render(content, **args)
     page = main_content.page
     if main_content.name == 'body':
         body = main_content
