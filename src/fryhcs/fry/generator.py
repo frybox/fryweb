@@ -368,7 +368,7 @@ class PyGenerator(BaseGenerator):
         if self.web_component_script:
             uuid = self.get_uuid(cname, node)
             args = [(k,v) for k,v in self.client_script_args.items()]
-            attrs.insert(0, [call_client_attr, f'{self.relative_dir / uuid}', args])
+            attrs.insert(0, [call_client_attr, f'{(self.relative_dir/uuid).as_posix()}', args])
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
