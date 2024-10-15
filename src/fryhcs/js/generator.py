@@ -77,7 +77,12 @@ class JSGenerator(BaseGenerator):
             # 2024.2.23: bun不成熟，使用esbuild打包
             # esbuild支持通过环境变量NODE_PATH设置import查找路径
             env['NODE_PATH'] = str(this / '..' / 'static' / 'js')
-            args = ['npx', 'esbuild', '--format=esm', '--bundle', f'--outbase={self.tmp_dir}']
+            # Windows上需要指定npx全路径，否则会出现FileNotFoundError
+            npx = shutil.which('npx')
+            if not npx:
+                print(f"Can't find npx, please install nodejs first.")
+                return
+            args = [npx, 'esbuild', '--format=esm', '--bundle', f'--outbase={self.tmp_dir}']
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
