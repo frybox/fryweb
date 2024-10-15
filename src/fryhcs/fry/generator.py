@@ -36,7 +36,7 @@ class BaseGenerator(NodeVisitor):
     def get_uuid(self, cname, node):
         sha1 = hashlib.sha1()
         sha1.update(node.text.encode('utf-8'))
-        return f'{cname}-{sha1.hexdigest()}'
+        return f'{cname.lower()}-{sha1.hexdigest()}'
 
     def set_curr_file(self, file):
         self.curr_file = Path(file).absolute().resolve(strict=True)
