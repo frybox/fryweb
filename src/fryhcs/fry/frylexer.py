@@ -324,7 +324,7 @@ if __name__ == '__main__':
     lexer = FryLexer()
     fmter = TerminalFormatter()
     if len(sys.argv) > 1:
-        with open(sys.argv[1], 'r') as f:
+        with open(sys.argv[1], 'r', encoding='utf-8') as f:
             data = f.read()
         #print(highlight(data, lexer, fmter))
         for t, v in lexer.get_tokens(data):

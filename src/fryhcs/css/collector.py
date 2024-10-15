@@ -24,7 +24,7 @@ class BaseCollector():
 
     def collect_attrs(self):
         for file in self.fileiter.all_files():
-            with file.open('r') as f:
+            with file.open('r', encoding='utf-8') as f:
                 self.collect_from_content(f.read())
 
     def collect_from_content(self, data):

@@ -51,16 +51,16 @@ class CSSGenerator():
         self.output_file.parent.mkdir(parents=True, exist_ok=True)
         preflight = os.path.join(os.path.dirname(__file__), 'preflight.css')
         preflight = Path(preflight)
-        with self.output_file.open('a' if incremental else 'w') as f:
+        with self.output_file.open('a' if incremental else 'w', encoding='utf-8') as f:
             if not incremental:
-                with preflight.open('r') as pf:
+                with preflight.open('r', encoding='utf-8') as pf:
                     f.write(pf.read())
                 from fryhcs.css.plugin import plugin_basecss
                 basecss = plugin_basecss()
                 f.write(basecss)
                 preflight = fryconfig.config_root / 'preflight.css'
                 if preflight.is_file():
-                    with preflight.open('r') as pf:
+                    with preflight.open('r', encoding='utf-8') as pf:
                         f.write(pf.read())
             csses = []
             for key, value in collector.all_attrs():

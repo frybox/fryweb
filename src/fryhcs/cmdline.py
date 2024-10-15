@@ -918,7 +918,7 @@ def topy_command(fryfile):
     if not path.is_file():
         print(f"Error: can't open file '{fryfile}'.")
         sys.exit(1)
-    with path.open('r') as f:
+    with path.open('r', encoding='utf-8') as f:
         data = f.read()
     source = fry_to_py(data, path)
     try:
@@ -1012,7 +1012,7 @@ def hl_command(fryfile):
     from fryhcs.fry.frylexer import FryLexer
     lexer = FryLexer()
     fmter = TerminalFormatter()
-    with open(fryfile, 'r') as f:
+    with open(fryfile, 'r', encoding='utf-8') as f:
         source = f.read()
     click.echo(highlight(source, lexer, fmter))
 

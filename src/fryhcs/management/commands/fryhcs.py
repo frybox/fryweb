@@ -52,6 +52,6 @@ Usage example:
         path = Path(fryfile)
         if not path.is_file():
             return f"Wrong argument to fryhcs topy command: {fryfile} is not readable"
-        with path.open('r') as f:
+        with path.open('r', encoding='utf-8') as f:
             data = f.read()
         return fry_to_py(data, path)

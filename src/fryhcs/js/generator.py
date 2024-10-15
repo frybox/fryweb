@@ -56,7 +56,7 @@ class JSGenerator(BaseGenerator):
             self.set_curr_file(file)
             self.js_dir = self.tmp_dir / self.relative_dir
             self.js_dir.mkdir(parents=True, exist_ok=True)
-            with self.curr_file.open('r') as f:
+            with self.curr_file.open('r', encoding='utf-8') as f:
                 count += self.generate_one(f.read())
         self.bundle()
         return count
@@ -110,7 +110,7 @@ class JSGenerator(BaseGenerator):
             script = c['script']
             embeds = c['embeds']
             jspath = self.js_dir / f'{name}.js'
-            with jspath.open('w') as f:
+            with jspath.open('w', encoding='utf-8') as f:
                 f.write(compose_js(args, script, embeds))
         return len(self.web_components)
 
