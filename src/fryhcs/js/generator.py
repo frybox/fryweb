@@ -56,7 +56,9 @@ class JSGenerator(BaseGenerator):
             self.set_curr_file(file)
             self.js_dir = self.tmp_dir / self.relative_dir
             self.js_dir.mkdir(parents=True, exist_ok=True)
-            with self.curr_file.open('r', encoding='utf-8') as f:
+            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变
+            # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
+            with self.curr_file.open('r', encoding='utf-8', newline='') as f:
                 count += self.generate_one(f.read())
         self.bundle()
         return count

@@ -24,7 +24,9 @@ class BaseCollector():
 
     def collect_attrs(self):
         for file in self.fileiter.all_files():
-            with file.open('r', encoding='utf-8') as f:
+            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变
+            # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
+            with file.open('r', encoding='utf-8', newline='') as f:
                 self.collect_from_content(f.read())
 
     def collect_from_content(self, data):
