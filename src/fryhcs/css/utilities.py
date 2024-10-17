@@ -22,6 +22,11 @@ def is_percent(value):
             value[:-1].isdigit() and
             0 <= int(value[:-1]) <= 100)
 
+def is_calc(value):
+    return (len(value) > 6 and
+            value[3] == ',' and
+            value[:3] in ('add', 'sub','mul', 'div'))
+
 def is_hex(value):
     return all('0'<=x<='9' or 'a'<=x<='f' or 'A'<=x<='F'
                for x in value)
@@ -81,6 +86,13 @@ def convert_size(value, negative=False):
         a, b = value.split('/')
         a, b = int(a), int(b)
         size = f'{a*100/b}%'
+    elif is_calc(value):
+        items = value.split(',')
+        if len(items) != 3:
+            size = value
+        else:
+            ops = {'add':'+','sub':'-','mul':'*', 'div':'/'}
+            size = f'calc({items[1]} {ops[items[0]]} {items[2]})'
     else:
         size = value
     if negative and size and size[0] != '-':
