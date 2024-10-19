@@ -7,8 +7,8 @@ from importlib._bootstrap_external import _get_supported_file_loaders
 from .generator import fry_to_py
 
 # 最初.fry文件叫.pyx文件，参考.jsx，但.pyx在Cython中已经使用了，改为.fry文件
-# 兼用期间，仍然支持.pyx文件的加载
-PYXSOURCE_SUFFIXES = ['.fry', '.pyx']
+# 如果仍用.pyx，会在Cython使用时报错（如sqlalchemy/cyextension/collections.pyx）
+PYXSOURCE_SUFFIXES = ['.fry',]
 
 class PyxSourceFileLoader(SourceFileLoader):
     def source_to_code(self, data, path, *, _optimize=-1):
