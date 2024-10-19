@@ -14,7 +14,7 @@ def App():
     print(c.get_style('color'))
     print(c.get_style('height'))
     <template>
-      <div flex flex-col gap-4 text-center>
+      <div flex flex-col gap-4 text-center h-sub,100vh,25px>
         <Content value={randint(0,2)} class="mb-4 mt-8" />
         <Content value={randint(0,2)} />
         <Content value={randint(0,2)} />
@@ -43,4 +43,4 @@ def Content(value=0):
 
 if __name__ == '__main__':
     from fryhcs import render
-    render(App)
+    print(render(App))
