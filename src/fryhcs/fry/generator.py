@@ -330,7 +330,8 @@ class PyGenerator(BaseGenerator):
     def visit_fry_embed(self, node, children):
         _, script, _ = children
         # embed都是赋值表达式，可以直接加上小括号
-        return ('fry_embed', '(' + script + ')')
+        # 2024.10.22：作为fry_child时，不支持{*mylist}这种用法，直接{mylist}
+        return ('fry_embed', '(' + script.strip() + ')')
 
     def visit_triple_single_quote(self, node, children):
         return node.text
@@ -610,6 +611,10 @@ class PyGenerator(BaseGenerator):
             #elif frychild[0] == 'fry_embed':
             if frychild[0] == 'fry_embed':
                 _, embed = frychild
+                # 2024.10.12: 不支持{*mylist}这种语法，会导致python语法错误：
+                # SyntaxError: cannot use starred expression here
+                if embed[0] == '(' and embed[1] == '*':
+                    raise BadGrammar('{' + embed[1:-1] + '} is not allowed in component template')
                 return embed
             elif frychild[0] == 'joint_embed':
                 _, quoted_literal, client_embed = frychild

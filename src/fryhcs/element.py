@@ -15,7 +15,7 @@ class RenderException(Exception):
 def render_children(children, page):
     chs = []
     for ch in children:
-        if isinstance(ch, list): #tuple和GeneratorType都已转化为list
+        if isinstance(ch, list): #tuple和GeneratorType都已在Element.render第四步转化为list
             chs += render_children(ch, page)
         elif isinstance(ch, Element):
             chs.append(ch.render(page))
@@ -110,9 +110,9 @@ refall_attr_name = 'refall'
 
 class Element(object):
 
-    def __init__(self, name, props={}, rendered=False):
+    def __init__(self, name, props=None, rendered=False):
         self.name = name
-        self.props = props
+        self.props = {} if props is None else props
         self.rendered = rendered
         self.cid = 0
 
@@ -164,7 +164,7 @@ class Element(object):
         def hook(v):
             if isinstance(v, (ClientEmbed, ClientRef)):
                 v.hook(component)
-            elif isinstance(v, list): #tuple和GeneratorType都已转化为list
+            elif isinstance(v, list): #tuple和GeneratorType在render第四步都已转化为list
                 for lv in v:
                     hook(lv)
             elif isinstance(v, dict):
