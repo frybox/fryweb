@@ -926,9 +926,13 @@ def topy_command(fryfile):
         from pygments.lexers import PythonLexer
         from pygments import highlight
         lexer = PythonLexer()
-        fmter = TerminalFormatter()
+        fmter = TerminalFormatter(linenos=True)
         click.echo(highlight(source, lexer, fmter))
     except ImportError:
+        lines = source.splitlines()
+        if lines:
+            prefix_len = len(str(len(lines)))
+            source = '\n'.join([f'{i:0{prefix_len}}: {line}' for i, line in zip(range(1, len(lines)+1), lines)])
         click.echo(source)
 
 
