@@ -1,0 +1,235 @@
+from fryhcs import html, Element
+from flask import Flask
+from random import randint
+
+app = Flask(__name__)
+
+@app.get('/')
+def index():
+    return html(App, title="fryhcs color test", autoreload=False)
+
+
+def App():
+    <template>
+      <div text-center text-xxl mt-50px>
+        <div border-4 border-primary rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-primary-bg>text-primary-bg</p>
+          <p text-primary-bga>text-primary-bga</p>
+          <p text-primary-bgx>text-primary-bgx</p>
+          <p text-primary-bgax>text-primary-bgax</p>
+          <p text-primary-el>text-primary-el</p>
+          <p text-primary-ela>text-primary-ela</p>
+          <p text-primary-elx>text-primary-elx</p>
+          <p text-primary-elax>text-primary-elax</p>
+          <p text-primary-elxx>text-primary-elxx</p>
+          <p text-primary-elaxx>text-primary-elaxx</p>
+          <p text-primary-bd>text-primary-bd</p>
+          <p text-primary-bda>text-primary-bda</p>
+          <p text-primary-bdx>text-primary-bdx</p>
+          <p text-primary-bdax>text-primary-bdax</p>
+          <p text-primary-bdxx>text-primary-bdxx</p>
+          <p text-primary-bdaxx>text-primary-bdaxx</p>
+          <p text-primary>text-primary</p>
+          <p text-primarya>text-primarya</p>
+          <p text-primaryx>text-primaryx</p>
+          <p text-primaryax>text-primaryax</p>
+          <p text-primary-t>text-primary-t</p>
+          <p text-primary-ta>text-primary-ta</p>
+          <p text-primary-tx>text-primary-tx</p>
+          <p text-primary-tax>text-primary-tax</p>
+        </div>
+
+        <div border-4 border-secondary rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-secondary-bg>text-secondary-bg</p>
+          <p text-secondary-bga>text-secondary-bga</p>
+          <p text-secondary-bgx>text-secondary-bgx</p>
+          <p text-secondary-bgax>text-secondary-bgax</p>
+          <p text-secondary-el>text-secondary-el</p>
+          <p text-secondary-ela>text-secondary-ela</p>
+          <p text-secondary-elx>text-secondary-elx</p>
+          <p text-secondary-elax>text-secondary-elax</p>
+          <p text-secondary-elxx>text-secondary-elxx</p>
+          <p text-secondary-elaxx>text-secondary-elaxx</p>
+          <p text-secondary-bd>text-secondary-bd</p>
+          <p text-secondary-bda>text-secondary-bda</p>
+          <p text-secondary-bdx>text-secondary-bdx</p>
+          <p text-secondary-bdax>text-secondary-bdax</p>
+          <p text-secondary-bdxx>text-secondary-bdxx</p>
+          <p text-secondary-bdaxx>text-secondary-bdaxx</p>
+          <p text-secondary>text-secondary</p>
+          <p text-secondarya>text-secondarya</p>
+          <p text-secondaryx>text-secondaryx</p>
+          <p text-secondaryax>text-secondaryax</p>
+          <p text-secondary-t>text-secondary-t</p>
+          <p text-secondary-ta>text-secondary-ta</p>
+          <p text-secondary-tx>text-secondary-tx</p>
+          <p text-secondary-tax>text-secondary-tax</p>
+        </div>
+
+        <div border-4 border-accent rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-accent-bg>text-accent-bg</p>
+          <p text-accent-bga>text-accent-bga</p>
+          <p text-accent-bgx>text-accent-bgx</p>
+          <p text-accent-bgax>text-accent-bgax</p>
+          <p text-accent-el>text-accent-el</p>
+          <p text-accent-ela>text-accent-ela</p>
+          <p text-accent-elx>text-accent-elx</p>
+          <p text-accent-elax>text-accent-elax</p>
+          <p text-accent-elxx>text-accent-elxx</p>
+          <p text-accent-elaxx>text-accent-elaxx</p>
+          <p text-accent-bd>text-accent-bd</p>
+          <p text-accent-bda>text-accent-bda</p>
+          <p text-accent-bdx>text-accent-bdx</p>
+          <p text-accent-bdax>text-accent-bdax</p>
+          <p text-accent-bdxx>text-accent-bdxx</p>
+          <p text-accent-bdaxx>text-accent-bdaxx</p>
+          <p text-accent>text-accent</p>
+          <p text-accenta>text-accenta</p>
+          <p text-accentx>text-accentx</p>
+          <p text-accentax>text-accentax</p>
+          <p text-accent-t>text-accent-t</p>
+          <p text-accent-ta>text-accent-ta</p>
+          <p text-accent-tx>text-accent-tx</p>
+          <p text-accent-tax>text-accent-tax</p>
+        </div>
+
+        <div border-4 border-info rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-info-bg>text-info-bg</p>
+          <p text-info-bga>text-info-bga</p>
+          <p text-info-bgx>text-info-bgx</p>
+          <p text-info-bgax>text-info-bgax</p>
+          <p text-info-el>text-info-el</p>
+          <p text-info-ela>text-info-ela</p>
+          <p text-info-elx>text-info-elx</p>
+          <p text-info-elax>text-info-elax</p>
+          <p text-info-elxx>text-info-elxx</p>
+          <p text-info-elaxx>text-info-elaxx</p>
+          <p text-info-bd>text-info-bd</p>
+          <p text-info-bda>text-info-bda</p>
+          <p text-info-bdx>text-info-bdx</p>
+          <p text-info-bdax>text-info-bdax</p>
+          <p text-info-bdxx>text-info-bdxx</p>
+          <p text-info-bdaxx>text-info-bdaxx</p>
+          <p text-info>text-info</p>
+          <p text-infoa>text-infoa</p>
+          <p text-infox>text-infox</p>
+          <p text-infoax>text-infoax</p>
+          <p text-info-t>text-info-t</p>
+          <p text-info-ta>text-info-ta</p>
+          <p text-info-tx>text-info-tx</p>
+          <p text-info-tax>text-info-tax</p>
+        </div>
+
+        <div border-4 border-success rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-success-bg>text-success-bg</p>
+          <p text-success-bga>text-success-bga</p>
+          <p text-success-bgx>text-success-bgx</p>
+          <p text-success-bgax>text-success-bgax</p>
+          <p text-success-el>text-success-el</p>
+          <p text-success-ela>text-success-ela</p>
+          <p text-success-elx>text-success-elx</p>
+          <p text-success-elax>text-success-elax</p>
+          <p text-success-elxx>text-success-elxx</p>
+          <p text-success-elaxx>text-success-elaxx</p>
+          <p text-success-bd>text-success-bd</p>
+          <p text-success-bda>text-success-bda</p>
+          <p text-success-bdx>text-success-bdx</p>
+          <p text-success-bdax>text-success-bdax</p>
+          <p text-success-bdxx>text-success-bdxx</p>
+          <p text-success-bdaxx>text-success-bdaxx</p>
+          <p text-success>text-success</p>
+          <p text-successa>text-successa</p>
+          <p text-successx>text-successx</p>
+          <p text-successax>text-successax</p>
+          <p text-success-t>text-success-t</p>
+          <p text-success-ta>text-success-ta</p>
+          <p text-success-tx>text-success-tx</p>
+          <p text-success-tax>text-success-tax</p>
+        </div>
+
+        <div border-4 border-warning rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-warning-bg>text-warning-bg</p>
+          <p text-warning-bga>text-warning-bga</p>
+          <p text-warning-bgx>text-warning-bgx</p>
+          <p text-warning-bgax>text-warning-bgax</p>
+          <p text-warning-el>text-warning-el</p>
+          <p text-warning-ela>text-warning-ela</p>
+          <p text-warning-elx>text-warning-elx</p>
+          <p text-warning-elax>text-warning-elax</p>
+          <p text-warning-elxx>text-warning-elxx</p>
+          <p text-warning-elaxx>text-warning-elaxx</p>
+          <p text-warning-bd>text-warning-bd</p>
+          <p text-warning-bda>text-warning-bda</p>
+          <p text-warning-bdx>text-warning-bdx</p>
+          <p text-warning-bdax>text-warning-bdax</p>
+          <p text-warning-bdxx>text-warning-bdxx</p>
+          <p text-warning-bdaxx>text-warning-bdaxx</p>
+          <p text-warning>text-warning</p>
+          <p text-warninga>text-warninga</p>
+          <p text-warningx>text-warningx</p>
+          <p text-warningax>text-warningax</p>
+          <p text-warning-t>text-warning-t</p>
+          <p text-warning-ta>text-warning-ta</p>
+          <p text-warning-tx>text-warning-tx</p>
+          <p text-warning-tax>text-warning-tax</p>
+        </div>
+
+        <div border-4 border-error rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-error-bg>text-error-bg</p>
+          <p text-error-bga>text-error-bga</p>
+          <p text-error-bgx>text-error-bgx</p>
+          <p text-error-bgax>text-error-bgax</p>
+          <p text-error-el>text-error-el</p>
+          <p text-error-ela>text-error-ela</p>
+          <p text-error-elx>text-error-elx</p>
+          <p text-error-elax>text-error-elax</p>
+          <p text-error-elxx>text-error-elxx</p>
+          <p text-error-elaxx>text-error-elaxx</p>
+          <p text-error-bd>text-error-bd</p>
+          <p text-error-bda>text-error-bda</p>
+          <p text-error-bdx>text-error-bdx</p>
+          <p text-error-bdax>text-error-bdax</p>
+          <p text-error-bdxx>text-error-bdxx</p>
+          <p text-error-bdaxx>text-error-bdaxx</p>
+          <p text-error>text-error</p>
+          <p text-errora>text-errora</p>
+          <p text-errorx>text-errorx</p>
+          <p text-errorax>text-errorax</p>
+          <p text-error-t>text-error-t</p>
+          <p text-error-ta>text-error-ta</p>
+          <p text-error-tx>text-error-tx</p>
+          <p text-error-tax>text-error-tax</p>
+        </div>
+
+        <div border-4 border-gray rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
+          <p text-gray-bg>text-gray-bg</p>
+          <p text-gray-bga>text-gray-bga</p>
+          <p text-gray-bgx>text-gray-bgx</p>
+          <p text-gray-bgax>text-gray-bgax</p>
+          <p text-gray-el>text-gray-el</p>
+          <p text-gray-ela>text-gray-ela</p>
+          <p text-gray-elx>text-gray-elx</p>
+          <p text-gray-elax>text-gray-elax</p>
+          <p text-gray-elxx>text-gray-elxx</p>
+          <p text-gray-elaxx>text-gray-elaxx</p>
+          <p text-gray-bd>text-gray-bd</p>
+          <p text-gray-bda>text-gray-bda</p>
+          <p text-gray-bdx>text-gray-bdx</p>
+          <p text-gray-bdax>text-gray-bdax</p>
+          <p text-gray-bdxx>text-gray-bdxx</p>
+          <p text-gray-bdaxx>text-gray-bdaxx</p>
+          <p text-gray>text-gray</p>
+          <p text-graya>text-graya</p>
+          <p text-grayx>text-grayx</p>
+          <p text-grayax>text-grayax</p>
+          <p text-gray-t>text-gray-t</p>
+          <p text-gray-ta>text-gray-ta</p>
+          <p text-gray-tx>text-gray-tx</p>
+          <p text-gray-tax>text-gray-tax</p>
+        </div>
+      </div>
+    </template>
+
+if __name__ == '__main__':
+    from fryhcs import render
+    print(render(App))

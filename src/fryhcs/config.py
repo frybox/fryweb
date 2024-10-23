@@ -92,6 +92,10 @@ class FryConfig():
             return Path('.').resolve()
 
     @property
+    def semantic_theme(self):
+        return self.item('FRYHCS_SEMANTIC_THEME', None)
+
+    @property
     def plugins(self):
         return self.item('FRYHCS_PLUGINS', [])
 

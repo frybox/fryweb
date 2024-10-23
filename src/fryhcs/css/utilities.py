@@ -1,6 +1,6 @@
 import re
 from random import randint
-from .color import tailwind_colors, radix_colors
+from .color import tailwind_colors, radix_colors, semantic_colors
 
 def is_digit(value):
     return value.isdigit()
@@ -145,7 +145,10 @@ def convert_color(args):
         color, opacity = color_opacity
     else:
         return None
-    c = values.get(color) or tailwind_colors.get(color) or radix_colors.get(color)
+    c = (values.get(color) or
+         tailwind_colors.get(color) or
+         radix_colors.get(color) or
+         semantic_colors.get(color))
     if not c:
         from fryhcs.css.plugin import plugin_color
         color = plugin_color(color)
