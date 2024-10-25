@@ -236,14 +236,13 @@ function computed(fn) {
 
 
 /*
-** hydrate the DOM tree in the specified containerDOM using the components args
-** containerDOM: container dom element
+** hydrate the DOM tree in the specified domContainer using the components args
+** domContainer: container dom element
 ** components:   map of cid -> {fryid: cid, fryname: name, fryurl: url, fryargs: args, fryrefs: refs}
-**               这里的每个component可以是普通对象，也可以是一个代表组件的script元素
 **               水合时只要求其有fryid/fryname/fryurl/fryargs/fryrefs这几个属性即可。
 **               第一次html全量水合时是script元素，动态加载的组件是普通对象。
 */
-async function hydrate(containerDOM, components) {
+async function hydrate(domContainer, components) {
     // 1. 收集cid列表
     let cids = [];
     for (const cid in components) {
@@ -251,30 +250,27 @@ async function hydrate(containerDOM, components) {
     }
 
     // 2. 收集所有*html元素*的ref/refall信息，设置到所在组件的script元素上
-    const embedElements = containerDOM.querySelectorAll('[data-fryref]:not(script)');
+    const embedElements = domContainer.querySelectorAll('[data-fryref]:not(script)');
     for (const element of embedElements) {
         const refs = element.dataset.fryref;
         for (const ref of refs.split(' ')) {
             const [name, cid] = ref.split('-');
-            const scriptElement = components[cid];
+            const component = components[cid];
             if (name.endsWith(':a')) {
                 const rname = name.slice(0, -2);
-                if (rname in scriptElement.fryargs) {
-                    scriptElement.fryargs[rname].push(element);
+                if (rname in component.fryargs) {
+                    component.fryargs[rname].push(element);
                 } else {
-                    scriptElement.fryargs[rname] = [element];
+                    component.fryargs[rname] = [element];
                 }
             } else {
-                scriptElement.fryargs[name] = element;
+                component.fryargs[name] = element;
             }
         }
     }
 
     // 3. 执行水合操作
-    function doHydrate(script, embedValues) {
-        const cid = script.fryid;
-        const rootElement = containerDOM.querySelector(`[data-fryid~="${cid}"]:not(script)`);
-        const prefix = '' + cid + '/';
+    function doHydrate(domElement, prefix, embedValues) {
         function handle(element) {
             if ('fryembed' in element.dataset) {
                 const embeds = element.dataset.fryembed;
@@ -322,7 +318,7 @@ async function hydrate(containerDOM, components) {
                 handle(child);
             }
         }
-        handle(rootElement);
+        handle(domElement);
     }
 
     // 3.1 组件元素排序，从后往前(从里往外)执行组件水合代码
@@ -330,7 +326,16 @@ async function hydrate(containerDOM, components) {
 
     for (const cid of cids) {
         const scid = ''+cid;
-        let comp = components[scid];
+        const comp = components[scid];
+        const domElement = domContainer.querySelector(`[data-fryid~="${scid}"]:not(script)`);
+
+        // 如果没找到该组件对应的dom元素（可能在template中，也可能不在domContainer子树范围内），
+        // 没有水合对象，继续下一个组件
+        if (!domElement) { continue; }
+
+        // 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
+        if (typeof comp.fryurl === 'undefined') { continue; }
+
         // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的comp元素上
         for (const name in comp.fryrefs) {
             const value = comp.fryrefs[name];
@@ -342,11 +347,10 @@ async function hydrate(containerDOM, components) {
         }
 
         // 3.3 执行本组件水合
-        // 不是每个组件都有js脚本，纯服务端组件没有js脚本
-        if (typeof comp.fryurl !== 'undefined') {
-            const { hydrate } = await import(comp.fryurl);
-            await hydrate(comp, doHydrate);
-        }
+        const prefix = scid + '/';
+        const { prepare } = await import(comp.fryurl);
+        const embedValues = await prepare(comp);
+        doHydrate(domElement, prefix, embedValues);
     }
 }
 

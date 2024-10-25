@@ -99,24 +99,30 @@ def html(content='div',
         body.props[children_attr_name].append(components)
     if page.hasjs:
         script = """
-      let components = {};
+      let components = window.fryComponents = {};
+      window.fryMaxCID = 0;
       const scripts = document.querySelectorAll('script[data-fryid]');
       let firsturl = undefined;
       for (const script of scripts) {
+        const component = {};
         const cid = script.dataset.fryid;
-        script.fryid = cid;
+        const ncid = +cid;
+        if (ncid > window.fryMaxCID) {
+            window.fryMaxCID = ncid;
+        }
+        component.fryid = cid;
         const data = JSON.parse(script.textContent);
-        script.fryname = data.name;
-        script.fryurl  = data.url;
+        component.fryname = data.name;
+        component.fryurl  = data.url;
         if (typeof firsturl === 'undefined') {
             firsturl = data.url;
         }
-        script.fryargs = Object.assign({}, data.args);
-        script.fryrefs = Object.assign({}, data.refs);
-        components[cid] = script;
+        component.fryargs = Object.assign({}, data.args);
+        component.fryrefs = Object.assign({}, data.refs);
+        components[cid] = component;
       }
-      const { hydrateAll } = await import(firsturl);
-      await hydrateAll(document.documentElement, components);
+      const { hydrate } = await import(firsturl);
+      await hydrate(document.documentElement, components);
 """
         hydrate_script = Element('script', dict(type='module', children=[script]), True)
         body.props[children_attr_name].append(hydrate_script)
