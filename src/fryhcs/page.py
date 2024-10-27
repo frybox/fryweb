@@ -99,16 +99,16 @@ def html(content='div',
         body.props[children_attr_name].append(components)
     if page.hasjs:
         script = """
-      let components = window.fryComponents = {};
-      window.fryMaxCID = 0;
+      let components = document.fryComponents = {};
+      document.fryMaxCID = 0;
       const scripts = document.querySelectorAll('script[data-fryid]');
       let firsturl = undefined;
       for (const script of scripts) {
         const component = {};
         const cid = script.dataset.fryid;
         const ncid = +cid;
-        if (ncid > window.fryMaxCID) {
-            window.fryMaxCID = ncid;
+        if (ncid > document.fryMaxCID) {
+            document.fryMaxCID = ncid;
         }
         component.fryid = cid;
         const data = JSON.parse(script.textContent);
