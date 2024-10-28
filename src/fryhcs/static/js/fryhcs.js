@@ -238,11 +238,62 @@ function computed(fn) {
 /*
 ** hydrate the DOM tree in the specified domContainer using the components args
 ** domContainer: container dom element
-** components:   map of cid -> {fryid: cid, fryname: name, fryurl: url, fryargs: args, fryrefs: refs}
-**               水合时只要求其有fryid/fryname/fryurl/fryargs/fryrefs这几个属性即可。
-**               第一次html全量水合时是script元素，动态加载的组件是普通对象。
+** components:   map of cid -> {cid, name, url, args, refs}
+**               cid: 组件id
+**               name: 组件名
+**               url: 组件js文件的url
+**               args: 组件js prepare代码执行时的(部分)参数，另一部分是refs
+**               refs：组件元素的ref/refall数据
+**               components值为空时，将根据domContainer中的组件ID，从dom的组件script
+**               元素取相关组件信息。
 */
 async function hydrate(domContainer, components) {
+    // 0. 如果没有传组件列表过来，遍历整个dom树，查找所有
+    if (!components) {
+        components = {};
+        const scripts = {};
+        for (const script of document.querySelectorAll('script[data-fryid]')) {
+            scripts[script.dataset.fryid] = script;
+        }
+        function collect(element) {
+            if (element.tagName === 'SCRIPT') {
+                // 对于脚本，无需处理
+                return;
+            } else if (element.tagName === 'TEMPLATE') {
+                // 对于模板，取其模板内容处理
+                for (const child of element.content.chidren) {
+                    collect(child);
+                }
+            } else {
+                // 对于有data-fryid属性的其他元素，根据对应id的script元素内容初始化component对象
+                if ('fryid' in element.dataset) {
+                    for (const cid of element.dataset.fryid.split(' ')) {
+                        if (cid in components) {
+                            throw `duplicate component id ${cid}`;
+                        }
+                        if (!(cid in scripts)) {
+                            throw `unknown component id ${cid}`;
+                        }
+                        const script = scripts[cid];
+                        const data = JSON.parse(script.textContent);
+                        components[cid] = {
+                            cid: cid,
+                            name: script.dataset.fryname,
+                            url: script.dataset.fryurl,
+                            args: data.args,
+                            refs: data.refs,
+                        }
+                    }
+                }
+                // 然后处理孩子元素
+                for (const child of element.children) {
+                    collect(child);
+                }
+            }
+        }
+        collect(domContainer);
+    }
+
     // 1. 收集cid列表
     let cids = [];
     for (const cid in components) {
@@ -258,18 +309,18 @@ async function hydrate(domContainer, components) {
             const component = components[cid];
             if (name.endsWith(':a')) {
                 const rname = name.slice(0, -2);
-                if (rname in component.fryargs) {
-                    component.fryargs[rname].push(element);
+                if (rname in component.args) {
+                    component.args[rname].push(element);
                 } else {
-                    component.fryargs[rname] = [element];
+                    component.args[rname] = [element];
                 }
             } else {
-                component.fryargs[name] = element;
+                component.args[name] = element;
             }
         }
     }
 
-    // 3. 执行水合操作
+    // 对一个组件执行水合操作
     function doHydrate(domElement, prefix, embedValues) {
         function handle(element) {
             if ('fryembed' in element.dataset) {
@@ -304,6 +355,7 @@ async function hydrate(domContainer, components) {
                             element.setAttribute(arg, value);
                         }
                     } else if (atype === 'object') {
+                        // 该功能已弃用，暂时保留代码
                         // 设置对象属性时不使用effect，signal对象本身将传给js脚本
                         if (!('frydata' in element)) {
                             element.frydata = {};
@@ -321,34 +373,43 @@ async function hydrate(domContainer, components) {
         handle(domElement);
     }
 
-    // 3.1 组件元素排序，从后往前(从里往外)执行组件水合代码
+    // 3. 组件元素排序，从后往前(从里往外)执行组件水合代码
     cids.sort((x,y)=>y-x);
 
+    // 4. 对每个组件分别按照从里到外的顺序执行水合
     for (const cid of cids) {
         const scid = ''+cid;
         const comp = components[scid];
         const domElement = domContainer.querySelector(`[data-fryid~="${scid}"]:not(script)`);
 
-        // 如果没找到该组件对应的dom元素（可能在template中，也可能不在domContainer子树范围内），
-        // 没有水合对象，继续下一个组件
+        // 4.1 如果没找到该组件对应的dom元素（可能在template中，也可能不在domContainer子树范围内），
+        //     没有水合对象，继续下一个组件
         if (!domElement) { continue; }
 
-        // 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
-        if (typeof comp.fryurl === 'undefined') { continue; }
+        // 4.2 在dom元素和组件实例对象之间建立关联
+        comp.domElement = domElement;
+        if (!('fryComponents' in domElement)) {
+            domElement.fryComponents = [comp];
+        } else {
+            domElement.fryComponents.unshift(comp);
+        }
 
-        // 3.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的comp元素上
-        for (const name in comp.fryrefs) {
-            const value = comp.fryrefs[name];
+        // 4.3 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
+        if (typeof comp.url === 'undefined') { continue; }
+
+        // 4.4 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的参数列表中
+        for (const name in comp.refs) {
+            const value = comp.refs[name];
             if (Array.isArray(value)) {
-                comp.fryargs[name] = value.map(subid=>components[subid].fryobject);
+                comp.args[name] = value.map(subid=>components[subid].fryobject);
             } else {
-                comp.fryargs[name] = components[value].fryobject;
+                comp.args[name] = components[value].fryobject;
             }
         }
 
-        // 3.3 执行本组件水合
+        // 4.5 执行本组件水合
         const prefix = scid + '/';
-        const { prepare } = await import(comp.fryurl);
+        const { prepare } = await import(comp.url);
         const embedValues = await prepare(comp);
         doHydrate(domElement, prefix, embedValues);
     }

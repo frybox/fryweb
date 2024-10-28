@@ -1,4 +1,4 @@
-from fryhcs.element import Element, component_id_attr_name, children_attr_name, type_attr_name
+from fryhcs.element import Element, component_id_attr_name, component_name_attr_name, component_url_attr_name, children_attr_name, type_attr_name
 from fryhcs.utils import static_url
 from fryhcs.config import fryconfig
 from importlib import import_module
@@ -15,7 +15,7 @@ class Page(object):
     def add_component(self, component):
         cid = len(self.components) + 1
         self.components[cid] = component
-        component['fryid'] = cid
+        component['cid'] = cid
         self.cid2childrefs[cid] = {} 
         return cid
 
@@ -80,49 +80,28 @@ def html(content='div',
         body = Element('body', dict(children=[main_content]), True)
     components = []
     for c in page.components.values():
-        content = {
-            'name': c['fryname'],
-            'refs': c['fryrefs'],
-        }
-        if 'fryurl' in c:
-            content['url'] = c['fryurl']
-            content['args'] = c['fryargs']
         scriptprops = {
             type_attr_name: 'text/x-frydata',
-            children_attr_name: [json.dumps(content)],
-            component_id_attr_name: c['fryid'],
+            component_id_attr_name: c['cid'],
+            component_name_attr_name: c['name'],
         }
+        content = {}
+        if 'url' in c:
+            scriptprops[component_url_attr_name] = c['url']
+            content['refs'] = c['refs']
+            content['args'] = c['args']
+        scriptprops[children_attr_name] = [json.dumps(content)]
         comp = Element('script', scriptprops, True)
         components.append(comp)
     if components:
         components = Element('div', dict(style=dict(display='none'), children=components), True)
         body.props[children_attr_name].append(components)
     if page.hasjs:
+        # 此时必定存在script[data-fryurl]，所以js代码中无需校验script是否存在
         script = """
-      let components = document.fryComponents = {};
-      document.fryMaxCID = 0;
-      const scripts = document.querySelectorAll('script[data-fryid]');
-      let firsturl = undefined;
-      for (const script of scripts) {
-        const component = {};
-        const cid = script.dataset.fryid;
-        const ncid = +cid;
-        if (ncid > document.fryMaxCID) {
-            document.fryMaxCID = ncid;
-        }
-        component.fryid = cid;
-        const data = JSON.parse(script.textContent);
-        component.fryname = data.name;
-        component.fryurl  = data.url;
-        if (typeof firsturl === 'undefined') {
-            firsturl = data.url;
-        }
-        component.fryargs = Object.assign({}, data.args);
-        component.fryrefs = Object.assign({}, data.refs);
-        components[cid] = component;
-      }
-      const { hydrate } = await import(firsturl);
-      await hydrate(document.documentElement, components);
+      const script = document.querySelector('script[data-fryurl]');
+      const { hydrate } = await import(script.dataset.fryurl);
+      await hydrate(document.documentElement);
 """
         hydrate_script = Element('script', dict(type='module', children=[script]), True)
         body.props[children_attr_name].append(hydrate_script)

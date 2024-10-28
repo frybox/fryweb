@@ -91,8 +91,14 @@ client_embed_attr_name = 'data-fryembed'
 # 1. 通过ref引用的元素，生成'name-id'结构
 # 2. 通过refall引用的元素列表，生成'name:a-id'
 # 3. 对于html元素的引用，'name-id'中的id是引用自己的组件的id
-# 4. 对于子组件元素的引用，放到父组件script的json格式的textContent中
+# 4. 对于子组件元素的引用，放到父组件script的textContent中
 client_ref_attr_name = 'data-fryref'
+
+# 组件名的html元素属性名，只放在组件script上
+component_name_attr_name = 'data-fryname'
+
+# 组件js脚本url的html元素属性名，只放在组件script上
+component_url_attr_name = 'data-fryurl'
 
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
@@ -311,14 +317,14 @@ class Element(object):
                 element.props[class_attr_name] = selfclass
 
             # 12. 将子组件实例的引用附加到script上(ref和refall都编码到refs中了)
-            component['fryname'] = component_name(self.name)
-            component['fryrefs'] = page.child_refs(cnumber)
+            component['name'] = component_name(self.name)
+            component['refs'] = page.child_refs(cnumber)
 
             # 13. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
-                component['fryurl'] = f'{static_url(fryconfig.js_url)}{uuid}.js'
-                component['fryargs'] = {k:v for k,v in args}
+                component['url'] = f'{static_url(fryconfig.js_url)}{uuid}.js'
+                component['args'] = {k:v for k,v in args}
                 page.hasjs = True
         elif isinstance(self.name, str):
             props = {}
