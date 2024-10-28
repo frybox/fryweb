@@ -12,19 +12,18 @@ import shutil
 
 
 # generate js content for fry component
-# element$$：代表组件的<script>元素
-# hydrate$$：使用embeds$$对html元素树进行水合的函数
-# embeds$$： js嵌入值列表
+# $component：代表组件对象
+# embeds： js嵌入值列表
 def compose_js(args, script, embeds):
     output = []
     if args:
-        args = f'let {{ {", ".join(args)} }} = component$$.args;'
+        args = f'let {{ {", ".join(args)} }} = $component.args;'
     else:
         args = ''
 
     return f"""\
 export {{ hydrate }} from "fryhcs";
-export const prepare = async function (component$$) {{
+export const prepare = async function ($component) {{
     {args}
     {script}
     return [{', '.join(embeds)}];
@@ -342,7 +341,7 @@ class JSGenerator(BaseGenerator):
         return {identifier: alias}
 
     def visit_js_default_export(self, node, children):
-        return 'component$$.fryobject ='
+        return '$component.fryobject ='
 
     def visit_js_normal_code(self, node, children):
         return node.text
