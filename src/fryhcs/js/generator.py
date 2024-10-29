@@ -17,16 +17,18 @@ import shutil
 def compose_js(args, script, embeds):
     output = []
     if args:
-        args = f'let {{ {", ".join(args)} }} = $component.args;'
+        args = f'let {{ {", ".join(args)} }} = $component.fryargs;'
     else:
         args = ''
 
     return f"""\
 export {{ hydrate }} from "fryhcs";
 export const prepare = async function ($component) {{
+    let $fryobject = undefined;
     {args}
     {script}
-    return [{', '.join(embeds)}];
+    Object.assign($component, $fryobject);
+    $component.fryembeds = [{', '.join(embeds)}];
 }};
 """
 
@@ -341,7 +343,7 @@ class JSGenerator(BaseGenerator):
         return {identifier: alias}
 
     def visit_js_default_export(self, node, children):
-        return '$component.fryobject ='
+        return '$fryobject ='
 
     def visit_js_normal_code(self, node, children):
         return node.text

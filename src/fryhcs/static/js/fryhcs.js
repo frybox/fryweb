@@ -238,12 +238,12 @@ function computed(fn) {
 /*
 ** hydrate the DOM tree in the specified domContainer using the components args
 ** domContainer: container dom element
-** components:   map of cid -> {cid, name, url, args, refs}
-**               cid: 组件id
-**               name: 组件名
-**               url: 组件js文件的url
-**               args: 组件js prepare代码执行时的(部分)参数，另一部分是refs
-**               refs：组件元素的ref/refall数据
+** components:   map of cid -> {fryid, fryname, fryurl, fryargs, fryrefs}
+**               fryid: 组件id
+**               fryname: 组件名
+**               fryurl: 组件js文件的url
+**               fryargs: 组件js prepare代码执行时的(部分)参数，另一部分是refs
+**               fryrefs：子组件元素的ref/refall数据
 **               components值为空时，将根据domContainer中的组件ID，从dom的组件script
 **               元素取相关组件信息。
 */
@@ -261,7 +261,7 @@ async function hydrate(domContainer, components) {
                 return;
             } else if (element.tagName === 'TEMPLATE') {
                 // 对于模板，取其模板内容处理
-                for (const child of element.content.chidren) {
+                for (const child of element.content.children) {
                     collect(child);
                 }
             } else {
@@ -277,11 +277,11 @@ async function hydrate(domContainer, components) {
                         const script = scripts[cid];
                         const data = JSON.parse(script.textContent);
                         components[cid] = {
-                            cid: cid,
-                            name: script.dataset.fryname,
-                            url: script.dataset.fryurl,
-                            args: data.args,
-                            refs: data.refs,
+                            fryid: cid,
+                            fryname: script.dataset.fryname,
+                            fryurl: script.dataset.fryurl,
+                            fryargs: data.args,
+                            fryrefs: data.refs,
                         }
                     }
                 }
@@ -309,19 +309,22 @@ async function hydrate(domContainer, components) {
             const component = components[cid];
             if (name.endsWith(':a')) {
                 const rname = name.slice(0, -2);
-                if (rname in component.args) {
-                    component.args[rname].push(element);
+                if (rname in component.fryargs) {
+                    component.fryargs[rname].push(element);
                 } else {
-                    component.args[rname] = [element];
+                    component.fryargs[rname] = [element];
                 }
             } else {
-                component.args[name] = element;
+                component.fryargs[name] = element;
             }
         }
     }
 
     // 对一个组件执行水合操作
-    function doHydrate(domElement, prefix, embedValues) {
+    function doHydrate(component) {
+        const domElement = component.domElement;
+        const prefix = '' + component.fryid + '/';
+        const embedValues = component.fryembeds;
         function handle(element) {
             if ('fryembed' in element.dataset) {
                 const embeds = element.dataset.fryembed;
@@ -395,23 +398,22 @@ async function hydrate(domContainer, components) {
         }
 
         // 4.3 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
-        if (typeof comp.url === 'undefined') { continue; }
+        if (typeof comp.fryurl === 'undefined') { continue; }
 
         // 4.4 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的参数列表中
-        for (const name in comp.refs) {
-            const value = comp.refs[name];
+        for (const name in comp.fryrefs) {
+            const value = comp.fryrefs[name];
             if (Array.isArray(value)) {
-                comp.args[name] = value.map(subid=>components[subid].fryobject);
+                comp.fryargs[name] = value.map(subid=>components[subid]);
             } else {
-                comp.args[name] = components[value].fryobject;
+                comp.fryargs[name] = components[value];
             }
         }
 
         // 4.5 执行本组件水合
-        const prefix = scid + '/';
-        const { prepare } = await import(comp.url);
-        const embedValues = await prepare(comp);
-        doHydrate(domElement, prefix, embedValues);
+        const { prepare } = await import(comp.fryurl);
+        await prepare(comp);
+        doHydrate(comp);
     }
 }
 
