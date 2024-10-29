@@ -377,7 +377,7 @@ async function hydrate(domContainer, components) {
     // 3. 组件元素排序，从后往前(从里往外)执行组件水合代码
     cids.sort((x,y)=>y-x);
 
-    // 4. 对每个组件分别按照从里到外的顺序执行水合
+    // 4. 按照从里到外的顺序分别对每个组件执行水合
     for (const cid of cids) {
         const scid = ''+cid;
         const comp = components[scid];
