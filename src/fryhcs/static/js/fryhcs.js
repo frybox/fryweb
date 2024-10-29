@@ -260,13 +260,11 @@ async function hydrate(domContainer, components) {
                 // 对于脚本，无需处理
                 return;
             } else if (element.tagName === 'TEMPLATE') {
-                // 对于模板，取其模板内容处理
-                for (const child of element.content.children) {
-                    collect(child);
-                }
+                // 组件渲染期间，不会使用到组件内部模板中的组件信息
+                return;
             } else {
                 // 对于有data-fryid属性的其他元素，根据对应id的script元素内容初始化component对象
-                if ('fryid' in element.dataset) {
+                if (element.dataset && 'fryid' in element.dataset) {
                     for (const cid of element.dataset.fryid.split(' ')) {
                         if (cid in components) {
                             throw `duplicate component id ${cid}`;
@@ -401,12 +399,29 @@ async function hydrate(domContainer, components) {
         if (typeof comp.fryurl === 'undefined') { continue; }
 
         // 4.4 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的参数列表中
+        // 4.4.1 子组件模板的对象需要特殊处理，返回包含模板和实例化函数的对象
+        function templator(subid) {
+            const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
+            const generate = async () => {
+                let clone = template.content.cloneNode(true);
+                await hydrate(clone);
+                return clone.firstElementChild.fryComponents[0];
+            };
+            return { template, generate };
+        }
+        // 4.4.2 对于每个引用，单独进行处理
         for (const name in comp.fryrefs) {
             const value = comp.fryrefs[name];
+            let rname = name;
+            let f = (subid) => components[subid];
+            if (name.startsWith('t:')) {
+                rname = name.slice(2);
+                f = templator;
+            }
             if (Array.isArray(value)) {
-                comp.fryargs[name] = value.map(subid=>components[subid]);
+                comp.fryargs[rname] = value.map(subid=>f(subid));
             } else {
-                comp.fryargs[name] = components[value];
+                comp.fryargs[rname] = f(value);
             }
         }
 

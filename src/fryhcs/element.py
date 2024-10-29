@@ -100,6 +100,12 @@ component_name_attr_name = 'data-fryname'
 # 组件js脚本url的html元素属性名，只放在组件script上
 component_url_attr_name = 'data-fryurl'
 
+# 组件元素作为一个模板时的无值属性名，组件元素用，不会最终生成到html中
+component_template_attr_name = 'frytemplate'
+
+# 组件元素生成<template>时添加的html元素属性名，值与组件实例id相同
+component_template_id_atttr_name = 'data-frytid'
+
 children_attr_name = 'children'
 call_client_script_attr_name = 'call-client-script'
 class_attr_name = 'class'
@@ -235,7 +241,7 @@ class Element(object):
             component = {}
             cnumber = page.add_component(component)
 
-            # 2. 预处理父组件传来的ref/refall/@event/class
+            # 2. 预处理父组件传来的frytemplate/ref/refall/@event/class
             #    2.1 将本组件上定义的给父组件js脚本用的ref/refall记录到page
             #        上，在生成父组件的script元素时加到data-fryref上；
             #    2.2 将父组件传来的@event事件处理函数暂存，渲染完成后添加到
@@ -243,15 +249,19 @@ class Element(object):
             #    2.3 将父组件传来的class值暂存，渲染完成后附加到本组件树的数根元素上。
             peventhandlers = []
             pclass = ''
+            istemplate = self.props.pop(component_template_attr_name, False)
             for key, value in list(self.props.items()):
                 if isinstance(value, ClientRef):
                     self.props.pop(key)
                     pcid = value.component
                     if pcid == 0:
                         raise RuntimeError(f"Invalid ClientRef {value.name}")
-                    page.add_ref(pcid, value.name, cnumber)
+                    name = 't:' + value.name if istemplate else value.name
+                    page.add_ref(pcid, name, cnumber)
                 elif key[0] == '@':
                     name = key[1:]
+                    if istemplate:
+                        raise RuntimeError(f"Can't attach event handler {name} to a frytemplate")
                     self.props.pop(key)
                     value.embed_id = f'{value.embed_id}-event-{name}'
                     peventhandlers.append(value)
@@ -326,6 +336,14 @@ class Element(object):
                 component['url'] = f'{static_url(fryconfig.js_url)}{uuid}.js'
                 component['args'] = {k:v for k,v in args}
                 page.hasjs = True
+
+            # 14. 对于组件模板，使用<template>包装起来
+            if istemplate:
+                props = {
+                    component_template_id_atttr_name: cnumber,
+                    children_attr_name: [element]
+                }
+                element = Element('template', props, True)
         elif isinstance(self.name, str):
             props = {}
             #style = {} 

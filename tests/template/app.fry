@@ -1,0 +1,52 @@
+from fryhcs import Element, html
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.get('/')
+def index():
+    return html(RefApp, title="test template", autoreload=False)
+
+def Log(value=''):
+    <template>
+      <div>
+        <p ref=(container)>{value}</p>
+      </div>
+    </template>
+    <script>
+      export default {
+          setValue(value) {
+            container.textContent = value;
+          },
+          hello() {
+              console.log('hello hello')
+          }
+      }
+    </script>
+
+def RefApp():
+    count = 0
+    <template>
+      <div w-full h-100vh flex flex-col gap-y-10 justify-center items-center>
+        <p ref=(foo) text-indigo-600 text-6xl transition-transform duration-1500>
+          [{count}](counter)
+        </p>
+        <button type="button" @click=(doclick)>点我</button>
+        <Log frytemplate ref=(logline) />
+        <div ref=(logcontainer)>
+        </div>
+      </div>
+    </template>
+    <script {count}>
+      import {signal} from 'fryhcs';
+      const counter = signal(count);
+      const doclick = async () => {
+        counter.value ++;
+        const line = await logline.generate();
+        line.setValue(`counter is ${counter.peek()}`);
+        logcontainer.appendChild(line.domElement);
+      }
+    </script>
+
+if __name__ == '__main__':
+    print(html(RefApp))

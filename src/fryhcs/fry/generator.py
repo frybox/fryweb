@@ -204,6 +204,11 @@ def check_html_element(name, attrs):
         # 检查事件处理器
         if attr[1][0] == '@' and atype not in (js_attr, ):
             raise BadGrammar(f"Invalid attribute type '{atype}' for event handler '{attr[1]}' in html element '{name}'")
+
+        if atype in (novalue_attr, literal_attr, py_attr):
+            if attr[1] == 'frytemplate':
+                raise BadGrammar('Only component element can have frytemplate attribute')
+
         # 2023.11.30: 不再支持$style
         ## 检查$style
         #if attr[1][0] == '$':
