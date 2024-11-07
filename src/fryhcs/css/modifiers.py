@@ -66,6 +66,9 @@ selector_modifier_templates = {
 
     # dark mode
     'dark':               '.dark {selector}, [dark=""] {selector}', # .dark & 
+
+    # added 2024/11/7 为直接孩子元素设置样式
+    '*':                  '{selector}>*'                     # &>*
 }
 
 selector_modifiers = set(selector_modifier_templates.keys())
@@ -75,13 +78,19 @@ selector_modifiers = set(selector_modifier_templates.keys())
 #最后，发现很多正则没那么多共同点，不需要定义一个公共的正则了，去掉
 #re_brackets = '(.+)'
 re_selector_modifier_templates = {
-    f'aria-(.+)':          r'{selector}[aria-{group1}]',       # &[aria-xxx]
-    f'data-(.+)':          r'{selector}[data-{group1}]',       # &[data-xxx]
-    f'nth-(\d+)':          r'{selector}:nth-child({group1})',  # &:nth-child(ddd)
-    f'group-([^@]+)':      r'.group:{group1} {selector}, [group=""]:{group1} {selector}',
-    f'group-([^@]+)@(.+)': r'.group\@{group2}:{group1} {selector}, [group\@{group2}=""]:{group1} {selector}',
-    f'peer-([^@]+)':       r'.peer:{group1} ~ {selector}, [peer=""]:{group1} ~ {selector}',
-    f'peer-([^@]+)@(.+)':  r'.peer\@{group2}:{group1} + {selector}, [peer\@{group2}=""]:{group1} ~ {selector}',
+    f'aria-(.+)':             r'{selector}[aria-{group1}]',       # &[aria-xxx]
+    f'data-(.+)':             r'{selector}[data-{group1}]',       # &[data-xxx]
+    f'nth-(\d+)':             r'{selector}:nth-child({group1})',  # &:nth-child(ddd)
+    f'group-([^@]+)':         r'.group:{group1} {selector}, [group=""]:{group1} {selector}',
+    f'group-([^@]+)@(.+)':    r'.group\@{group2}:{group1} {selector}, [group\@{group2}=""]:{group1} {selector}',
+    f'peer-([^@]+)':          r'.peer:{group1} ~ {selector}, [peer=""]:{group1} ~ {selector}',
+    f'peer-([^@]+)@(.+)':     r'.peer\@{group2}:{group1} ~ {selector}, [peer\@{group2}=""]:{group1} ~ {selector}',
+    # added 2024/11/7 子孙元素/组子孙元素/前面兄弟的子孙元素有伪类时设置样式
+    f'has-(.*)':              r'{selector}:has(:{group1})',
+    f'grouphas-([^@]+)':      r'.group:has(:{group1}) {selector}, [group=""]:has(:{group1}) {selector}',
+    f'grouphas-([^@]+)@(.+)': r'.group\@{group2}:has(:{group1}) {selector}, [group\@{group2}=""]:has(:{group1}) {selector}',
+    f'peerhas-([^@]+)':       r'.peer:has(:{group1}) ~ {selector}, [peer=""]:has(:{group1}) ~ {selector}',
+    f'peerhas-([^@]+)@(.+)':  r'.peer\@{group2}:has(:{group1}) ~ {selector}, [peer\@{group2}=""]:has(:{group1}) ~ {selector}',
 }
 re_selector_modifiers = set(re_selector_modifier_templates.keys())
 
