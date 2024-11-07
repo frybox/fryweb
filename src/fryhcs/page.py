@@ -33,7 +33,7 @@ class Page(object):
         refs = {}
         for name, ids in origin.items():
             if name.endswith(':a'):
-                refs[name[:-2]] = list(ids)
+                refs[name[:-2]] = sorted(ids)
             else:
                 if len(ids) != 1:
                     raise RuntimeError(f"More than ONE ref value for '{name}'.")
