@@ -619,7 +619,7 @@ class PyGenerator(BaseGenerator):
                 # 2024.10.12: 不支持{*mylist}这种语法，会导致python语法错误：
                 # SyntaxError: cannot use starred expression here
                 if embed[0] == '(' and embed[1] == '*':
-                    raise BadGrammar('{' + embed[1:-1] + '} is not allowed in component template')
+                    raise BadGrammar('{' + embed[1:-1] + '} is not allowed in component template, use {' + embed[2:-1] + '}')
                 return embed
             elif frychild[0] == 'joint_embed':
                 _, quoted_literal, client_embed = frychild

@@ -46,7 +46,7 @@ def RefApp():
         counter.value ++;
         const log = await logline.generate();
         log.setValue(`counter is ${counter.peek()}`);
-        logger.appendChild(log.domElement);
+        logger.appendChild(log.fryelement);
       }
     </script>
 
