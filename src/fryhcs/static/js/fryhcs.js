@@ -415,12 +415,12 @@ async function hydrate(domContainer) {
         // 4.2.1 子组件模板的对象需要特殊处理，返回包含模板和实例化函数的对象
         function templator(subid) {
             const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
-            const generate = async () => {
+            const create = async () => {
                 let clone = template.content.cloneNode(true);
                 await hydrate(clone);
-                return clone.firstElementChild.fryComponents[0];
+                return clone.firstElementChild.frycomponents[0];
             };
-            return { template, generate };
+            return { template, create };
         }
         // 4.2.2 对于每个引用，单独进行处理
         for (const name in comp.fryrefs) {
@@ -439,8 +439,9 @@ async function hydrate(domContainer) {
         }
 
         // 4.3 执行本组件水合
-        const { prepare } = await import(comp.fryurl);
-        await prepare(comp);
+        const { setup } = await import(comp.fryurl);
+        const boundSetup = setup.bind(comp);
+        await boundSetup();
         doHydrate(comp);
     }
 }

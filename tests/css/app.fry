@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.get('/')
 def index():
-    return html(App, title="fryhcs CSS test")
+    return html(App, title="fryhcs CSS test", autoreload=False)
 
 
 def App():

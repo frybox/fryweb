@@ -14,14 +14,12 @@ def Log(value=''):
       </div>
     </template>
     <script>
-      export default {
-          setValue(value) {
-            log.textContent = value;
-          },
-          hello() {
-              console.log('hello hello')
-          }
-      }
+        this.setValue = (value) => {
+          log.textContent = value;
+        },
+        this.hello = () => {
+            console.log('hello hello')
+        }
     </script>
 
 def RefApp():
@@ -44,7 +42,7 @@ def RefApp():
       const counter = signal(count);
       const doclick = async () => {
         counter.value ++;
-        const log = await logline.generate();
+        const log = await logline.create();
         log.setValue(`counter is ${counter.peek()}`);
         logger.appendChild(log.fryelement);
       }

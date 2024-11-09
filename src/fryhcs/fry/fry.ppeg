@@ -184,7 +184,9 @@ js_parenthesis = '(' js_script ')'
 # 为了处理template string中内嵌的js代码，需要加上js_brace
 js_brace = '{' js_script '}'
 
-js_script_item = js_single_line_comment / js_multi_line_comment / js_regexp / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_default_export / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char / no_export_e_char
+# 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
+#js_script_item = js_single_line_comment / js_multi_line_comment / js_regexp / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_default_export / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char / no_export_e_char
+js_script_item = js_single_line_comment / js_multi_line_comment / js_regexp / js_simple_quote / js_template_simple / js_template_normal / js_parenthesis / js_brace / js_static_import / js_normal_code / no_comment_slash_char / no_script_less_than_char / no_import_i_char
 
 js_single_line_comment = ~r"//[^\r\n]*"
 
@@ -234,7 +236,8 @@ js_named_import_identifier = js_identifier_with_alias / js_identifier
 
 js_identifier_with_alias = js_identifier space 'as' space js_identifier
 
-js_default_export = ~r'\bexport' space ~r'default\b' 
+# 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
+#js_default_export = ~r'\bexport' space ~r'default\b' 
 
 # /: js中注释的开头字符
 # ': js中字符串开头字符
@@ -246,8 +249,9 @@ js_default_export = ~r'\bexport' space ~r'default\b'
 # {: js模板字符串中嵌入js代码开始字符
 # }: js模板字符串中嵌入js代码结束字符
 # i: js中import语句开头字符
-# e: js中export语句开头字符
-js_normal_code = ~"[^/'\"`<(){}ie]+"
+# ~~e: js中export语句开头字符~~
+#js_normal_code = ~"[^/'\"`<(){}ie]+"
+js_normal_code = ~"[^/'\"`<(){}i]+"
 
 no_script_less_than_char = ~"<(?!/script>)"
 
@@ -255,4 +259,5 @@ no_comment_slash_char = ~'/(?![/*])'
 
 no_import_i_char = 'i'
 
-no_export_e_char = 'e'
+# 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
+#no_export_e_char = 'e'

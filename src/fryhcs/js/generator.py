@@ -12,23 +12,21 @@ import shutil
 
 
 # generate js content for fry component
-# $component：代表组件对象
+# this：代表组件对象
 # embeds： js嵌入值列表
 def compose_js(args, script, embeds):
     output = []
     if args:
-        args = f'let {{ {", ".join(args)} }} = $component.fryargs;'
+        args = f'let {{ {", ".join(args)} }} = this.fryargs;'
     else:
         args = ''
 
     return f"""\
 export {{ hydrate }} from "fryhcs";
-export const prepare = async function ($component) {{
-    let $fryobject = undefined;
+export const setup = async function () {{
     {args}
     {script}
-    Object.assign($component, $fryobject);
-    $component.fryembeds = [{', '.join(embeds)}];
+    this.fryembeds = [{', '.join(embeds)}];
 }};
 """
 
@@ -342,8 +340,9 @@ class JSGenerator(BaseGenerator):
         identifier, _, _as, _, alias = children
         return {identifier: alias}
 
-    def visit_js_default_export(self, node, children):
-        return '$fryobject ='
+    # 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
+    #def visit_js_default_export(self, node, children):
+    #    return '$fryobject ='
 
     def visit_js_normal_code(self, node, children):
         return node.text
@@ -357,5 +356,6 @@ class JSGenerator(BaseGenerator):
     def visit_no_import_i_char(self, node, children):
         return node.text
 
-    def visit_no_export_e_char(self, node, children):
-        return node.text
+    # 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
+    #def visit_no_export_e_char(self, node, children):
+    #    return node.text

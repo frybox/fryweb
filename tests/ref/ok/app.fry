@@ -14,11 +14,9 @@ def Refed():
       </div>
     </template>
     <script>
-      export default {
-          hello() {
-              console.log('hello hello')
-          }
-      }
+        this.hello = () => {
+            console.log('hello hello')
+        }
     </script>
 
 def RefApp():

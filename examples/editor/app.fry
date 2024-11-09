@@ -36,7 +36,7 @@ def App():
           ],
           parent: root,
           lineNumbers: true,
-          showIndentGuilde: true,
+          showIndentGuide: true,
       })
     </script>
 
