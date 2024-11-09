@@ -209,6 +209,12 @@ class JSGenerator(BaseGenerator):
     def visit_fry_attribute_value(self, node, children):
         return children[0]
 
+    def visit_joint_html_embed(self, node, children):
+        _, _f_string, _, jsembed = children
+        _name, script = jsembed
+        self.embeds.append(script)
+        return None
+
     def visit_joint_embed(self, node, children):
         _f_string, _, jsembed = children
         _name, script = jsembed

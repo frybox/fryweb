@@ -208,6 +208,8 @@ class Element(object):
                         value.embed_id = f'{value.embed_id}-attr-{key[2:]}'
                     elif key == '*':
                         value.embed_id = f'{value.embed_id}-text'
+                    elif key == '!':
+                        value.embed_id = f'{value.embed_id}-html'
                     else:
                         raise RenderException(f"Invalid client embed key '{key}' for element '{e.name}'")
                     embeds.append(value)

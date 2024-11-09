@@ -372,6 +372,13 @@ async function hydrate(domContainer) {
                         } else {
                             element.textContent = value;
                         }
+                    } else if (atype === 'html') {
+                        // 设置html元素时需要进行响应式处理
+                        if ((value instanceof Signal) || (value instanceof Computed)) {
+                            effect(() => element.innerHTML = value.value);
+                        } else {
+                            element.innerHTML = value;
+                        }
                     } else if (atype === 'event') {
                         element.addEventListener(arg, value);
                     } else if (atype === 'attr') {

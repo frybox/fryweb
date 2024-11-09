@@ -127,7 +127,9 @@ fry_children = fry_child*
 
 # 将<script>从root_element内部挪到root_element之后
 #fry_child = embed_value / client_embed_value / web_component_script / html_comment / fry_element / fry_text / no_embed_char
-fry_child = joint_embed / fry_embed / html_comment / fry_element / fry_text / no_embed_char
+fry_child = joint_html_embed / joint_embed / fry_embed / html_comment / fry_element / fry_text / no_embed_char
+
+joint_html_embed = '!' bracket_f_string maybe_space js_embed
 
 joint_embed = bracket_f_string maybe_space js_embed
 
@@ -156,9 +158,9 @@ double_f_string_item = double_simple_f_string / '{{' / '}}' / fry_embed
 double_simple_f_string = ~r'(\\.|[^"{}\\])+'
 
 # 多个空格缩减为1个，丢弃只有空格的字符串，单双引号是正常字符
-fry_text = ~r"[^<>{}[\]]+"
+fry_text = ~r"[^<>{}[\]!]+"
 
-no_embed_char = ~r"[{}[\]]"
+no_embed_char = ~r"[{}[\]!]"
 
 maybe_web_script =  web_script?
 

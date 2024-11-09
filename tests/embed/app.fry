@@ -1,0 +1,30 @@
+from flask import Flask
+from fryhcs import Element, html
+
+app = Flask(__name__)
+
+@app.get('/')
+def index():
+    return html(App, autoreload=False)
+
+def App():
+    <template>
+      <div>
+        <div>
+          [这是一个<strong>text嵌入</strong>](textEmbed)
+        </div>
+        <div>
+          ![这是一个<strong>html嵌入</strong>](htmlEmbed)
+        </div>
+        <div>
+          <p>hello world</p>
+          <!--
+          ![这是一个错误的<strong>html嵌入</strong>，前后不能有兄弟元素](htmlEmbed)
+          -->
+        </div>
+      </div>
+    </template>
+    <script>
+        const textEmbed = 'hello <em>textEmbed</em>';
+        const htmlEmbed = 'hello <em>htmlEmbed</em>';
+    </script>

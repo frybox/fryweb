@@ -1,24 +1,21 @@
 from parsimonious import NodeVisitor, BadGrammar
 from pathlib import Path
-import sys
 import re
+import html
 import hashlib
 from fryhcs.fry.grammar import grammar
 from fryhcs.spec import is_valid_html_attribute
 from fryhcs.css.style import CSS
 from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
 
-def escape(s):
-    return s.replace('"', '\\"')
-
 def quote_bracket_f_string(s):
-    if not '"""' in s:
+    if '"""' not in s:
         quote = '"""'
-    elif not "'''" in s:
+    elif "'''" not in s:
         quote = "'''"
     else:
-        raise BadGrammar(f"F-string '{s}' should not have both \"'''\" and '\"\"\"'")
-    return f"f{quote}{s}{quote}"
+        raise BadGrammar("Can't quote html embed")
+    return f'{quote}{s}{quote}'
 
 
 class BaseGenerator(NodeVisitor):
@@ -70,6 +67,7 @@ fsjs_attr = 'fsjs_attr'               # ('fsjs_attr', name, value, jscount): nam
 #fsjsop_attr = 'fsjsop_attr'           # ('fsjsop_attr', name, value, value): name=[value]({pyscript})
 children_attr = 'children_attr'       # ('children_attr', [children])
 jstext_attr = 'jstext_attr'           # ('jstext_attr', jscount)
+jshtml_attr = 'jshtml_attr'           # ('jshtml_attr', jscount)
 #jsoptext_attr = 'jsoptext_attr'       # ('jsoptext_attr', value)
 call_client_attr = 'call_client_attr' # ('call_client_attr', uuid, args)
 
@@ -126,6 +124,9 @@ def concat_kv(attrs):
             elif atype == jstext_attr:
                 _, jscount = attr
                 ats.append(f'"*": Element.ClientEmbed({jscount})')
+            elif atype == jshtml_attr:
+                _, jscount = attr
+                ats.append(f'"!": Element.ClientEmbed({jscount})')
             #elif atype == jsoptext_attr:
             #    _, jsvalue = attr
             #    ats.append(f'"*": {jsvalue}')
@@ -407,6 +408,15 @@ class PyGenerator(BaseGenerator):
 
     def visit_fry_fragment(self, node, children):
         _, fry_children, _ = children
+        if self.is_joint_html_embed(fry_children):
+            _, quoted_html, js_embed = fry_children
+            if js_embed[0] == 'js_embed':
+                attr = jshtml_attr
+                value = js_embed[1]
+            else:
+                raise BadGrammar
+            return ('"div"', [[attr, value],
+                              [children_attr, [quoted_html]]])
         return ('"div"', [[children_attr, fry_children]])
 
     def visit_fry_self_closing_element(self, node, children):
@@ -446,8 +456,17 @@ class PyGenerator(BaseGenerator):
         else:
             check_component_element(name, attrs)
 
-        attrs.append([children_attr, fry_children])
-
+        if self.is_joint_html_embed(fry_children):
+            _, quoted_html, js_embed = fry_children
+            if js_embed[0] == 'js_embed':
+                attr = jshtml_attr
+                value = js_embed[1]
+            else:
+                raise BadGrammar
+            attrs.append([attr, value])
+            attrs.append([children_attr, [quoted_html]])
+        else:
+            attrs.append([children_attr, fry_children])
         return (name, attrs)
 
     def visit_fry_start_tag(self, node, children):
@@ -522,8 +541,8 @@ class PyGenerator(BaseGenerator):
             if value[0] == 'joint_embed':
                 _, quoted_literal, client_embed = value
                 if client_embed[0] == 'js_embed':
-                    count = self.inc_client_embed()
-                    return [fsjs_attr, name, quoted_literal, str(count)]
+                    count = client_embed[1]
+                    return [fsjs_attr, name, quoted_literal, count]
                 else:
                     raise BadGrammar
             #elif value[0] == 'fry_js_embed':
@@ -592,7 +611,13 @@ class PyGenerator(BaseGenerator):
     #    return children[0]
 
     def visit_fry_children(self, node, children):
-        return [ch for ch in children if ch]
+        cleaned = [ch for ch in children if ch]
+        for ch in cleaned:
+            if self.is_joint_html_embed(ch):
+                if len(cleaned) != 1:
+                    raise BadGrammar("no sibling allowed for html embed(![]())")
+                return ch
+        return cleaned
 
     def visit_fry_child(self, node, children):
         frychild = children[0]
@@ -621,11 +646,13 @@ class PyGenerator(BaseGenerator):
                 if embed[0] == '(' and embed[1] == '*':
                     raise BadGrammar('{' + embed[1:-1] + '} is not allowed in component template, use {' + embed[2:-1] + '}')
                 return embed
+            elif self.is_joint_html_embed(frychild):
+                return frychild
             elif frychild[0] == 'joint_embed':
                 _, quoted_literal, client_embed = frychild
                 if client_embed[0] == 'js_embed':
                     attr = jstext_attr
-                    value = str(self.inc_client_embed())
+                    value = client_embed[1]
                 #elif client_embed[0] == 'jsop_embed':
                 #    attr = jsoptext_attr
                 #    value = client_embed[1]
@@ -645,13 +672,26 @@ class PyGenerator(BaseGenerator):
     #    _name, fry = fry_embed
     #    return ('fry_js_embed', fry, js_embed)
 
+    def is_joint_html_embed(self, embed):
+        return (isinstance(embed, tuple) and
+                len(embed) == 3 and
+                embed[0] == 'joint_html_embed')
+
+    def visit_joint_html_embed(self, node, children):
+        _, html_literal, _, js_embed = children
+        quoted_html = quote_bracket_f_string(html_literal)
+        js_embed = (js_embed[0], str(self.inc_client_embed()))
+        return ('joint_html_embed', quoted_html, js_embed)
+
     def visit_joint_embed(self, node, children):
-        quoted_literal, _, js_embed = children
+        text_literal, _, js_embed = children
+        quoted_literal = f'"{html.escape(text_literal)}"'
+        js_embed = (js_embed[0], str(self.inc_client_embed()))
         return ('joint_embed', quoted_literal, js_embed)
 
     def visit_bracket_f_string(self, node, children):
         _l, body, _r = children
-        return quote_bracket_f_string(body)
+        return body
 
     def visit_bracket_f_string_body(self, node, children):
         return node.text
@@ -672,7 +712,7 @@ class PyGenerator(BaseGenerator):
         value = re.sub(r'(\s+)', lambda m: ' ', node.text).strip()
         if not value or value == ' ':
             return ''
-        return f'"{escape(value)}"'
+        return f'"{html.escape(value)}"'
 
     def visit_no_embed_char(self, node, children):
         return node.text
@@ -729,7 +769,7 @@ class PyGenerator(BaseGenerator):
 
     def visit_js_embed(self, node, children):
         self.web_component_script = True
-        # 返回js script内容，在ref DOM元素时有用
+        # 返回js script内容，在ref/refall时有用
         return ('js_embed', node.text[1:-1])
 
     #def visit_jsop_embed(self, node, children):
