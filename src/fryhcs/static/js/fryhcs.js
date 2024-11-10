@@ -246,21 +246,46 @@ class Component {
         this.fryargs = args;
         this.fryrefs = refs;
         this.fryelement = element;
+        this._fryparent = null;
+        this._fryroot = null;
     }
 
     get fryparent() {
+        if (this._fryparent) return this._fryparent;
         let element = this.fryelement;
         let components = element.frycomponents;
         const index = components.indexOf(this);
-        if (index > 0)
-            return components[index-1];
-        while (element !== document.documentElement) {
-            element = element.parentElement;
+        if (index > 0) {
+            this._fryparent = components[index-1];
+            return this._fryparent;
+        }
+        element = element.parentElement;
+        while (element) {
             if ('frycomponents' in element) {
                 components = element.frycomponents;
-                return components[components.length-1]
+                this._fryparent = components[components.length-1];
+                return this._fryparent;
             }
+            element = element.parentElement;
         }
+    }
+
+    get fryroot() {
+        let element = this.fryelement;
+        let component = this;
+        if (!element.isConnected) {
+            this._fryroot = null;
+            return null;
+        }
+        if (this._fryroot) return this._fryroot;
+        while (element) {
+            if ('frycomponents' in element) {
+                component = element.frycomponents[0];
+            }
+            element = element.parentElement;
+        }
+        this._fryroot = component;
+        return component;
     }
 }
 
