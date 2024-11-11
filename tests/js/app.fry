@@ -13,7 +13,8 @@ def Sub2(v, create, children=[]):
     </template>
     <script {create}>
       const value = 999;
-      console.log(`sub2: ${foo}, create: ${create}`);
+      console.log(`hydrate sub2: ${foo}, create: ${create}`);
+      this.ready(() => console.log("sub2 after ready"));
     </script>
 
 def Sub1(bar, create, children=[]):
@@ -23,7 +24,8 @@ def Sub1(bar, create, children=[]):
       </Sub2>
     </template>
     <script>
-      console.log('sub1')
+      console.log('hydrate sub1')
+      this.ready(() => console.log("sub1 after ready"));
     </script>
 
 def App():
@@ -35,7 +37,8 @@ def App():
     <script>
       import {signal as create_signal} from 'fryhcs';
       const v = create_signal(10);
-      console.log("app");
+      console.log("hydrate app");
+      this.ready(() => console.log("app after ready"));
     </script>
 
 

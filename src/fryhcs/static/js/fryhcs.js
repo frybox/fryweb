@@ -239,15 +239,20 @@ function computed(fn) {
 ** 组件
 */
 class Component {
-    constructor({cid, name, url, args, refs, element}) {
+    constructor({cid, name, url, args, refs, element, g}) {
         this.fryid = cid;
         this.fryname = name;
         this.fryurl = url;
         this.fryargs = args;
         this.fryrefs = refs;
         this.fryelement = element;
+        this.fryg = g;
         this._fryparent = null;
         this._fryroot = null;
+    }
+
+    ready(fn) {
+        this.fryg.readyFns.push(fn);
     }
 
     get fryparent() {
@@ -303,6 +308,9 @@ class Component {
 */
 async function hydrate(domContainer) {
     // 0. 遍历整个dom树，查找所有组件静态信息
+    // g是本次水合的公共数据，类似python后端渲染时的page对象
+    // g.readyFns：在渲染完成后执行的函数。
+    const g = {readyFns:[],};
     const components = {};
     const scripts = {};
     for (const script of document.querySelectorAll('script[data-fryid]')) {
@@ -328,7 +336,7 @@ async function hydrate(domContainer) {
                     const script = scripts[cid];
                     const {args, refs} = JSON.parse(script.textContent);
                     const {fryname: name, fryurl: url} = script.dataset;
-                    let comp = components[cid] = new Component({cid, name, url, args, refs, element});
+                    let comp = components[cid] = new Component({cid, name, url, args, refs, element, g});
                     if (!('frycomponents' in element)) {
                         element.frycomponents = [comp];
                     } else {
@@ -476,6 +484,13 @@ async function hydrate(domContainer) {
         await boundSetup();
         doHydrate(comp);
     }
+
+    // 5. 调用水合完成后的回调函数
+    for (const fn of g.readyFns) {
+        fn();
+    }
+    // 清空回调列表
+    g.readyFns.length = 0;
 }
 
 
@@ -528,6 +543,4 @@ export {
     effect,
     computed,
     hydrate,
-    getRemote,
-    postRemote,
 }
