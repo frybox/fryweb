@@ -15,7 +15,7 @@ def quote_bracket_f_string(s):
         quote = "'''"
     else:
         raise BadGrammar("Can't quote html embed")
-    return f'{quote}{s}{quote}'
+    return f'f{quote}{s}{quote}'
 
 
 class BaseGenerator(NodeVisitor):
@@ -685,7 +685,7 @@ class PyGenerator(BaseGenerator):
 
     def visit_joint_embed(self, node, children):
         text_literal, _, js_embed = children
-        quoted_literal = f'"{html.escape(text_literal)}"'
+        quoted_literal = f'f"{html.escape(text_literal)}"'
         js_embed = (js_embed[0], str(self.inc_client_embed()))
         return ('joint_embed', quoted_literal, js_embed)
 
