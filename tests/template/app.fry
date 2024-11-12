@@ -8,14 +8,16 @@ def index():
     return html(RefApp, title="test template", autoreload=False)
 
 def Log(value=''):
+    prefix = ''
     <template>
       <div>
         <p ref=(log)>{value}</p>
       </div>
     </template>
-    <script>
+    <script {prefix}>
+        console.log(`prefix is ${prefix}`);
         this.setValue = (value) => {
-          log.textContent = value;
+          log.textContent = `${prefix}${value}`;
         },
         this.hello = () => {
             console.log('hello hello')
@@ -38,11 +40,11 @@ def RefApp():
       </div>
     </template>
     <script {count}>
-      import {signal} from 'fryhcs';
+      import { signal } from 'fryhcs';
       const counter = signal(count);
       const doclick = async () => {
         counter.value ++;
-        const log = await logline.create();
+        const log = await logline.create({prefix: `counter${counter.peek()}: `});
         log.setValue(`counter is ${counter.peek()}`);
         logger.appendChild(log.fryelement);
       }

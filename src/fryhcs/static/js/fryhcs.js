@@ -309,8 +309,9 @@ class Component {
 **               fryrefs：子组件元素的ref/refall数据
 **               components值为空时，将根据domContainer中的组件ID，从dom的组件script
 **               元素取相关组件信息。
+** rootArgs:         根组件的新参数，覆盖在根组件的<script {arg1} {arg2}>元素上传入的参数
 */
-async function hydrate(domContainer) {
+async function hydrate(domContainer, rootArgs) {
     // 0. 遍历整个dom树，查找所有组件静态信息
     // g是本次水合的公共数据，类似python后端渲染时的page对象
     // g.readyFns：在渲染完成后执行的函数。
@@ -318,6 +319,7 @@ async function hydrate(domContainer) {
         readyFns: [],
         isReady: false
     };
+    let rootComponent = null;
     const components = {};
     const scripts = {};
     for (const script of document.querySelectorAll('script[data-fryid]')) {
@@ -344,6 +346,10 @@ async function hydrate(domContainer) {
                     const {args, refs} = JSON.parse(script.textContent);
                     const {fryname: name, fryurl: url} = script.dataset;
                     let comp = components[cid] = new Component({cid, name, url, args, refs, element, g});
+                    if (!rootComponent) {
+                        rootComponent = comp;
+                        Object.assign(rootComponent.fryargs, rootArgs);
+                    }
                     if (!('frycomponents' in element)) {
                         element.frycomponents = [comp];
                     } else {
@@ -462,9 +468,9 @@ async function hydrate(domContainer) {
         // 4.2.1 子组件模板的对象需要特殊处理，返回包含模板和实例化函数的对象
         function templator(subid) {
             const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
-            const create = async () => {
+            const create = async (args) => {
                 let clone = template.content.cloneNode(true);
-                await hydrate(clone);
+                await hydrate(clone, args);
                 return clone.firstElementChild.frycomponents[0];
             };
             return { template, create };
