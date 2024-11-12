@@ -255,6 +255,10 @@ class Component {
         this.fryg.readyFns.push(fn);
     }
 
+    get isReady() {
+        return this.fryg.isReady;
+    }
+
     get fryparent() {
         if (this._fryparent) return this._fryparent;
         let element = this.fryelement;
@@ -310,7 +314,10 @@ async function hydrate(domContainer) {
     // 0. 遍历整个dom树，查找所有组件静态信息
     // g是本次水合的公共数据，类似python后端渲染时的page对象
     // g.readyFns：在渲染完成后执行的函数。
-    const g = {readyFns:[],};
+    const g = {
+        readyFns: [],
+        isReady: false
+    };
     const components = {};
     const scripts = {};
     for (const script of document.querySelectorAll('script[data-fryid]')) {
@@ -491,6 +498,7 @@ async function hydrate(domContainer) {
     }
     // 清空回调列表
     g.readyFns.length = 0;
+    g.isReady = true;
 }
 
 
