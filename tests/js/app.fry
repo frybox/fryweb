@@ -15,6 +15,7 @@ def Sub2(v, create, children=[]):
       const value = 999;
       console.log(`hydrate sub2: ${foo}, create: ${create}`);
       this.ready(() => console.log("sub2 after ready"));
+      this.ready(() => console.log(`g.hello = ${this.g.hello}`));
     </script>
 
 def Sub1(bar, create, children=[]):
@@ -39,6 +40,7 @@ def App():
       const v = create_signal(10);
       console.log("hydrate app");
       this.ready(() => console.log("app after ready"));
+      this.g.hello = 'world';
     </script>
 
 

@@ -255,6 +255,10 @@ class Component {
         this.fryg.readyFns.push(fn);
     }
 
+    get g() {
+        return this.fryg.g;
+    }
+
     get isReady() {
         return this.fryg.isReady;
     }
@@ -315,9 +319,12 @@ async function hydrate(domContainer, rootArgs) {
     // 0. 遍历整个dom树，查找所有组件静态信息
     // g是本次水合的公共数据，类似python后端渲染时的page对象
     // g.readyFns：在渲染完成后执行的函数。
+    // g.isReady: 渲染过程中为false，渲染结束为true
+    // g.g: 暴露给所有组件的公共状态，在组件setup方法中，可通过this.g访问。
     const g = {
         readyFns: [],
-        isReady: false
+        isReady: false,
+        g: {},
     };
     let rootComponent = null;
     const components = {};
