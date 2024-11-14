@@ -32,7 +32,7 @@ export const setup = async function () {{
 
 
 class JSGenerator(BaseGenerator):
-    component_pattern = f"**/[A-Z]*-{'[0-9a-fA-Z]'*40}.js"
+    component_pattern = f"**/[a-z]*-{'[0-9a-f]'*40}.js"
 
     def __init__(self, input_files, output_dir):
         super().__init__()
