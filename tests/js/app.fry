@@ -16,6 +16,7 @@ def Sub2(v, create, children=[]):
       console.log(`hydrate sub2: ${foo}, create: ${create}, g.hello = ${this.g.hello}`);
       this.ready(() => console.log("sub2 after ready"));
       this.ready(() => console.log(`g.hello = ${this.g.hello}`));
+      console.log(`hydrate sub2: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
     </script>
 
 def Sub1(bar, create, children=[]):
@@ -25,8 +26,9 @@ def Sub1(bar, create, children=[]):
       </Sub2>
     </template>
     <script>
-      console.log('hydrate sub1')
+      console.log('hydrate sub1');
       this.ready(() => console.log("sub1 after ready"));
+      console.log(`hydrate sub1: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
     </script>
 
 def App():
@@ -41,6 +43,7 @@ def App():
       console.log("hydrate app");
       this.ready(() => console.log("app after ready"));
       this.g.hello = 'world';
+      console.log(`hydrate app: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
     </script>
 
 

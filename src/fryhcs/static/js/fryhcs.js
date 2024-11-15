@@ -241,7 +241,14 @@ function computed(fn) {
 class Component {
     constructor({cid, name, url, args, refs, element, g}) {
         this.fryid = cid;
-        this.fryname = name;
+        const names = name.split(':');
+        if (names.length == 1) {
+            this.fryapp = '';
+            this.fryname = name;
+        } else {
+            this.fryapp = names[0];
+            this.fryname = names[1];
+        }
         this.fryurl = url;
         this.fryargs = args;
         this.fryrefs = refs;
