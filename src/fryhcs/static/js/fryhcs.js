@@ -303,7 +303,13 @@ class Component {
 }
 
 /*
-** hydrate the DOM tree in the specified domContainer using the components args
+** 对以domContainer为根的DOM子树进行水合
+** 
+** 前端全局数据越早创建越好，并且全局数据适合在靠近树根处创建，所以组件的水合顺序（组件安装顺序）
+** 与服务端的渲染一样，都是父组件先水合，然后子组件再水合。子组件水合时，可以使用父组件水合过程
+** 中已经初始化好的全局状态（通过this.g）。
+**
+** 参数：
 ** domContainer: container dom element
 ** components:   该参数取消。map of cid -> {fryid, fryname, fryurl, fryargs, fryrefs}
 **               fryid: 组件id
@@ -313,10 +319,12 @@ class Component {
 **               fryrefs：子组件元素的ref/refall数据
 **               components值为空时，将根据domContainer中的组件ID，从dom的组件script
 **               元素取相关组件信息。
-** rootArgs:         根组件的新参数，覆盖在根组件的<script {arg1} {arg2}>元素上传入的参数
+** rootArgs:     根组件的新参数，覆盖在根组件的<script {arg1} {arg2}>元素上传入的参数
 */
 async function hydrate(domContainer, rootArgs) {
-    // 0. 遍历整个dom树，查找所有组件静态信息
+
+    // 1. 初始化全局数据，遍历整个dom树，查找出服务端渲染出来的所有组件静态信息
+
     // g是本次水合的公共数据，类似python后端渲染时的page对象
     // g.readyFns：在渲染完成后执行的函数。
     // g.isReady: 渲染过程中为false，渲染结束为true
@@ -326,12 +334,15 @@ async function hydrate(domContainer, rootArgs) {
         isReady: false,
         g: {},
     };
-    let rootComponent = null;
     const components = {};
+    const complist = [];
     const scripts = {};
     for (const script of document.querySelectorAll('script[data-fryid]')) {
         scripts[script.dataset.fryid] = script;
     }
+
+    // 2. 遍历domContainer DOM树，找到树上所有组件，然后根据组件静态信息创建组件
+
     function collect(element) {
         if (element.tagName === 'SCRIPT') {
             // 对于脚本，无需处理
@@ -352,11 +363,12 @@ async function hydrate(domContainer, rootArgs) {
                     const script = scripts[cid];
                     const {args, refs} = JSON.parse(script.textContent);
                     const {fryname: name, fryurl: url} = script.dataset;
-                    let comp = components[cid] = new Component({cid, name, url, args, refs, element, g});
-                    if (!rootComponent) {
-                        rootComponent = comp;
-                        Object.assign(rootComponent.fryargs, rootArgs);
+                    if (complist.length === 0) {
+                        // 将水合时动态传入的参数rootArgs给到本次水合的根组件
+                        Object.assign(args, rootArgs);
                     }
+                    let comp = components[cid] = new Component({cid, name, url, args, refs, element, g});
+                    complist.push(comp);
                     if (!('frycomponents' in element)) {
                         element.frycomponents = [comp];
                     } else {
@@ -372,13 +384,8 @@ async function hydrate(domContainer, rootArgs) {
     }
     collect(domContainer);
 
-    // 1. 收集cid列表
-    let cids = [];
-    for (const cid in components) {
-        cids.push(parseInt(cid));
-    }
+    // 3. 收集所有**html元素**的ref/refall信息，设置到所在组件的参数列表中
 
-    // 2. 收集所有*html元素*的ref/refall信息，设置到所在组件的script元素上
     const embedElements = domContainer.querySelectorAll('[data-fryref]:not(script)');
     for (const element of embedElements) {
         const refs = element.dataset.fryref;
@@ -398,7 +405,38 @@ async function hydrate(domContainer, rootArgs) {
         }
     }
 
-    // 对一个组件执行水合操作
+    // 4. 收集组件中所有**子组件元素**的ref/refall信息，设置到组件的参数列表中
+
+    for (const comp of complist) {
+        // 子组件模板的对象需要特殊处理，返回包含模板和实例化函数的对象
+        function templator(subid) {
+            const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
+            const create = async (args) => {
+                let clone = template.content.cloneNode(true);
+                await hydrate(clone, args);
+                return clone.firstElementChild.frycomponents[0];
+            };
+            return { template, create };
+        }
+        // 对于每个引用，单独进行处理
+        for (const name in comp.fryrefs) {
+            const value = comp.fryrefs[name];
+            let rname = name;
+            let f = (subid) => components[subid];
+            if (name.startsWith('t:')) {
+                rname = name.slice(2);
+                f = templator;
+            }
+            if (Array.isArray(value)) {
+                comp.fryargs[rname] = value.map(subid=>f(subid));
+            } else {
+                comp.fryargs[rname] = f(value);
+            }
+        }
+    }
+
+    // 5. 按照从外到里（从树根到树叶）的顺序分别对每个组件执行水合
+
     function doHydrate(component) {
         const prefix = '' + component.fryid + '/';
         const embedValues = component.fryembeds;
@@ -460,52 +498,18 @@ async function hydrate(domContainer, rootArgs) {
         handle(component.fryelement);
     }
 
-    // 3. 组件元素排序，从后往前(从里往外)执行组件水合代码
-    cids.sort((x,y)=>y-x);
-
-    // 4. 按照从里到外的顺序分别对每个组件执行水合
-    for (const cid of cids) {
-        const scid = ''+cid;
-        const comp = components[scid];
-
-        // 4.1 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
+    for (const comp of complist) {
+        // 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
         if (typeof comp.fryurl === 'undefined') { continue; }
 
-        // 4.2 收集本组件中所有*子组件元素*的ref对象和refall对象列表，设置到本组件的参数列表中
-        // 4.2.1 子组件模板的对象需要特殊处理，返回包含模板和实例化函数的对象
-        function templator(subid) {
-            const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
-            const create = async (args) => {
-                let clone = template.content.cloneNode(true);
-                await hydrate(clone, args);
-                return clone.firstElementChild.frycomponents[0];
-            };
-            return { template, create };
-        }
-        // 4.2.2 对于每个引用，单独进行处理
-        for (const name in comp.fryrefs) {
-            const value = comp.fryrefs[name];
-            let rname = name;
-            let f = (subid) => components[subid];
-            if (name.startsWith('t:')) {
-                rname = name.slice(2);
-                f = templator;
-            }
-            if (Array.isArray(value)) {
-                comp.fryargs[rname] = value.map(subid=>f(subid));
-            } else {
-                comp.fryargs[rname] = f(value);
-            }
-        }
-
-        // 4.3 执行本组件水合
+        // 执行本组件水合
         const { setup } = await import(comp.fryurl);
         const boundSetup = setup.bind(comp);
         await boundSetup();
         doHydrate(comp);
     }
 
-    // 5. 调用水合完成后的回调函数
+    // 6. 调用水合完成后的回调函数
     for (const fn of g.readyFns) {
         fn();
     }

@@ -56,6 +56,8 @@ literal_attr = 'literal_attr'         # ('literal_attr', name, value): name="lit
 novalue_attr = 'novalue_attr'         # ('novalue_attr', name): name
 py_attr = 'py_attr'                   # ('py_attr', name, pyscript): name={pyscript}
 js_attr = 'js_attr'                   # ('js_attr', name, jscount): name=(jsscript)
+#2024.11.15: 现在不论服务端的渲染还是客户端的水合，都是由外而内。
+#             不过由于有更好的全局状态this.g，还是不需要jsop。
 #2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
 #jsop_attr = 'jsop_attr'               # ('jsop_attr', name, pyscript): name=({pyscript})
 #2023.10.27 不再支持元素作为属性值，参考语法文件fry.ppeg说明

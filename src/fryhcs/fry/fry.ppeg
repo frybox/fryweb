@@ -171,6 +171,8 @@ html_comment = '<!--' ~'(-(?!->)|[^-])*' '-->'
 
 js_script = js_script_item*
 
+# 2024.11.15: 现在不论服务端的渲染还是客户端的水合，都是由外而内。
+#             不过由于有更好的全局状态this.g，还是不需要jsop。
 # 2023.11.24: 根据服务端由外而内，客户端由内而外的设计，不再需要jsop
 # js_embed = jsop_embed / local_js_embed
 # 

@@ -13,7 +13,7 @@ def Sub2(v, create, children=[]):
     </template>
     <script {create}>
       const value = 999;
-      console.log(`hydrate sub2: ${foo}, create: ${create}`);
+      console.log(`hydrate sub2: ${foo}, create: ${create}, g.hello = ${this.g.hello}`);
       this.ready(() => console.log("sub2 after ready"));
       this.ready(() => console.log(`g.hello = ${this.g.hello}`));
     </script>
