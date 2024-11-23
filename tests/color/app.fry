@@ -11,7 +11,7 @@ def index():
 
 def App():
     <template>
-      <div text-center text-xxl mt-50px>
+      <div text-center text-xxl mt-50px text-black>
         <div border-4 border-primary rounded p-2 mb-20px mx-auto w-1/3 min-w-250px > 
           <p text-primary-bg>text-primary-bg</p>
           <p text-primary-bga>text-primary-bga</p>

@@ -370,7 +370,7 @@ async function hydrate(domContainer, rootArgs) {
                     const script = scripts[cid];
                     const {args, refs} = JSON.parse(script.textContent);
                     const {fryname: name, fryurl: url} = script.dataset;
-                    if (complist.length === 0) {
+                    if (complist.length === 0 && args) {
                         // 将水合时动态传入的参数rootArgs给到本次水合的根组件
                         Object.assign(args, rootArgs);
                     }
