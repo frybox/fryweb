@@ -19,6 +19,7 @@ class CSS():
         self.wrappers = []
         self.modifiers = []
         self.utility_args = []
+        self.important = False
         self.selector = ''
         self.selector_template = self.default_selector_template
         self.styles = []
@@ -67,6 +68,8 @@ class CSS():
         utility = '-'.join(self.utility_args)
         if modifiers:
             if utility:
+                if self.important:
+                    utility = '!' + utility
                 return modifiers + ':' + utility
             else:
                 return modifiers
@@ -91,6 +94,8 @@ class CSS():
             self.selector: css selector based on the value of key and value
             self.modifiers: all modifiers
             self.utility_args: utility and its args
+            self.important
+        如果utility是important的，则utility_args[0]以'!'开头
         如果utility中的大小为负值，则utility_args[0]以'-'开头
         """
         key = self.key
@@ -118,9 +123,13 @@ class CSS():
         keys = key.split(':') if key else []
         values = value.split(':') if value else []
         negative = False
+        important = False
         if keys and not is_modifier(keys[-1]):
             modifiers = keys[:-1]
             utility = keys[-1]
+            if utility and utility[0] == '!':
+                utility = utility[1:]
+                important=True
             if utility and utility[0] == '-':
                 utility = utility[1:]
                 negative = not negative
@@ -134,6 +143,9 @@ class CSS():
         if values:
             modifiers += values[:-1]
             utility = values[-1]
+            if utility and utility[0] == '!':
+                utility = utility[1:]
+                important=True
             if utility and utility[0] == '-':
                 utility = utility[1:]
                 negative = not negative
@@ -142,6 +154,7 @@ class CSS():
         if negative and utility_args:
             utility_args[0] = '-' + utility_args[0]
 
+        self.important = important
         self.modifiers = modifiers
         self.utility_args = self.clean_args(utility_args)
         self.selector = selector
@@ -207,11 +220,12 @@ class CSS():
             indent += twospace
         selector = new_selector or self.selector
         selector = self.selector_template.format(selector=selector)
+        important = ' !important' if self.important else ''
         if len(self.styles) > 0:
             lines.append(indent + selector + ' {')
             indent += twospace
             for k, v in dict(self.styles).items():
-                style = f'{k}: {v};'
+                style = f'{k}: {v}{important};'
                 lines.append(indent + style)
             indent = indent[:-2]
             lines.append(indent + '}')

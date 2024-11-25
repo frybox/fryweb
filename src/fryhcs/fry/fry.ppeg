@@ -96,9 +96,10 @@ fry_novalue_attribute = fry_attribute_name !(maybe_space '=')
 
 # 属性名中可以有“/”，用以支持无值属性方式的CSS，这一点不符合[html规范]( https://html.spec.whatwg.org/#attributes-2)
 # 属性名中可以有“,”，用以支持calc
+# 2024.11.26属性名中可以有“!”，用以支持important modifier(!important)
 # 缩小属性名的范围，支持css utility即可
 #fry_attribute_name = ~r"([^\s\"'>/=]|/(?!>))+"
-fry_attribute_name = ~r"([a-zA-Z0-9@#%$:.,_-]|/(?!>))+"
+fry_attribute_name = ~r"([a-zA-Z0-9!@#%$:.,_-]|/(?!>))+"
 
 # https://html.spec.whatwg.org/#attributes-2  with extension of fry, and do not support unquoted attribute value
 # single_f_string: 单引号f-string
