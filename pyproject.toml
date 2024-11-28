@@ -1,6 +1,6 @@
 [project]
 name = "fryhcs"
-version = "0.2.41"
+version = "0.2.42"
 keywords = [
     "fryhcs",
     "fry",

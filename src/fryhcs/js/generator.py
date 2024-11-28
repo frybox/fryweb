@@ -71,12 +71,12 @@ class JSGenerator(BaseGenerator):
         super().__init__()
         self.fileiter = FileIter(input_files)
         self.output_dir = Path(output_dir).absolute()
-        self.tmp_dir = Path(tempfile.mkdtemp(prefix='fryhcs_'))
 
     def generate(self, input_files=[], clean=False):
         if not input_files:
             input_files = self.fileiter.all_files()
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_dir = Path(tempfile.mkdtemp(prefix='.frytmp_', dir='.')).absolute()
         try:
             if clean:
                 f = self.output_dir / 'index.js'
@@ -101,6 +101,8 @@ class JSGenerator(BaseGenerator):
             deps = set()
             for dir, root in self.dependencies:
                 for f in dir.rglob('*.[jt]s'):
+                    if f.is_relative_to(self.tmp_dir):
+                        continue
                     if is_componentjs(f):
                         continue
                     p = f.parent.relative_to(root)
@@ -113,10 +115,6 @@ class JSGenerator(BaseGenerator):
         if not src:
             return
         entry_point = compose_index(src, self.tmp_dir) 
-        dstmodules = self.tmp_dir / 'node_modules'
-        srcmodules = Path('.').resolve() / 'node_modules'
-        if srcmodules.exists() and not dstmodules.exists():
-            os.symlink(srcmodules, dstmodules)
         outfile = self.output_dir / 'index.js'
         this = Path(__file__).absolute().parent
         bun = this / 'bun' 
