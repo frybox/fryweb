@@ -14,15 +14,20 @@ import shutil
 # generate js content for fry component
 # this：代表组件对象
 # embeds： js嵌入值列表
-def compose_js(args, script, embeds):
-    output = []
+# emports: 静态import语句
+def compose_js(args, script, embeds, imports):
+    if imports:
+        imports = '\n'.join(imports)
+    else:
+        imports = ''
+
     if args:
         args = f'let {{ {", ".join(args)} }} = this.fryargs;'
     else:
         args = ''
 
     return f"""\
-export {{ hydrate }} from "fryhcs";
+{imports}
 export const setup = async function () {{
     {args}
     {script}
@@ -30,10 +35,32 @@ export const setup = async function () {{
 }};
 """
 
+def compose_index(src, root_dir):
+    dest = root_dir / 'index.js'
+    output = []
+    names = []
+    for file in src:
+        f = file.relative_to(root_dir)
+        suffix_len = len(f.suffix)
+        path = f.as_posix()[:-suffix_len]
+        name = f.name[:-suffix_len]
+        output.append(f'import {{ setup as {name} }} from "./{path}";')
+        names.append(name)
+    output.append(f'let setups = {{ {', '.join(names)} }};')
+    output.append('import { hydrate as hydrate_with_setups } from "fryhcs";')
+    output.append('export const hydrate = async (rootElement) => await hydrate_with_setups(rootElement, setups);')
+    output = '\n'.join(output)
+    with dest.open('w', encoding='utf-8') as f:
+        f.write(output)
+    return dest
+
+
+def get_componentjs(rootdir):
+    for file in rootdir.rglob("*.js"):
+        if re.match(r'^[a-z_][a-z0-9_]*_[0-9a-f]{40}\.js$', file.name):
+            yield file
 
 class JSGenerator(BaseGenerator):
-    component_pattern = f"**/[a-z]*-{'[0-9a-f]'*40}.js"
-
     def __init__(self, input_files, output_dir):
         super().__init__()
         self.fileiter = FileIter(input_files)
@@ -46,9 +73,9 @@ class JSGenerator(BaseGenerator):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
         if clean:
-            for f in self.output_dir.glob(self.component_pattern):
-                f.unlink(missing_ok=True)
-            for f in self.tmp_dir.glob('*.js'):
+            f = self.output_dir / 'index.js'
+            f.unlink(missing_ok=True)
+            for f in self.tmp_dir.rglob('*.[jt]s'):
                 f.unlink(missing_ok=True)
         self.dependencies = set()
         count = 0
@@ -56,22 +83,32 @@ class JSGenerator(BaseGenerator):
             self.set_curr_file(file)
             self.js_dir = self.tmp_dir / self.relative_dir
             self.js_dir.mkdir(parents=True, exist_ok=True)
-            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变
+            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
             # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
             with self.curr_file.open('r', encoding='utf-8', newline='') as f:
                 count += self.generate_one(f.read())
+        print("begin bundle")
         self.bundle()
         return count
                 
     def bundle(self):
+        print(self.dependencies)
         if self.dependencies:
-            for file, path in self.dependencies:
+            deps = set()
+            for root in self.dependencies:
+                for f in root.rglob('*.[jt]s'):
+                    p = f.parent.relative_to(root)
+                    deps.add((f, p))
+            for file, path in deps:
                 p = self.tmp_dir / path
                 p.mkdir(parents=True, exist_ok=True)
                 shutil.copy(file, p)
-        src = list(self.tmp_dir.glob(self.component_pattern))
+        src = list(get_componentjs(self.tmp_dir))
+        print(self.tmp_dir, src)
         if not src:
             return
+        entry_point = compose_index(src, self.tmp_dir) 
+        outfile = self.output_dir / 'index.js'
         this = Path(__file__).absolute().parent
         bun = this / 'bun' 
         env = os.environ.copy()
@@ -84,23 +121,18 @@ class JSGenerator(BaseGenerator):
             if not npx:
                 print(f"Can't find npx, please install nodejs first.")
                 return
-            args = [npx, 'esbuild', '--format=esm', '--bundle', f'--outbase={self.tmp_dir}']
+            args = [npx, 'esbuild', '--format=esm', '--bundle', f'--outfile={outfile}', str(entry_point),]
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
-            args = [str(bun), 'build', '--external', 'fryhcs']
-        args += ['--splitting', f'--outdir={self.output_dir}']
-        args += [str(js) for js in src]
+            args = [str(bun), 'build', '--external', 'fryhcs', '--splitting', f'--outdir={self.output_dir}', str(entry_point)]
         subprocess.run(args, env=env)
 
     def check_js_module(self, jsmodule):
         if jsmodule[0] in "'\"":
             jsmodule = jsmodule[1:-1]
         if jsmodule.startswith('./') or jsmodule.startswith('../'):
-            jsfile = self.curr_dir / jsmodule
-            jsfile = jsfile.resolve(strict=True) # 如果js文件不存在，抛出异常
-            jsdir = jsfile.parent.relative_to(self.curr_root)
-            self.dependencies.add((str(jsfile), str(jsdir)))
+            self.dependencies.add(self.curr_root)
 
     def generate_one(self, source):
         tree = grammar.parse(source)
@@ -110,15 +142,17 @@ class JSGenerator(BaseGenerator):
         self.embeds = []
         self.refs = set()
         self.refalls = set()
+        self.static_imports = []
         self.visit(tree)
         for c in self.web_components:
             name = c['name']
             args = c['args']
             script = c['script']
             embeds = c['embeds']
+            imports = c['imports']
             jspath = self.js_dir / f'{name}.js'
             with jspath.open('w', encoding='utf-8') as f:
-                f.write(compose_js(args, script, embeds))
+                f.write(compose_js(args, script, embeds, imports))
         return len(self.web_components)
 
     def generic_visit(self, node, children):
@@ -144,12 +178,14 @@ class JSGenerator(BaseGenerator):
                 'name': uuid,
                 'args': [*self.refs, *self.refalls, *self.args],
                 'script': self.script,
-                'embeds': self.embeds})
+                'embeds': self.embeds,
+                'imports': self.static_imports})
         self.script = ''
         self.args = []
         self.embeds = []
         self.refs = set()
         self.refalls = set()
+        self.static_imports = []
 
     def visit_fry_component_header(self, node, children):
         _def, _, cname, _ = children
@@ -259,92 +295,20 @@ class JSGenerator(BaseGenerator):
     def visit_js_template_normal(self, node, children):
         return node.text
 
+    # 2024.11.28: 修改import的实现，静态import仍然是静态，挪到setup函数之外，import内容变为闭包变量使用
     def visit_js_static_import(self, node, children):
-        return children[0]
+        self.static_imports.append(children[0])
+        return ''
 
     def visit_js_simple_static_import(self, node, children):
-        _, _, module_name = children
+        _, _, module_name, _, _ = children
         self.check_js_module(module_name)
-        return f'await import({module_name})'
-
-    def visit_js_normal_static_import(self, node, children):
-        _import, _, identifiers, _, _from, _, module_name = children
-        self.check_js_module(module_name)
-        value = ''
-        namespace = identifiers.pop('*', '')
-        if namespace:
-            value = f'const {namespace} = await import({module_name})'
-            if identifiers:
-                value += ', '
-        names = []
-        for k,v in identifiers.items():
-            if v:
-                names.append(f'{k}: {v}')
-            else:
-                names.append(k)
-        if names:
-            names = ", ".join(names)
-            if namespace:
-                value += f'{{{names}}} = {namespace}'
-            else:
-                value += f'const {{{names}}} = await import({module_name})'
-        return value
-
-    def visit_js_import_identifiers(self, node, children):
-        identifier, others = children
-        identifiers = identifier
-        identifiers.update(others)
-        return identifiers
-        
-    def visit_js_other_import_identifiers(self, node, children):
-        identifiers = {}
-        for ch in children:
-            identifiers.update(ch)
-        return identifiers
-
-    def visit_js_other_import_identifier(self, node, children):
-        _, _comma, _, identifier = children
-        return identifier
-
-    def visit_js_import_identifier(self, node, children):
-        if isinstance(children[0], str):
-            return {'default': children[0]}
-        else:
-            return children[0]
-
-    def visit_js_identifier(self, node, children):
         return node.text
 
-    def visit_js_namespace_import_identifier(self, node, children):
-        _star, _, _as, _, identifier = children
-        return {'*': identifier}
-
-    def visit_js_named_import_identifiers(self, node, children):
-        _lb, _, identifier, others, _, _rb = children
-        identifiers = identifier
-        identifiers.update(others)
-        return identifiers
-
-    def visit_js_other_named_import_identifiers(self, node, children):
-        identifiers = {}
-        for ch in children:
-            identifiers.update(ch)
-        return identifiers
-
-    def visit_js_other_named_import_identifier(self, node, children):
-        _, _comma, _, identifier = children
-        return identifier
-
-    def visit_js_named_import_identifier(self, node, children):
-        value = children[0]
-        if isinstance(value, str):
-            return {value: ''}
-        else:
-            return value
-
-    def visit_js_identifier_with_alias(self, node, children):
-        identifier, _, _as, _, alias = children
-        return {identifier: alias}
+    def visit_js_normal_static_import(self, node, children):
+        _import, _, identifiers, _, _from, _, module_name, _, _ = children
+        self.check_js_module(module_name)
+        return node.text
 
     # 2024.11.9: 去掉对export default的支持，直接使用this.prop1 = prop1
     #def visit_js_default_export(self, node, children):

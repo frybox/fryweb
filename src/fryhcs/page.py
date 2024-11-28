@@ -1,4 +1,4 @@
-from fryhcs.element import Element, component_id_attr_name, component_name_attr_name, component_url_attr_name, children_attr_name, type_attr_name
+from fryhcs.element import Element, component_id_attr_name, component_name_attr_name, children_attr_name, type_attr_name
 from fryhcs.utils import static_url
 from fryhcs.config import fryconfig
 from importlib import import_module
@@ -86,8 +86,8 @@ def html(content='div',
             component_name_attr_name: c['name'],
         }
         content = {}
-        if 'url' in c:
-            scriptprops[component_url_attr_name] = c['url']
+        if 'setup' in c:
+            content['setup'] = c['setup']
             content['refs'] = c['refs']
             content['args'] = c['args']
         scriptprops[children_attr_name] = [json.dumps(content)]
@@ -97,10 +97,9 @@ def html(content='div',
         components = Element('div', dict(style=dict(display='none'), children=components), True)
         body.props[children_attr_name].append(components)
     if page.hasjs:
-        # 此时必定存在script[data-fryurl]，所以js代码中无需校验script是否存在
-        script = """
-      const script = document.querySelector('script[data-fryurl]');
-      const { hydrate } = await import(script.dataset.fryurl);
+        # 此时必定存在js_url/index.js
+        script = f"""
+      const {{ hydrate }} = await import("{static_url(fryconfig.js_url)}/index.js");
       await hydrate(document.documentElement);
 """
         hydrate_script = Element('script', dict(type='module', children=[script]), True)

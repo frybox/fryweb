@@ -97,9 +97,6 @@ client_ref_attr_name = 'data-fryref'
 # 组件名的html元素属性名，只放在组件script上
 component_name_attr_name = 'data-fryname'
 
-# 组件js脚本url的html元素属性名，只放在组件script上
-component_url_attr_name = 'data-fryurl'
-
 # 组件元素作为一个模板时的无值属性名，组件元素用，不会最终生成到html中
 component_template_attr_name = 'frytemplate'
 
@@ -335,7 +332,7 @@ class Element(object):
             # 13. 若当前组件存在js代码，记录组件与脚本关系，然后将组件js参数加到script脚本上
             if calljs:
                 uuid, args = calljs
-                component['url'] = f'{static_url(fryconfig.js_url)}{uuid}.js'
+                component['setup'] = uuid
                 component['args'] = {k:v for k,v in args}
                 page.hasjs = True
 

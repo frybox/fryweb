@@ -46,7 +46,6 @@ def App():
       console.log(`hydrate app: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
     </script>
 
-
 @app.get('/')
 def index():
     return html(App, title="Test JS", autoreload=False)

@@ -33,7 +33,7 @@ class BaseGenerator(NodeVisitor):
     def get_uuid(self, cname, node):
         sha1 = hashlib.sha1()
         sha1.update(node.text.encode('utf-8'))
-        return f'{cname}-{sha1.hexdigest()}'.lower()
+        return f'{cname}_{sha1.hexdigest()}'.lower()
 
     def set_curr_file(self, file):
         self.curr_file = Path(file).absolute().resolve(strict=True)
@@ -377,7 +377,7 @@ class PyGenerator(BaseGenerator):
         if self.web_component_script:
             uuid = self.get_uuid(cname, node)
             args = [(k,v) for k,v in self.client_script_args.items()]
-            attrs.insert(0, [call_client_attr, f'{(self.relative_dir/uuid).as_posix()}', args])
+            attrs.insert(0, [call_client_attr, f'{uuid}', args])
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()

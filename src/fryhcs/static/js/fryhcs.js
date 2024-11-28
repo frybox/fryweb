@@ -239,7 +239,7 @@ function computed(fn) {
 ** 组件
 */
 class Component {
-    constructor({cid, name, url, args, refs, element, g}) {
+    constructor({cid, name, setup, args, refs, element, g}) {
         this.fryid = cid;
         const names = name.split(':');
         if (names.length == 1) {
@@ -249,7 +249,7 @@ class Component {
             this.fryapp = names[0];
             this.fryname = names[1];
         }
-        this.fryurl = url;
+        this.frysetup = setup;
         this.fryargs = args;
         this.fryrefs = refs;
         this.fryelement = element;
@@ -318,17 +318,18 @@ class Component {
 **
 ** 参数：
 ** domContainer: container dom element
-** components:   该参数取消。map of cid -> {fryid, fryname, fryurl, fryargs, fryrefs}
+** components:   该参数取消。map of cid -> {fryid, fryname, frysetup, fryargs, fryrefs}
 **               fryid: 组件id
 **               fryname: 组件名
-**               fryurl: 组件js文件的url
+**               frysetup: 组件水合配置函数名
 **               fryargs: 组件js prepare代码执行时的(部分)参数，另一部分是refs
 **               fryrefs：子组件元素的ref/refall数据
 **               components值为空时，将根据domContainer中的组件ID，从dom的组件script
 **               元素取相关组件信息。
+** setups:       水合准备函数列表对象
 ** rootArgs:     根组件的新参数，覆盖在根组件的<script {arg1} {arg2}>元素上传入的参数
 */
-async function hydrate(domContainer, rootArgs) {
+async function hydrate(domContainer, setups, rootArgs) {
 
     // 1. 初始化全局数据，遍历整个dom树，查找出服务端渲染出来的所有组件静态信息
 
@@ -368,13 +369,13 @@ async function hydrate(domContainer, rootArgs) {
                         throw `unknown component id ${cid}`;
                     }
                     const script = scripts[cid];
-                    const {args, refs} = JSON.parse(script.textContent);
-                    const {fryname: name, fryurl: url} = script.dataset;
+                    const {setup, args, refs} = JSON.parse(script.textContent);
+                    const {fryname: name} = script.dataset;
                     if (complist.length === 0 && args) {
                         // 将水合时动态传入的参数rootArgs给到本次水合的根组件
                         Object.assign(args, rootArgs);
                     }
-                    let comp = components[cid] = new Component({cid, name, url, args, refs, element, g});
+                    let comp = components[cid] = new Component({cid, name, setup, args, refs, element, g});
                     complist.push(comp);
                     if (!('frycomponents' in element)) {
                         element.frycomponents = [comp];
@@ -420,7 +421,7 @@ async function hydrate(domContainer, rootArgs) {
             const template = domContainer.querySelector(`[data-frytid="${subid}"]`);
             const create = async (args) => {
                 let clone = template.content.cloneNode(true);
-                await hydrate(clone, args);
+                await hydrate(clone, setups, args);
                 return clone.firstElementChild.frycomponents[0];
             };
             return { template, create };
@@ -507,10 +508,10 @@ async function hydrate(domContainer, rootArgs) {
 
     for (const comp of complist) {
         // 如果该组件是纯服务端组件，没有对应的前端逻辑，无需水合，继续下一个组件
-        if (typeof comp.fryurl === 'undefined') { continue; }
+        if (!comp.frysetup) { continue; }
 
         // 执行本组件水合
-        const { setup } = await import(comp.fryurl);
+        const setup = setups[comp.frysetup]
         const boundSetup = setup.bind(comp);
         await boundSetup();
         doHydrate(comp);

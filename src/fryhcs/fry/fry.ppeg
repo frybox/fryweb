@@ -215,9 +215,9 @@ js_template_tail = ~r"[}](\\.|[^`$\\])*`"
 
 js_static_import = js_simple_static_import / js_normal_static_import
 
-js_simple_static_import = ~r'\bimport\b' maybe_space js_simple_quote
+js_simple_static_import = ~r'\bimport\b' maybe_space js_simple_quote ~r"[ \t]*" ~r"[;\r\n]*"
 
-js_normal_static_import = ~r'\bimport\b' maybe_space js_import_identifiers maybe_space ~r'\bfrom\b' maybe_space js_simple_quote
+js_normal_static_import = ~r'\bimport\b' maybe_space js_import_identifiers maybe_space ~r'\bfrom\b' maybe_space js_simple_quote ~r"[ \t]*" ~r"[;\r\n]*"
 
 js_import_identifiers = js_import_identifier js_other_import_identifiers
 
