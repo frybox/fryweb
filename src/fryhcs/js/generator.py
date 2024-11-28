@@ -9,6 +9,7 @@ import re
 import os
 import subprocess
 import shutil
+import tempfile
 
 
 # generate js content for fry component
@@ -65,34 +66,32 @@ class JSGenerator(BaseGenerator):
         super().__init__()
         self.fileiter = FileIter(input_files)
         self.output_dir = Path(output_dir).absolute()
-        self.tmp_dir = self.output_dir / '.tmp'
+        self.tmp_dir = Path(tempfile.mkdtemp(prefix='fryhcs_'))
 
     def generate(self, input_files=[], clean=False):
         if not input_files:
             input_files = self.fileiter.all_files()
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        if clean:
-            f = self.output_dir / 'index.js'
-            f.unlink(missing_ok=True)
-            for f in self.tmp_dir.rglob('*.[jt]s'):
+        try:
+            if clean:
+                f = self.output_dir / 'index.js'
                 f.unlink(missing_ok=True)
-        self.dependencies = set()
-        count = 0
-        for file in input_files:
-            self.set_curr_file(file)
-            self.js_dir = self.tmp_dir / self.relative_dir
-            self.js_dir.mkdir(parents=True, exist_ok=True)
-            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
-            # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
-            with self.curr_file.open('r', encoding='utf-8', newline='') as f:
-                count += self.generate_one(f.read())
-        print("begin bundle")
-        self.bundle()
+            self.dependencies = set()
+            count = 0
+            for file in input_files:
+                self.set_curr_file(file)
+                self.js_dir = self.tmp_dir / self.relative_dir
+                self.js_dir.mkdir(parents=True, exist_ok=True)
+                # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
+                # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
+                with self.curr_file.open('r', encoding='utf-8', newline='') as f:
+                    count += self.generate_one(f.read())
+            self.bundle()
+        finally:
+            shutil.rmtree(self.tmp_dir)
         return count
                 
     def bundle(self):
-        print(self.dependencies)
         if self.dependencies:
             deps = set()
             for root in self.dependencies:
@@ -104,7 +103,6 @@ class JSGenerator(BaseGenerator):
                 p.mkdir(parents=True, exist_ok=True)
                 shutil.copy(file, p)
         src = list(get_componentjs(self.tmp_dir))
-        print(self.tmp_dir, src)
         if not src:
             return
         entry_point = compose_index(src, self.tmp_dir) 
