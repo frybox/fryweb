@@ -72,9 +72,8 @@ class JSGenerator(BaseGenerator):
         self.fileiter = FileIter(input_files)
         self.output_dir = Path(output_dir).absolute()
 
-    def generate(self, input_files=[], clean=False):
-        if not input_files:
-            input_files = self.fileiter.all_files()
+    def generate(self, clean=False):
+        input_files = self.fileiter.all_files()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.tmp_dir = Path(tempfile.mkdtemp(prefix='.frytmp_', dir='.')).absolute()
         try:

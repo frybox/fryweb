@@ -712,7 +712,7 @@ def generate_static(path=None):
         if path.suffix == '.fry':
             logger.info(f"Regenerating js files and css file for {str(path)}...")
             css_generator.generate(path)
-            js_generator.generate([path])
+            js_generator.generate(clean=True)
 
 
 def show_server_banner(debug, app_import_path):
