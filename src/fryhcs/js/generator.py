@@ -56,9 +56,14 @@ def compose_index(src, root_dir):
     return dest
 
 
+def is_componentjs(file):
+    if re.match(r'^[a-z_][a-z0-9_]*_[0-9a-f]{40}\.js$', file.name):
+        return True
+    return False
+
 def get_componentjs(rootdir):
     for file in rootdir.rglob("*.js"):
-        if re.match(r'^[a-z_][a-z0-9_]*_[0-9a-f]{40}\.js$', file.name):
+        if is_componentjs(file):
             yield file
 
 class JSGenerator(BaseGenerator):
@@ -94,8 +99,10 @@ class JSGenerator(BaseGenerator):
     def bundle(self):
         if self.dependencies:
             deps = set()
-            for root in self.dependencies:
-                for f in root.rglob('*.[jt]s'):
+            for dir, root in self.dependencies:
+                for f in dir.rglob('*.[jt]s'):
+                    if is_componentjs(f):
+                        continue
                     p = f.parent.relative_to(root)
                     deps.add((f, p))
             for file, path in deps:
@@ -106,6 +113,10 @@ class JSGenerator(BaseGenerator):
         if not src:
             return
         entry_point = compose_index(src, self.tmp_dir) 
+        dstmodules = self.tmp_dir / 'node_modules'
+        srcmodules = Path('.').resolve() / 'node_modules'
+        if srcmodules.exists() and not dstmodules.exists():
+            os.symlink(srcmodules, dstmodules)
         outfile = self.output_dir / 'index.js'
         this = Path(__file__).absolute().parent
         bun = this / 'bun' 
@@ -129,8 +140,10 @@ class JSGenerator(BaseGenerator):
     def check_js_module(self, jsmodule):
         if jsmodule[0] in "'\"":
             jsmodule = jsmodule[1:-1]
-        if jsmodule.startswith('./') or jsmodule.startswith('../'):
-            self.dependencies.add(self.curr_root)
+        if jsmodule.startswith('./'):
+            self.dependencies.add((self.curr_dir, self.curr_root))
+        elif jsmodule.startswith('../'):
+            self.dependencies.add((self.curr_dir.parent.absolute(), self.curr_root))
 
     def generate_one(self, source):
         tree = grammar.parse(source)
