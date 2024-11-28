@@ -47,7 +47,7 @@ def compose_index(src, root_dir):
         name = f.name[:-suffix_len]
         output.append(f'import {{ setup as {name} }} from "./{path}";')
         names.append(name)
-    output.append(f'let setups = {{ {', '.join(names)} }};')
+    output.append(f'let setups = {{ {", ".join(names)} }};')
     output.append('import { hydrate as hydrate_with_setups } from "fryhcs";')
     output.append('export const hydrate = async (rootElement) => await hydrate_with_setups(rootElement, setups);')
     output = '\n'.join(output)
