@@ -329,6 +329,9 @@ class Component {
 ** setups:       水合准备函数列表对象
 ** rootArgs:     根组件的新参数，覆盖在根组件的<script {arg1} {arg2}>元素上传入的参数
 */
+
+const globalG = {};
+
 async function hydrate(domContainer, setups, rootArgs) {
 
     // 1. 初始化全局数据，遍历整个dom树，查找出服务端渲染出来的所有组件静态信息
@@ -340,7 +343,7 @@ async function hydrate(domContainer, setups, rootArgs) {
     const g = {
         readyFns: [],
         isReady: false,
-        g: {},
+        g: globalG,
     };
     const components = {};
     const complist = [];
