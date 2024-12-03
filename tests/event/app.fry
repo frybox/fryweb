@@ -1,4 +1,4 @@
-from fryhcs import Element, html
+from fryweb import Element, html
 from flask import Flask
 
 app = Flask(__name__)
@@ -15,7 +15,7 @@ def App():
     </div>
     </template>
     <script>
-        import { signal } from 'fryhcs'
+        import { signal } from 'fryweb'
         const count = signal(0)
         function onClick() {
             console.log("Clicked!!!");

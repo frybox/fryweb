@@ -1,9 +1,9 @@
-# Fryhcs
+# Fryweb
 A Python library to generate HTML, Javascript and CSS, based on .fry file.
 
 Fry is jsx in python, it's the core of this project.
 
-Fryhcs is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
+Fryweb is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
 **FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
 
@@ -22,7 +22,7 @@ All features are implemented in pure Python, no node.js ecosystem is required.
 ## Installation
 
 ```bash
-$ pip install fryhcs
+$ pip install fryweb
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ $ pip install fryhcs
 create app.fry file:
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
@@ -39,7 +39,7 @@ app = Flask(__name__)
 def App():
     <template>
       <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-        Hello FryHCS!
+        Hello FryWEB!
       </h1>
     </template>
 
@@ -57,13 +57,13 @@ $ fry topy app.fry
 check the generated python content:
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
 
 def App():
-    return Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]})
+    return Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryWEB!"]})
 
 @app.get('/')
 def index():
@@ -109,22 +109,22 @@ Open browser, access `http://127.0.0.1:5000` to browse the page.
 
 Change the app.fry file, save, check the browser auto reloading.
 
-`fryhcs.render` can be used to render component directly.
+`fryweb.render` can be used to render component directly.
 
 Create components.fry and input following code:
 
 ```python
-from fryhcs import Element
+from fryweb import Element
 
 def Component(**props):
     <template>
       <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-        Hello FryHCS!
+        Hello Fryweb!
       </h1>
     </template>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print(render(Component))
 ```
 
@@ -137,7 +137,7 @@ $ fry run component.fry
 ### 2. Using python variable in html markup:
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
@@ -148,7 +148,7 @@ def App():
     <template>
       <div>
         <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-          Hello FryHCS!
+          Hello Fryweb!
         </h1>
         <p text-indigo-600 text-center mt-9>Count: {initial_count}</p>
       </div>
@@ -162,14 +162,14 @@ def index():
 Generated python:
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
 
 def App():
     initial_count = 10
-    return Element("div", {"children": [Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", (initial_count)]})]})
+    return Element("div", {"children": [Element("h1", {"class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello Fryweb!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", (initial_count)]})]})
 
 @app.get('/')
 def index():
@@ -180,7 +180,7 @@ def index():
 ### 3. Add js logic and reactive variable(signal/computed):
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
@@ -191,7 +191,7 @@ def App():
     <template>
        <div>
          <h1 ref=(header) text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-           Hello FryHCS!
+           Hello Fryweb!
          </h1>
          <p text-indigo-600 text-center mt-9>
            Count:
@@ -212,7 +212,7 @@ def App():
     </template>
 
     <script initial={initial_count}>
-       import {signal, computed} from "fryhcs"
+       import {signal, computed} from "fryweb"
  
        let count = signal(initial)
  
@@ -220,7 +220,7 @@ def App():
  
        function increment() {
            count.value ++;
-           header.textContent = `Hello FryHCS(${count.value})`;
+           header.textContent = `Hello Fryweb(${count.value})`;
        }
     </script>
 
@@ -233,7 +233,7 @@ def index():
 Generated python:
 
 ```python
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
@@ -241,7 +241,7 @@ app = Flask(__name__)
 def App():
     initial_count = 20
 
-    return Element("div", {"call-client-script": ["App-1171022438ea1f5e3d31f5fb191ca3c18adfda49", [("initial", (initial_count))]], "children": [Element("h1", {"ref:header": Element.ClientEmbed(0), "class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello FryHCS!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(1), "children": [f"""{initial_count}"""]})]})]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Double:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(2), "children": [f"""{initial_count*2}"""]})]})]}), Element("div", {"class": "flex w-full justify-center", "children": [Element("button", {"@click": Element.ClientEmbed(3), "class": "inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none", "children": ["Increment"]})]})]})
+    return Element("div", {"call-client-script": ["App-1171022438ea1f5e3d31f5fb191ca3c18adfda49", [("initial", (initial_count))]], "children": [Element("h1", {"ref:header": Element.ClientEmbed(0), "class": "text-cyan-500 hover:text-cyan-600 text-center mt-100px", "children": ["Hello Fryweb!"]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Count:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(1), "children": [f"""{initial_count}"""]})]})]}), Element("p", {"class": "text-indigo-600 text-center mt-9", "children": ["Double:", Element("span", {"class": "text-red-600", "children": [Element("span", {"*": Element.ClientEmbed(2), "children": [f"""{initial_count*2}"""]})]})]}), Element("div", {"class": "flex w-full justify-center", "children": [Element("button", {"@click": Element.ClientEmbed(3), "class": "inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none", "children": ["Increment"]})]})]})
 
 
 @app.get('/')
@@ -252,11 +252,11 @@ def index():
 Generated js script `static/js/components/.tmp/App-1171022438ea1f5e3d31f5fb191ca3c18adfda49.js`:
 
 ```js
-export { hydrate as hydrateAll } from "fryhcs";
+export { hydrate as hydrateAll } from "fryweb";
 export const hydrate = async function (element$$, doHydrate$$) {
     const { header, initial } = element$$.fryargs;
 
-              const {signal, computed} = await import("fryhcs")
+              const {signal, computed} = await import("fryweb")
 
               let count = signal(initial)
 
@@ -264,7 +264,7 @@ export const hydrate = async function (element$$, doHydrate$$) {
 
               function increment() {
                   count.value ++;
-                  header.textContent = `Hello FryHCS(${count.value})`;
+                  header.textContent = `Hello Fryweb(${count.value})`;
               }
 
     const embeds$$ = [header, count, doubleCount, increment];
@@ -284,7 +284,7 @@ Generated HTML:
     <link rel="stylesheet" href="/static/css/styles.css">
   </head>
   <body>
-    <div><script data-fryid="1" data-fryclass="app:App" data-initial="20"></script><h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px" data-fryembed="1/0-ref-header">Hello FryHCS!</h1><p class="text-indigo-600 text-center mt-9">Count:<span class="text-red-600"><span data-fryembed="1/1-text">20</span></span></p><p class="text-indigo-600 text-center mt-9">Double:<span class="text-red-600"><span data-fryembed="1/2-text">40</span></span></p><div class="flex w-full justify-center"><button class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none" data-fryembed="1/3-event-click">Increment</button></div></div>
+    <div><script data-fryid="1" data-fryclass="app:App" data-initial="20"></script><h1 class="text-cyan-500 hover:text-cyan-600 text-center mt-100px" data-fryembed="1/0-ref-header">Hello Fryweb!</h1><p class="text-indigo-600 text-center mt-9">Count:<span class="text-red-600"><span data-fryembed="1/1-text">20</span></span></p><p class="text-indigo-600 text-center mt-9">Double:<span class="text-red-600"><span data-fryembed="1/2-text">40</span></span></p><div class="flex w-full justify-center"><button class="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none" data-fryembed="1/3-event-click">Increment</button></div></div>
 
     <script type="module">
       let hydrates = {};
@@ -331,7 +331,7 @@ Generated HTML:
 ### 4. Reference html element and component element in js logic:
 
 ```python
-from fryhcs import Element, html
+from fryweb import Element, html
 from flask import Flask
 
 app = Flask(__name__)
@@ -362,7 +362,7 @@ def RefApp():
           Hello World!
         </p>
         <p ref=(bar) text-cyan-600 text-6xl transition-transform duration-1500>
-          Hello FryHCS!
+          Hello Fryweb!
         </p>
         {<p refall=(foobar)>foobar</p> for i in range(3)}
         <Refed ref=(refed) refall=(refeds)/>
@@ -400,7 +400,6 @@ if __name__ == '__main__':
 
 ## FastAPI Integration
 
-
 ## License
 MIT License
 
@@ -411,10 +410,13 @@ MIT License
 
 
 ## FAQ
-### 1. Why named fryhcs
-**FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
+### 1. Why named fryweb
+At first, fryweb is named fryhcs, means **FRY** **H**tml, **C**ss and Java**S**cript, in pure Python,
+no nodejs-based tooling needed!
 
-In fact, this project is created by the father of one boy(**F**ang**R**ui) and one girl(**F**ang**Y**i)...
+But this name is too difficult to remember, so it's named fryweb.
+
+By coincidence, this project is created by the father of one boy(**F**ang**R**ui) and one girl(**F**ang**Y**i)
 
 ### 2. Why is the file format named to be .fry
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already

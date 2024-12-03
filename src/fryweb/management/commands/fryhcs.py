@@ -1,18 +1,18 @@
 from django.core.management.base import CommandError, LabelCommand
-from fryhcs.utils import create_js_generator, create_css_generator
-from fryhcs.fry.generator import fry_to_py
+from fryweb.utils import create_js_generator, create_css_generator
+from fryweb.fry.generator import fry_to_py
 from pathlib import Path
 
 
 class Command(LabelCommand):
-    help = "Runs fryhcs commands"
+    help = "Runs fryweb commands"
     missing_args_message = """
 Command argument is missing, please add one of the following:
   build - to compile .fry into production css and js
   topy - to compile .fry into .py file
 Usage example:
-  python manage.py fryhcs build
-  python manage.py fryhcs topy FYFILE
+  python manage.py fryweb build
+  python manage.py fryweb topy FYFILE
 """
 
     def handle(self, *labels, **options):
@@ -21,7 +21,7 @@ Usage example:
         elif len(labels) == 2 and labels[0] == 'topy':
             return self.topy(labels[1])
         else:
-            return "Wrong command, Usage: python manage.py fryhcs [build | topy FYFILE]"
+            return "Wrong command, Usage: python manage.py fryweb [build | topy FYFILE]"
 
     def build(self)
         output = []
@@ -51,7 +51,7 @@ Usage example:
     def topy(fryfile):
         path = Path(fryfile)
         if not path.is_file():
-            return f"Wrong argument to fryhcs topy command: {fryfile} is not readable"
+            return f"Wrong argument to fryweb topy command: {fryfile} is not readable"
         with path.open('r', encoding='utf-8') as f:
             data = f.read()
         return fry_to_py(data, path)

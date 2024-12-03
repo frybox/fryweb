@@ -1,4 +1,4 @@
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 from random import randint
 
@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.get('/')
 def index():
-    return html(App, title="fryhcs color test", autoreload=False)
+    return html(App, title="fryweb color test", autoreload=False)
 
 
 def App():
@@ -231,5 +231,5 @@ def App():
     </template>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print(render(App))

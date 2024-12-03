@@ -1,5 +1,5 @@
 from flask import Flask
-from fryhcs import Element, html
+from fryweb import Element, html
 
 app = Flask(__name__)
 

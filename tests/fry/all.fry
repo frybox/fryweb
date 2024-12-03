@@ -1,16 +1,16 @@
-from fryhcs import Element
+from fryweb import Element
 
 # 这是一个fy样例
 
-# fy是一个内嵌html语法的python语法扩展，通过fryhcs将fy语法转化为python语法
+# fy是一个内嵌html语法的python语法扩展，通过fryweb将fy语法转化为python语法
 # fy内嵌html的方式如下：
-# from fryhcs.html import Element
+# from fryweb.html import Element
 # my_element = <div class="my-element">这是我的div</div>
 # another_element = (
 #   <div mt-8 hidden>
-#     这是一个支持<span text-red>fryhcs</span>语法的div
+#     这是一个支持<span text-red>fryweb</span>语法的div
 #   </div>)
-# 在注释和字符串中的html不会被fryhcs转化。
+# 在注释和字符串中的html不会被fryweb转化。
 
 def FunctionComponent(value, **props):
     print(f"FunctionComponent: '{props}'")
@@ -122,7 +122,7 @@ def FunctionComponent(value, **props):
         </div>
     </template>
     <script initage={a}>
-      import {signal} from 'fryhcs';
+      import {signal} from 'fryweb';
 
       const age = signal(parseInt(initage));
 
@@ -159,7 +159,7 @@ def FunctionComponent3(**props):
     </script>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print("================ FunctionComponent ================")
     print(render(<FunctionComponent value="hello world"/>))
     print()

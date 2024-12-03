@@ -1,4 +1,4 @@
-from fryhcs import Element, html
+from fryweb import Element, html
 from flask import Flask
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ def RefApp():
           Hello World!
         </p>
         <p ref=(bar) text-cyan-600 text-6xl transition-transform duration-1500>
-          Hello FryHCS!
+          Hello Fryweb!
         </p>
         {<p refall=(foobar)>foobar</p> for i in range(3)}
         <Refed ref=(refed) refall=(refeds)/>

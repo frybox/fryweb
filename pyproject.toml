@@ -1,8 +1,8 @@
 [project]
-name = "fryhcs"
-version = "0.2.43"
+name = "fryweb"
+version = "0.2.44"
 keywords = [
-    "fryhcs",
+    "fryweb",
     "fry",
     "django",
     "flask",
@@ -24,12 +24,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/frybox/fryhcs"
-"Bug Tracker" = "https://github.com/frybox/fryhcs/issues"
-Source = "https://github.com/frybox/fryhcs"
+Homepage = "https://github.com/frybox/fryweb"
+"Bug Tracker" = "https://github.com/frybox/fryweb/issues"
+Source = "https://github.com/frybox/fryweb"
 
 [project.scripts]
-fry = "fryhcs.cmdline:main"
+fry = "fryweb.cmdline:main"
 
 [build-system]
 requires = ["hatchling"]

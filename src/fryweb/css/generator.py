@@ -4,7 +4,7 @@ import os
 from .style import CSS
 from .collector import Collector
 from .color import theme_color_styles
-from fryhcs.config import fryconfig
+from fryweb.config import fryconfig
 
 
 class CSSGenerator():
@@ -57,7 +57,7 @@ class CSSGenerator():
                 with preflight.open('r', encoding='utf-8') as pf:
                     f.write(pf.read())
                 f.write(theme_color_styles())
-                from fryhcs.css.plugin import plugin_basecss
+                from fryweb.css.plugin import plugin_basecss
                 basecss = plugin_basecss()
                 f.write(basecss)
                 preflight = fryconfig.config_root / 'preflight.css'

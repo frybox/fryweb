@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from django.utils.autoreload import autoreload_started, file_changed, is_django_path
 from django.contrib.staticfiles.finders import get_finders
 
-from fryhcs.config import fryconfig
+from fryweb.config import fryconfig
 
 import threading
 import logging
@@ -21,7 +21,7 @@ js_generator = None
 
 incremental_generation_count = 0
 
-logger = logging.getLogger('fryhcs.signals')
+logger = logging.getLogger('fryweb.signals')
 
 def trigger_browser_reload():
     browser_reload_event.set()
@@ -40,7 +40,7 @@ def staticfiles_storages():
             yield from finder.storages.values()
 
 
-@receiver(autoreload_started, dispatch_uid='fryhcs_start_generator')
+@receiver(autoreload_started, dispatch_uid='fryweb_start_generator')
 def start_generator(sender, **kwargs):
     # django框架只监控了django模板的变更，为了浏览器自动更新，
     # 添加对静态资源的监控
@@ -48,7 +48,7 @@ def start_generator(sender, **kwargs):
         if hasattr(storage, 'location'):
             sender.watch_dir(Path(storage.location), '**/*')
 
-    from fryhcs.utils import create_css_generator, create_js_generator
+    from fryweb.utils import create_css_generator, create_js_generator
     global js_generator
     global css_generator
     js_generator = create_js_generator()
@@ -57,7 +57,7 @@ def start_generator(sender, **kwargs):
     css_generator.generate()
 
 
-@receiver(file_changed, dispatch_uid='fryhcs_file_changed')
+@receiver(file_changed, dispatch_uid='fryweb_file_changed')
 def template_changed(sender, file_path, **kwargs):
     global incremental_generation_count
     if is_django_path(file_path):
@@ -87,7 +87,7 @@ def template_changed(sender, file_path, **kwargs):
 
     # 当有html、js或css文件发生变更时，不需要服务端reoad，但浏览器需要reload
     if file_path.suffix in ('.html', '.js', '.css'):
-        from fryhcs.reload import update_serverid
+        from fryweb.reload import update_serverid
         update_serverid()
         return True
     # 其他情况，可能要服务端reload

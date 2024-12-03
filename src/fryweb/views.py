@@ -2,9 +2,9 @@ from http import HTTPStatus
 from django.http import Http404, HttpResponse, StreamingHttpResponse, JsonResponse
 from django.conf import settings
 
-from fryhcs.reload import event_stream, mime_type
+from fryweb.reload import event_stream, mime_type
 
-from fryhcs import render
+from fryweb import render
 
 import logging
 import uuid

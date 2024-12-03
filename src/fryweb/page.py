@@ -1,6 +1,6 @@
-from fryhcs.element import Element, component_id_attr_name, component_name_attr_name, children_attr_name, type_attr_name
-from fryhcs.utils import static_url
-from fryhcs.config import fryconfig
+from fryweb.element import Element, component_id_attr_name, component_name_attr_name, children_attr_name, type_attr_name
+from fryweb.utils import static_url
+from fryweb.config import fryconfig
 from importlib import import_module
 import json
 
@@ -150,7 +150,7 @@ def html(content='div',
     #<script type="importmap">
     #  {{
     #    "imports": {{
-    #      "fryhcs": "{static_url('js/fryhcs.js')}"
+    #      "fryweb": "{static_url('js/fryweb.js')}"
     #    }}
     #  }}
     #</script>

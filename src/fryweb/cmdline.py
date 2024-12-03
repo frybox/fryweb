@@ -1,5 +1,5 @@
 """
-    fryhcs.cmdline
+    fryweb.cmdline
     ~~~~~~~~~~~~~~~~
 
     Command line interface.
@@ -26,7 +26,7 @@ from flask.cli import FlaskGroup, shell_command, routes_command, CertParamType, 
 
 import click
 
-from fryhcs.utils import create_css_generator, create_js_generator
+from fryweb.utils import create_css_generator, create_js_generator
 
 css_generator = None 
 js_generator = None
@@ -297,7 +297,7 @@ class ReloaderLoop:
             logger.info(f" * Restarting with {self.name}")
             args = _get_args_for_reloading()
             new_environ = os.environ.copy()
-            new_environ["FRYHCS_RUN_MAIN"] = "true"
+            new_environ["FRYWEB_RUN_MAIN"] = "true"
             exit_code = subprocess.call(args, env=new_environ, close_fds=False)
 
             if exit_code != 3:
@@ -473,7 +473,7 @@ def run_with_reloader(
     )
 
     try:
-        if os.environ.get("FRYHCS_RUN_MAIN") == "true":
+        if os.environ.get("FRYWEB_RUN_MAIN") == "true":
             ensure_echo_on()
             t = threading.Thread(target=main_func, args=())
             t.daemon = True
@@ -491,11 +491,11 @@ def run_with_reloader(
 
 def is_running_from_reloader() -> bool:
     """Check if the server is running as a subprocess within the
-    fryhcs reloader.
+    fryweb reloader.
 
     .. versionadded:: 0.10
     """
-    return os.environ.get("FRYHCS_RUN_MAIN") == "true"
+    return os.environ.get("FRYWEB_RUN_MAIN") == "true"
 
 def _ansi_style(value: str, *styles: str) -> str:
     if not _log_add_style:
@@ -637,17 +637,17 @@ def run(
         js_generator = create_js_generator()
 
     if use_reloader:
-        from fryhcs.reload import event_stream, mime_type
+        from fryweb.reload import event_stream, mime_type
         from flask import Response
 
         @app.get('/_check_hotreload')
-        def fryhcs_check_hotreload():
+        def fryweb_check_hotreload():
             return Response(event_stream(), mimetype=mime_type)
 
     static_files = static_files if static_files else {}
 
     with app.app_context():
-        from fryhcs.config import fryconfig
+        from fryweb.config import fryconfig
         static_files[fryconfig.static_url] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     
     if static_files:
@@ -663,7 +663,7 @@ def run(
     if not is_running_from_reloader():
         fd = None
     else:
-        fd = int(os.environ["FRYHCS_SERVER_FD"])
+        fd = int(os.environ["FRYWEB_SERVER_FD"])
 
     srv = make_server(
         hostname,
@@ -677,7 +677,7 @@ def run(
         fd=fd,
     )
     srv.socket.set_inheritable(True)
-    os.environ["FRYHCS_SERVER_FD"] = str(srv.fileno())
+    os.environ["FRYWEB_SERVER_FD"] = str(srv.fileno())
 
     if not is_running_from_reloader():
         srv.log_startup()
@@ -723,7 +723,7 @@ def show_server_banner(debug, app_import_path):
         return
 
     if app_import_path is not None:
-        click.echo(f" * Serving Fryhcs app '{app_import_path}'")
+        click.echo(f" * Serving Fryweb app '{app_import_path}'")
 
     if debug is not None:
         click.echo(f" * Debug mode: {'on' if debug else 'off'}")
@@ -913,7 +913,7 @@ def build_command(info):
 @click.argument("fryfile")
 def topy_command(fryfile):
     """Convert specified .fry file into .py file."""
-    from fryhcs.fry.generator import fry_to_py
+    from fryweb.fry.generator import fry_to_py
     path = Path(fryfile)
     if not path.is_file():
         print(f"Error: can't open file '{fryfile}'.")
@@ -941,7 +941,7 @@ def topy_command(fryfile):
 @click.argument("jsdir")
 def tojs_command(fryfile, jsdir):
     """Convert specified .fry file into .js file(s)."""
-    from fryhcs.js.generator import JSGenerator
+    from fryweb.js.generator import JSGenerator
     path = Path(fryfile)
     if not path.is_file():
         print(f"Error: can't open file '{fryfile}'.")
@@ -963,8 +963,8 @@ def tocss_command(plugin, fryfile, cssfile):
     if plugin:
         sys.path.insert(0, '')
         plugins = ':'.join(plugin)
-        os.environ['FRYHCS_PLUGINS'] = plugins
-    from fryhcs.css.generator import CSSGenerator
+        os.environ['FRYWEB_PLUGINS'] = plugins
+    from fryweb.css.generator import CSSGenerator
     path = Path(fryfile)
     if not path.is_file():
         print(f"Error: can't open file '{fryfile}'.")
@@ -1013,7 +1013,7 @@ def hl_command(fryfile):
     except ImportError:
         click.echo("Pygments is not installed, install it via `pip install pygments`")
         return
-    from fryhcs.fry.frylexer import FryLexer
+    from fryweb.fry.frylexer import FryLexer
     lexer = FryLexer()
     fmter = TerminalFormatter()
     with open(fryfile, 'r', encoding='utf-8') as f:
@@ -1021,7 +1021,7 @@ def hl_command(fryfile):
     click.echo(highlight(source, lexer, fmter))
 
 
-class FryhcsGroup(FlaskGroup):
+class FrywebGroup(FlaskGroup):
     def __init__(self, **extra):
         extra.pop('add_default_commands', None)
         super().__init__(add_default_commands=False, **extra) 
@@ -1035,10 +1035,10 @@ class FryhcsGroup(FlaskGroup):
         self.add_command(shell_command)
         self.add_command(routes_command)
 
-cli = FryhcsGroup(
-    name="fryhcs",
+cli = FrywebGroup(
+    name="fryweb",
     help="""\
-A general utility for Fryhcs applications.
+A general utility for Fryweb applications.
 
 An application to load must be given with the '--app' option,
 'FLASK_APP' environment variable, or with a 'wsgi.py' or 'app.py' file
@@ -1049,7 +1049,7 @@ in the current directory.
 
 def main():
     # 让python可以import .fry文件
-    from fryhcs.fry.fryloader import install_path_hook
+    from fryweb.fry.fryloader import install_path_hook
     install_path_hook()
     cli.main()
 

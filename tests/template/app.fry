@@ -1,4 +1,4 @@
-from fryhcs import Element, html
+from fryweb import Element, html
 from flask import Flask
 
 app = Flask(__name__)
@@ -40,7 +40,7 @@ def RefApp():
       </div>
     </template>
     <script {count}>
-      import { signal } from 'fryhcs';
+      import { signal } from 'fryweb';
       const counter = signal(count);
       const doclick = async () => {
         counter.value ++;

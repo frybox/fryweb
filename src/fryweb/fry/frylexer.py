@@ -3,7 +3,7 @@ from pygments.lexers.python import PythonLexer
 from pygments.lexers.javascript import JavascriptLexer
 from pygments.token import Token, Name, Operator, Punctuation, String, Text, Whitespace, Comment
 from parsimonious import NodeVisitor, BadGrammar
-from fryhcs.fry.grammar import grammar
+from fryweb.fry.grammar import grammar
 
 
 def merge(children):

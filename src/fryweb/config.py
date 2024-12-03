@@ -44,11 +44,11 @@ class FryConfig():
 
     @property
     def js_url(self):
-        return self.item('FRYHCS_JS_URL', 'js/components/')
+        return self.item('FRYWEB_JS_URL', 'js/components/')
 
     @property
     def css_url(self):
-        return self.item('FRYHCS_CSS_URL', 'css/styles.css')
+        return self.item('FRYWEB_CSS_URL', 'css/styles.css')
 
     @property
     def check_reload_url(self):
@@ -56,9 +56,9 @@ class FryConfig():
             return ''
         if self.django_ok:
             from django.urls import reverse
-            return reverse('fryhcs:check_hotreload')
+            return reverse('fryweb:check_hotreload')
         if self.flask_ok:
-            return flask_app.url_for('fryhcs_check_hotreload')
+            return flask_app.url_for('fryweb_check_hotreload')
         return ''
 
     @property
@@ -68,11 +68,11 @@ class FryConfig():
     @property
     def static_root(self):
         if self.django_ok:
-            root_dir = getattr(django_settings, 'FRYHCS_STATIC_ROOT', '')
+            root_dir = getattr(django_settings, 'FRYWEB_STATIC_ROOT', '')
             if not root_dir:
                 staticfiles_dirs = getattr(django_settings, 'STATICFILES_DIRS', [])
                 if len(staticfiles_dirs) == 0:
-                    raise Exception("'FRYHCS_STATIC_ROOT' is not specified, 'STATICFILES_DIRS' should have at least one item.")
+                    raise Exception("'FRYWEB_STATIC_ROOT' is not specified, 'STATICFILES_DIRS' should have at least one item.")
                 root_dir = staticfiles_dirs[0]
             return Path(root_dir)
         if self.flask_ok:
@@ -93,11 +93,11 @@ class FryConfig():
 
     @property
     def semantic_theme(self):
-        return self.item('FRYHCS_SEMANTIC_THEME', None)
+        return self.item('FRYWEB_SEMANTIC_THEME', None)
 
     @property
     def plugins(self):
-        return self.item('FRYHCS_PLUGINS', [])
+        return self.item('FRYWEB_PLUGINS', [])
 
     @property
     def static_url(self, default='/static'):

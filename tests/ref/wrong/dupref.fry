@@ -1,4 +1,4 @@
-from fryhcs import Element
+from fryweb import Element
 
 def RefApp():
     <template>
@@ -7,7 +7,7 @@ def RefApp():
           Hello World!
         </p>
         <p refall=(foo)>
-          Hello FryHCS!
+          Hello Fryweb!
         </p>
       </div>
     </template>
@@ -18,5 +18,5 @@ def RefApp():
     </script>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print(render(RefApp))

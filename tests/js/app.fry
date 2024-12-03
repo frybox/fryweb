@@ -1,4 +1,4 @@
-from fryhcs import Element, html
+from fryweb import Element, html
 from flask import Flask
 
 app = Flask(__name__)
@@ -38,7 +38,7 @@ def App():
       </Sub1>
     </template>
     <script>
-      import {signal as create_signal} from 'fryhcs';
+      import {signal as create_signal} from 'fryweb';
       const v = create_signal(10);
       console.log("hydrate app");
       this.ready(() => console.log("app after ready"));

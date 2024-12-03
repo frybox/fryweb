@@ -1,15 +1,15 @@
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 
 app = Flask(__name__)
-app.config['FRYHCS_PLUGINS'] = ['daisyui']
+app.config['FRYWEB_PLUGINS'] = ['daisyui']
 
 def App():
     initial_count = 20
     <template>
       <div>
         <h1 text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-          Hello FryHCS!
+          Hello Fryweb!
         </h1>
         <p text-indigo-600 text-center mt-9>
           Count:
@@ -24,7 +24,7 @@ def App():
       </div>
     </template>
     <script {initial_count}>
-       import {signal} from "fryhcs";
+       import {signal} from "fryweb";
  
        let count = signal(initial_count);
  

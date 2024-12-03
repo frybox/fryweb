@@ -1,10 +1,10 @@
 from parsimonious import BadGrammar
 from pathlib import Path
 import sys
-from fryhcs.fry.grammar import grammar
-from fryhcs.fry.generator import BaseGenerator
-from fryhcs.fileiter import FileIter
-from fryhcs.element import ref_attr_name, refall_attr_name
+from fryweb.fry.grammar import grammar
+from fryweb.fry.generator import BaseGenerator
+from fryweb.fileiter import FileIter
+from fryweb.element import ref_attr_name, refall_attr_name
 import re
 import os
 import subprocess
@@ -48,7 +48,7 @@ def compose_index(src, root_dir):
         output.append(f'import {{ setup as {name} }} from "./{path}";')
         names.append(name)
     output.append(f'let setups = {{ {", ".join(names)} }};')
-    output.append('import { hydrate as hydrate_with_setups } from "fryhcs";')
+    output.append('import { hydrate as hydrate_with_setups } from "fryweb";')
     output.append('export const hydrate = async (rootElement) => await hydrate_with_setups(rootElement, setups);')
     output = '\n'.join(output)
     with dest.open('w', encoding='utf-8') as f:
@@ -131,7 +131,7 @@ class JSGenerator(BaseGenerator):
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
-            args = [str(bun), 'build', '--external', 'fryhcs', '--splitting', f'--outdir={self.output_dir}', str(entry_point)]
+            args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={self.output_dir}', str(entry_point)]
         subprocess.run(args, env=env)
 
     def check_js_module(self, jsmodule):

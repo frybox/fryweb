@@ -3,10 +3,10 @@ from collections import defaultdict
 
 import re
 
-from fryhcs.fileiter import FileIter
-from fryhcs.fry.grammar import grammar
-from fryhcs.spec import is_valid_html_attribute
-from fryhcs.element import class_attr_name
+from fryweb.fileiter import FileIter
+from fryweb.fry.grammar import grammar
+from fryweb.spec import is_valid_html_attribute
+from fryweb.element import class_attr_name
 
 class BaseCollector():
     ignored_tags = ('head', 'title', 'meta', 'style', 'link', 'script', 'template')

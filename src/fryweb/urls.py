@@ -3,7 +3,7 @@ from django.urls import path
 
 from .views import component, check_hotreload
 
-app_name = 'fryhcs'
+app_name = 'fryweb'
 
 urlpatterns = [
 #    path('component', components, name="component"),

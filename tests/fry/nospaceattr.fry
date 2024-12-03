@@ -1,4 +1,4 @@
-from fryhcs import Element
+from fryweb import Element
 from random import randint
 
 def A():
@@ -12,5 +12,5 @@ def A():
     </template>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print(render(A))

@@ -3,10 +3,10 @@ from pathlib import Path
 import re
 import html
 import hashlib
-from fryhcs.fry.grammar import grammar
-from fryhcs.spec import is_valid_html_attribute
-from fryhcs.css.style import CSS
-from fryhcs.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
+from fryweb.fry.grammar import grammar
+from fryweb.spec import is_valid_html_attribute
+from fryweb.css.style import CSS
+from fryweb.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
 
 def quote_bracket_f_string(s):
     if '"""' not in s:

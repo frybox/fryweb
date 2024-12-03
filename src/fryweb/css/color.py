@@ -1,5 +1,5 @@
 from coloraide import Color
-from fryhcs.config import fryconfig
+from fryweb.config import fryconfig
 
 tailwind_colors = {
     'slate-50':    'rgb(248 250 252)',

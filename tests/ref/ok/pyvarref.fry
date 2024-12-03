@@ -1,4 +1,4 @@
-from fryhcs import Element
+from fryweb import Element
 
 def RefApp():
     bar = 999
@@ -17,5 +17,5 @@ def RefApp():
     </script>
 
 if __name__ == '__main__':
-    from fryhcs import html
+    from fryweb import html
     print(html(RefApp))

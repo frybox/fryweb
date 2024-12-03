@@ -1,4 +1,4 @@
-from fryhcs import html, Element
+from fryweb import html, Element
 from flask import Flask
 from random import randint
 
@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.get('/')
 def index():
-    return html(App, title="fryhcs CSS test", autoreload=False)
+    return html(App, title="fryweb CSS test", autoreload=False)
 
 
 def App():
@@ -32,7 +32,7 @@ def Content(value=0):
         css = ["bg-purple-300", 'text-xl', 'text-green-600', 'hover:bg-purple-600', 'hover:text-green-300']
 
     <template>
-      <span ref=(el) @click=(toggle) {*css}>hello hello fryhcs({value})</span>
+      <span ref=(el) @click=(toggle) {*css}>hello hello fryweb({value})</span>
     </template>
 
     <script>
@@ -42,5 +42,5 @@ def Content(value=0):
     </script>
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print(render(App))

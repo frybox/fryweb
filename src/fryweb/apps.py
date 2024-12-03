@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class FryhcsConfig(AppConfig):
+class FrywebConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'fryhcs'
+    name = 'fryweb'
 
     def ready(self):
         # 注册信号处理函数

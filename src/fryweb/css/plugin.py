@@ -1,5 +1,5 @@
-from fryhcs.config import fryconfig
-from fryhcs.css.style import CSS
+from fryweb.config import fryconfig
+from fryweb.css.style import CSS
 from importlib import import_module
 import re
 

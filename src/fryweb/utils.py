@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fryhcs.config import fryconfig
+from fryweb.config import fryconfig
 
 import os
 import inspect
@@ -53,11 +53,11 @@ def fry_files():
 
 def create_css_generator():
     # input_files = [(dir, '**/*.html') for dir in template_directories()]
-    from fryhcs.css.generator import CSSGenerator
+    from fryweb.css.generator import CSSGenerator
     return CSSGenerator(fry_files(), fryconfig.css_file)
 
 def create_js_generator():
-    from fryhcs.js.generator import JSGenerator
+    from fryweb.js.generator import JSGenerator
     return JSGenerator(fry_files(), fryconfig.js_root)
 
 

@@ -1,10 +1,10 @@
-from fryhcs import Element, html
-from fryhcs.css import random_color
+from fryweb import Element, html
+from fryweb.css import random_color
 from random import randint
 from flask import Flask
 
 app = Flask(__name__)
-app.config['FRYHCS_PLUGINS'] = ['happybirthday']
+app.config['FRYWEB_PLUGINS'] = ['happybirthday']
 
 @app.get('/')
 def index():
@@ -141,7 +141,7 @@ def HappyBirthday(**props):
     )
 
 if __name__ == '__main__':
-    from fryhcs import render
+    from fryweb import render
     print("render HappyBirthday")
     print(render(HappyBirthday))
     print()

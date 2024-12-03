@@ -1,15 +1,15 @@
 """
-    fryhcs.__main__
+    fryweb.__main__
     ~~~~~~~~~~~~~~~
 
-    Main entry point for ``python -m fryhcs``
+    Main entry point for ``python -m fryweb``
 
     :copyright: Copyright 2023 by zenkj<juzejian@gmail.com>
     :license: BSD, see LICENSE for details.
 """
 
 import sys
-from fryhcs.cmdline import main
+from fryweb.cmdline import main
 
 try:
     sys.exit(main())

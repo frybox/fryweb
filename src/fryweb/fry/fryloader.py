@@ -16,11 +16,11 @@ class PyxSourceFileLoader(SourceFileLoader):
         return super(SourceFileLoader, self).source_to_code(data, path, _optimize=_optimize)
 
 def install_path_hook():
-    if sys.path_hooks and hasattr(sys.path_hooks[0], 'fryhcs'):
+    if sys.path_hooks and hasattr(sys.path_hooks[0], 'fryweb'):
         return
     loader_details = [(PyxSourceFileLoader, PYXSOURCE_SUFFIXES)] + _get_supported_file_loaders()
     factory_func = FileFinder.path_hook(*loader_details)
-    setattr(factory_func, 'fryhcs', True)
+    setattr(factory_func, 'fryweb', True)
     sys.path_hooks.insert(0, factory_func)
 
     # 清空已有的PathEntryFinder缓存

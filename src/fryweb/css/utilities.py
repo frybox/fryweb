@@ -150,7 +150,7 @@ def convert_color(args):
          radix_colors.get(color) or
          semantic_colors.get(color))
     if not c:
-        from fryhcs.css.plugin import plugin_color
+        from fryweb.css.plugin import plugin_color
         color = plugin_color(color)
         if not color:
             return None
@@ -212,7 +212,7 @@ class Utility():
         if self.argc == 0 or self.args[0] == '':
             return None
 
-        from fryhcs.css.plugin import plugin_utility
+        from fryweb.css.plugin import plugin_utility
         pu = plugin_utility(self.args)
         if pu:
             return lambda: self.from_plugin(pu)
