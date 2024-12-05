@@ -5,13 +5,11 @@ Fry is jsx in python, it's the core of this project.
 
 Fryweb is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
-**FRY** **H**tml, **C**ss and Java**S**cript, in pure Python, no nodejs-based tooling needed!
-
 ## Features
 * Support fry extension to normal python file, similar to jsx, write html tags in python file.
 * Provide a fry loader for python import machanism, load and execute .fry files directly by CPython.
 * Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
-* Support django/flask framework.
+* Support wsgi/asgi application.
 * Provide pygments lexer for fry.
 * Provide a development server which supports server/browser auto reloading when file saved.
 * Provide a command line tool `fry`, build css/js, highlight and run fry file and run development server. 
