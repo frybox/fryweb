@@ -70,7 +70,8 @@ class JSGenerator(BaseGenerator):
     def __init__(self, input_files, output_dir):
         super().__init__()
         self.fileiter = FileIter(input_files)
-        self.output_dir = Path(output_dir).absolute()
+        self.output_file = Path(output_file).resolve()
+        self.output_dir = self.output_file.parent
 
     def generate(self, clean=False):
         input_files = self.fileiter.all_files()
@@ -78,8 +79,7 @@ class JSGenerator(BaseGenerator):
         self.tmp_dir = Path(tempfile.mkdtemp(prefix='.frytmp_', dir='.')).absolute()
         try:
             if clean:
-                f = self.output_dir / 'index.js'
-                f.unlink(missing_ok=True)
+                self.output_file.unlink(missing_ok=True)
             self.dependencies = set()
             count = 0
             for file in input_files:

@@ -58,7 +58,7 @@ def create_css_generator():
 
 def create_js_generator():
     from fryweb.js.generator import JSGenerator
-    return JSGenerator(fry_files(), fryconfig.js_root)
+    return JSGenerator(fry_files(), fryconfig.js_file)
 
 
 def static_url(path):
