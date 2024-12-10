@@ -60,7 +60,7 @@ class CSSGenerator():
                 from fryweb.css.plugin import plugin_basecss
                 basecss = plugin_basecss()
                 f.write(basecss)
-                preflight = fryconfig.config_root / 'preflight.css'
+                preflight = fryconfig.app_root / 'preflight.css'
                 if preflight.is_file():
                     with preflight.open('r', encoding='utf-8') as pf:
                         f.write(pf.read())

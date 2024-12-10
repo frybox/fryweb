@@ -20,7 +20,6 @@ import typing as t
 from itertools import chain
 from pathlib import PurePath, Path
 
-import werkzeug
 from werkzeug.serving import make_server
 from flask.cli import FlaskGroup, shell_command, routes_command, CertParamType, pass_script_info, get_debug_flag, _debug_option
 

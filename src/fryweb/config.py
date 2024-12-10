@@ -1,40 +1,9 @@
 from pathlib import Path
 import os
 
-try:
-    from django.conf import settings as django_settings
-except ImportError:
-    django_settings = False
-
-try:
-    from flask import current_app as flask_app
-except ImportError:
-    flask_app = False
-
 class FryConfig():
-    @property
-    def django_ok(self):
-        try:
-            return django_settings and django_settings.configured
-        except:
-            pass
-        return False
-
-    @property
-    def flask_ok(self):
-        if flask_app:
-            try:
-                _current_obj = flask_app._get_current_object()
-                return True
-            except RuntimeError:
-                pass
-        return False
 
     def item(self, name, default):
-        if self.django_ok:
-            return getattr(django_settings, name, default)
-        if self.flask_ok:
-            return flask_app.config.get(name, default)
         if name in os.environ:
             value = os.environ[name]
             if isinstance(default, (list, tuple)):
@@ -44,7 +13,7 @@ class FryConfig():
 
     @property
     def js_url(self):
-        return self.item('FRYWEB_JS_URL', 'js/components/')
+        return self.item('FRYWEB_JS_URL', 'js/index.js')
 
     @property
     def css_url(self):
@@ -67,17 +36,7 @@ class FryConfig():
 
     @property
     def static_root(self):
-        if self.django_ok:
-            root_dir = getattr(django_settings, 'FRYWEB_STATIC_ROOT', '')
-            if not root_dir:
-                staticfiles_dirs = getattr(django_settings, 'STATICFILES_DIRS', [])
-                if len(staticfiles_dirs) == 0:
-                    raise Exception("'FRYWEB_STATIC_ROOT' is not specified, 'STATICFILES_DIRS' should have at least one item.")
-                root_dir = staticfiles_dirs[0]
-            return Path(root_dir)
-        if self.flask_ok:
-            return Path(flask_app.static_folder)
-        return Path('.')
+        return Path(self.item('FRYWEB_STATIC_ROOT', './public/'))
 
     @property
     def config_root(self):
@@ -108,7 +67,7 @@ class FryConfig():
         return default
 
     @property
-    def js_root(self):
+    def js_file(self):
         return self.static_root / self.js_url
 
     @property
