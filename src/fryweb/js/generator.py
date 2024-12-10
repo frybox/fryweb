@@ -66,7 +66,7 @@ def get_componentjs(rootdir):
         if is_componentjs(file):
             yield file
 
-class JSGenerator(BaseGenerator):
+class JsGenerator(BaseGenerator):
     def __init__(self, input_files, output_file):
         super().__init__()
         self.fileiter = FileIter(input_files)
@@ -77,23 +77,21 @@ class JSGenerator(BaseGenerator):
         input_files = self.fileiter.all_files()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.tmp_dir = Path(tempfile.mkdtemp(prefix='.frytmp_', dir='.')).absolute()
-        try:
-            if clean:
-                self.output_file.unlink(missing_ok=True)
-            self.dependencies = set()
-            count = 0
-            for file in input_files:
-                self.set_curr_file(file)
-                self.js_dir = self.tmp_dir / self.relative_dir
-                self.js_dir.mkdir(parents=True, exist_ok=True)
-                # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
-                # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
-                with self.curr_file.open('r', encoding='utf-8', newline='') as f:
-                    print(self.curr_file)
-                    count += self.generate_one(f.read())
-            self.bundle()
-        finally:
+        if clean:
             shutil.rmtree(self.tmp_dir)
+            self.tmp_dir.mkdir(parents=True, exist_ok=True)
+        self.dependencies = set()
+        count = 0
+        for file in input_files:
+            self.set_curr_file(file)
+            self.js_dir = self.tmp_dir / self.relative_dir
+            self.js_dir.mkdir(parents=True, exist_ok=True)
+            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
+            # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
+            with self.curr_file.open('r', encoding='utf-8', newline='') as f:
+                print(self.curr_file)
+                count += self.generate_one(f.read())
+        self.bundle()
         return count
                 
     def bundle(self):

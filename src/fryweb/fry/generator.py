@@ -12,6 +12,7 @@ from fryweb.css.style import CSS
 from fryweb.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
 from fryweb.fileiter import FileIter
 from fryweb.config import fryconfig
+from fryweb.js.generator import JsGenerator
 
 def fry_files():
     paths = set()
@@ -31,6 +32,8 @@ class FryGenerator:
         if (self.clean):
             shutil.rmtree(fryconfig.build_root)
             fryconfig.build_root.mkdir(parents=True, exist_ok=True)
+        pygenerator = PyGenerator()
+        jsgenerator = JsGenerator()
         for file in self.fileiter.all_files():
             curr_file = Path(file).resolve(struct=True)
             pyfile = curr_file.parent / f'{file.stem}.py'
@@ -46,7 +49,7 @@ class FryGenerator:
                 source_bytes = f.read()
                 sha1 = hashlib.sha1()
                 sha1.update(source_bytes)
-                hash = sha1.hexdigest().lower()
+                curr_hash = sha1.hexdigest().lower()
                 if pyfile.exists():
                     try:
                         with pyfile.open('r', encoding='utf-8') as pyf:
@@ -55,13 +58,18 @@ class FryGenerator:
                             if (len(result) == 3 and
                                 result[0] == '#' and
                                 result[1] == 'fry' and
-                                len(result[2]) == hash):
+                                len(result[2]) == curr_hash):
+                                continue
                     except:
                         pass
-
+                # 1. parse
                 source = source_bytes.decode()
                 tree = grammar.parse(source)
-                pygenerator = PyGenerator()
+
+                # 2. generate python file
+                with pyfile.open('w', encoding='utf-8') as pyf:
+                    pyfile.write(pygenerator.generate(tree))
+                
 
             
 

@@ -2,7 +2,8 @@ from collections import defaultdict
 from pathlib import Path
 
 class FileIter():
-    def __init__(self, input_files=[]):
+    def __init__(self, input_files=None):
+        input_files = [] if not input_files else input_files
         self.path_globs = defaultdict(set)
         self.files = set()
         for file in input_files:
