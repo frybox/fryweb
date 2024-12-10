@@ -44,7 +44,7 @@ def compose_index(src, root_dir):
         f = file.relative_to(root_dir)
         suffix_len = len(f.suffix)
         path = f.as_posix()[:-suffix_len]
-        name = f.name[:-suffix_len]
+        name = f.stem
         output.append(f'import {{ setup as {name} }} from "./{path}";')
         names.append(name)
     output.append(f'let setups = {{ {", ".join(names)} }};')
@@ -57,7 +57,7 @@ def compose_index(src, root_dir):
 
 
 def is_componentjs(file):
-    if re.match(r'^[a-z_][a-z0-9_]*_[0-9a-f]{40}\.js$', file.name):
+    if re.match(r'^![A-Z][a-zA-Z0-9_]*@[a-zA-Z_][a-zA-Z0-9_]+\.js$', file.name):
         return True
     return False
 
@@ -67,53 +67,59 @@ def get_componentjs(rootdir):
             yield file
 
 class JsGenerator(BaseGenerator):
-    def __init__(self, input_files, output_file):
+    def __init__(self):
         super().__init__()
-        self.fileiter = FileIter(input_files)
-        self.output_file = Path(output_file).resolve()
-        self.output_dir = self.output_file.parent
-
-    def generate(self, clean=False):
-        input_files = self.fileiter.all_files()
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.tmp_dir = Path(tempfile.mkdtemp(prefix='.frytmp_', dir='.')).absolute()
-        if clean:
-            shutil.rmtree(self.tmp_dir)
-            self.tmp_dir.mkdir(parents=True, exist_ok=True)
         self.dependencies = set()
-        count = 0
-        for file in input_files:
-            self.set_curr_file(file)
-            self.js_dir = self.tmp_dir / self.relative_dir
-            self.js_dir.mkdir(parents=True, exist_ok=True)
-            # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
-            # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
-            with self.curr_file.open('r', encoding='utf-8', newline='') as f:
-                print(self.curr_file)
-                count += self.generate_one(f.read())
-        self.bundle()
-        return count
-                
+
+    def generate(self, tree, hash, curr_root, curr_file):
+        self.curr_root = curr_root
+        self.curr_dir = curr_file.parent
+        self.relative_dir = self.curr_dir.relative_to(curr_root)
+        self.js_dir = fryconfig.build_root / self.relative_dir
+        self.js_dir.mkdir(parents=True, exist_ok=True)
+        for file in self.js_dir.glob(f'!*@{curr_file.stem}.js'):
+            file.unlink(missing_ok=True)
+        self.web_components = []
+        self.script = ''
+        self.args = []
+        self.embeds = []
+        self.refs = set()
+        self.refalls = set()
+        self.static_imports = []
+        self.visit(tree)
+
+        for c in self.web_components:
+            name = c['name']
+            args = c['args']
+            script = c['script']
+            embeds = c['embeds']
+            imports = c['imports']
+            jspath = self.js_dir / f'!{name}@{curr_file.stem}.js'
+            with jspath.open('w', encoding='utf-8') as f:
+                f.write(f'// fry {hash}\n')
+                f.write(compose_js(args, script, embeds, imports))
+        return len(self.web_components)
+
     def bundle(self):
         if self.dependencies:
             deps = set()
             for dir, root in self.dependencies:
                 for f in dir.rglob('*.[jt]s'):
-                    if f.is_relative_to(self.tmp_dir):
+                    if f.is_relative_to(fryconfig.build_root):
                         continue
                     if is_componentjs(f):
                         continue
                     p = f.parent.relative_to(root)
                     deps.add((f, p))
             for file, path in deps:
-                p = self.tmp_dir / path
+                p = fryconfig.build_root / path
                 p.mkdir(parents=True, exist_ok=True)
                 shutil.copy(file, p)
-        src = list(get_componentjs(self.tmp_dir))
+        src = list(get_componentjs(fryconfig.build_root))
         if not src:
             return
-        entry_point = compose_index(src, self.tmp_dir) 
-        outfile = self.output_dir / 'index.js'
+        entry_point = compose_index(src, fryconfig.build_root) 
+        outfile = fryconfig.js_file
         this = Path(__file__).absolute().parent
         bun = this / 'bun' 
         env = os.environ.copy()
@@ -130,7 +136,7 @@ class JsGenerator(BaseGenerator):
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
-            args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={self.output_dir}', str(entry_point)]
+            args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={outfile.parent}', str(entry_point)]
         subprocess.run(args, env=env)
 
     def check_js_module(self, jsmodule):
@@ -140,41 +146,6 @@ class JsGenerator(BaseGenerator):
             self.dependencies.add((self.curr_dir, self.curr_root))
         elif jsmodule.startswith('../'):
             self.dependencies.add((self.curr_dir.parent.absolute(), self.curr_root))
-
-    def generate_one(self, source):
-        begin = time.perf_counter()
-        tree = grammar.parse(source)
-        end = time.perf_counter()
-        print(f"js parse: {end-begin}")
-        begin = end
-
-        self.web_components = []
-        self.script = ''
-        self.args = []
-        self.embeds = []
-        self.refs = set()
-        self.refalls = set()
-        self.static_imports = []
-        self.visit(tree)
-
-        end = time.perf_counter()
-        print(f"js generate: {end-begin}")
-        begin = end
-
-        for c in self.web_components:
-            name = c['name']
-            args = c['args']
-            script = c['script']
-            embeds = c['embeds']
-            imports = c['imports']
-            jspath = self.js_dir / f'{name}.js'
-            with jspath.open('w', encoding='utf-8') as f:
-                f.write(compose_js(args, script, embeds, imports))
-
-        end = time.perf_counter()
-        print(f"js save: {end-begin}")
-
-        return len(self.web_components)
 
     def generic_visit(self, node, children):
         return children or node

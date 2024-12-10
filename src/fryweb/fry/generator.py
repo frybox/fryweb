@@ -34,17 +34,18 @@ class FryGenerator:
             fryconfig.build_root.mkdir(parents=True, exist_ok=True)
         pygenerator = PyGenerator()
         jsgenerator = JsGenerator()
+        csscollector = CssCollector()
         for file in self.fileiter.all_files():
             curr_file = Path(file).resolve(struct=True)
             pyfile = curr_file.parent / f'{file.stem}.py'
-            curr_dir = curr_file.parent
             curr_root = None
             for p in curr_file.parents:
                 init = p / '__init__.py'
                 if not init.exists():
                     curr_root = p
                     break
-            relative_dir = curr_dir.relative_to(curr_root)
+            relative_dir = curr_file.parent.relative_to(curr_root)
+            attrfile = fryconfig.build_root / relative_dir / f'{file.stem}.attr'
             with curr_file.open('rb') as f:
                 source_bytes = f.read()
                 sha1 = hashlib.sha1()
@@ -67,8 +68,15 @@ class FryGenerator:
                 tree = grammar.parse(source)
 
                 # 2. generate python file
-                with pyfile.open('w', encoding='utf-8') as pyf:
-                    pyfile.write(pygenerator.generate(tree))
+                pygenerator.generate(tree, curr_hash, pyfile)
+
+                # 3. generate javascript file
+                jsgenerator.generate(tree, curr_hash, curr_root, curr_file)
+
+                # 4. collect css utilities
+                cssgenerator.collect(tree, attrfile)
+        jsgenerator.bundle()
+        cssgenerator.generate()
                 
 
             
@@ -358,13 +366,15 @@ def check_component_element(name, attrs):
                 raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr, not '{attr[1]}'.")
 
 class PyGenerator(BaseGenerator):
-    def generate(self, tree):
+    def generate(self, tree, hash, pyfile):
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
         self.refalls = set()
         self.reset_client_embed()
-        return self.visit(tree)
+        with pyfile.open('w', encoding='utf-8') as pyf:
+            pyf.write(f'# fry {hash}\n')
+            pyf.write(self.visit(tree))
 
     def generic_visit(self, node, children):
         return children or node
