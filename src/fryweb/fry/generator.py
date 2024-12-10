@@ -3,10 +3,68 @@ from pathlib import Path
 import re
 import html
 import hashlib
+import time
+import shutil
+import sys
 from fryweb.fry.grammar import grammar
 from fryweb.spec import is_valid_html_attribute
 from fryweb.css.style import CSS
 from fryweb.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
+from fryweb.fileiter import FileIter
+from fryweb.config import fryconfig
+
+def fry_files():
+    paths = set()
+    syspath = [Path(p).resolve() for p in sys.path]
+    paths.update(p.resolve() for p in syspath if p.is_dir())
+    input_files = [(str(p), '**/*.fry') for p in paths]
+    return input_files
+
+class FryGenerator:
+    def __init__(self, fryfiles=None, clean=True):
+        if not fryfiles:
+            fryfiles = fry_files()
+        self.fileiter = FileIter(fryfiles)
+        self.clean = clean
+    
+    def generate(self):
+        if (self.clean):
+            shutil.rmtree(fryconfig.build_root)
+            fryconfig.build_root.mkdir(parents=True, exist_ok=True)
+        for file in self.fileiter.all_files():
+            curr_file = Path(file).resolve(struct=True)
+            pyfile = curr_file.parent / f'{file.stem}.py'
+            curr_dir = curr_file.parent
+            curr_root = None
+            for p in curr_file.parents:
+                init = p / '__init__.py'
+                if not init.exists():
+                    curr_root = p
+                    break
+            relative_dir = curr_dir.relative_to(curr_root)
+            with curr_file.open('rb') as f:
+                source_bytes = f.read()
+                sha1 = hashlib.sha1()
+                sha1.update(source_bytes)
+                hash = sha1.hexdigest().lower()
+                if pyfile.exists():
+                    try:
+                        with pyfile.open('r', encoding='utf-8') as pyf:
+                            first_line = next(pyf).strip()
+                            result = first_line.split()
+                            if (len(result) == 3 and
+                                result[0] == '#' and
+                                result[1] == 'fry' and
+                                len(result[2]) == hash):
+                    except:
+                        pass
+
+                source = source_bytes.decode()
+                tree = grammar.parse(source)
+                pygenerator = PyGenerator()
+
+            
+
 
 def quote_bracket_f_string(s):
     if '"""' not in s:
@@ -783,7 +841,14 @@ def fry_to_py(source, path):
     """
     fry文件内容转成py文件内容
     """
+    begin = time.perf_counter()
     tree = grammar.parse(source)
+    end = time.perf_counter()
+    print(f"py parse: {end-begin}")
+    begin = end
     generator = PyGenerator()
     generator.set_curr_file(path)
-    return generator.generate(tree)
+    result = generator.generate(tree)
+    end = time.perf_counter()
+    print(f"py generate: {end-begin}")
+    return result

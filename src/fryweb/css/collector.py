@@ -1,5 +1,6 @@
 from parsimonious import NodeVisitor, BadGrammar
 from collections import defaultdict
+import time
 
 import re
 
@@ -27,6 +28,7 @@ class BaseCollector():
             # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变
             # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
             with file.open('r', encoding='utf-8', newline='') as f:
+                print(file)
                 self.collect_from_content(f.read())
 
     def collect_from_content(self, data):
@@ -201,9 +203,15 @@ class CssVisitor(NodeVisitor):
 
 class ParserCollector(BaseCollector):
     def collect_from_content(self, data):
+        begin = time.perf_counter()
         tree = grammar.parse(data)
+        end = time.perf_counter()
+        print(f"css parse: {end-begin}")
+        begin = end
         visitor = CssVisitor(self.collect_kv)
         visitor.visit(tree)
+        end = time.perf_counter()
+        print(f"css collect: {end-begin}")
 
 Collector = ParserCollector
 

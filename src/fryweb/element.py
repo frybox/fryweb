@@ -1,4 +1,4 @@
-from fryweb.utils import static_url, component_name
+from fryweb.utils import component_name
 from fryweb.config import fryconfig
 from fryweb.spec import is_valid_html_attribute
 from fryweb.css.style import CSS

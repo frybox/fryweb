@@ -1,6 +1,6 @@
 from parsimonious import BadGrammar
 from pathlib import Path
-import sys
+import time
 from fryweb.fry.grammar import grammar
 from fryweb.fry.generator import BaseGenerator
 from fryweb.fileiter import FileIter
@@ -67,7 +67,7 @@ def get_componentjs(rootdir):
             yield file
 
 class JSGenerator(BaseGenerator):
-    def __init__(self, input_files, output_dir):
+    def __init__(self, input_files, output_file):
         super().__init__()
         self.fileiter = FileIter(input_files)
         self.output_file = Path(output_file).resolve()
@@ -89,6 +89,7 @@ class JSGenerator(BaseGenerator):
                 # 设置newline=''确保在windows下换行符为\r\n，文件内容不会被open改变，导致组件哈希计算出错
                 # 参考[universal newlines mode](https://docs.python.org/3/library/functions.html#open-newline-parameter)
                 with self.curr_file.open('r', encoding='utf-8', newline='') as f:
+                    print(self.curr_file)
                     count += self.generate_one(f.read())
             self.bundle()
         finally:
@@ -143,7 +144,12 @@ class JSGenerator(BaseGenerator):
             self.dependencies.add((self.curr_dir.parent.absolute(), self.curr_root))
 
     def generate_one(self, source):
+        begin = time.perf_counter()
         tree = grammar.parse(source)
+        end = time.perf_counter()
+        print(f"js parse: {end-begin}")
+        begin = end
+
         self.web_components = []
         self.script = ''
         self.args = []
@@ -152,6 +158,11 @@ class JSGenerator(BaseGenerator):
         self.refalls = set()
         self.static_imports = []
         self.visit(tree)
+
+        end = time.perf_counter()
+        print(f"js generate: {end-begin}")
+        begin = end
+
         for c in self.web_components:
             name = c['name']
             args = c['args']
@@ -161,6 +172,10 @@ class JSGenerator(BaseGenerator):
             jspath = self.js_dir / f'{name}.js'
             with jspath.open('w', encoding='utf-8') as f:
                 f.write(compose_js(args, script, embeds, imports))
+
+        end = time.perf_counter()
+        print(f"js save: {end-begin}")
+
         return len(self.web_components)
 
     def generic_visit(self, node, children):
