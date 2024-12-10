@@ -10,7 +10,7 @@ from .generator import fry_to_py
 # 如果仍用.pyx，会在Cython使用时报错（如sqlalchemy/cyextension/collections.pyx）
 PYXSOURCE_SUFFIXES = ['.fry',]
 
-class PyxSourceFileLoader(SourceFileLoader):
+class FrySourceFileLoader(SourceFileLoader):
     def source_to_code(self, data, path, *, _optimize=-1):
         data = fry_to_py(data.decode(), path)
         return super(SourceFileLoader, self).source_to_code(data, path, _optimize=_optimize)
@@ -18,7 +18,7 @@ class PyxSourceFileLoader(SourceFileLoader):
 def install_path_hook():
     if sys.path_hooks and hasattr(sys.path_hooks[0], 'fryweb'):
         return
-    loader_details = [(PyxSourceFileLoader, PYXSOURCE_SUFFIXES)] + _get_supported_file_loaders()
+    loader_details = [(FrySourceFileLoader, PYXSOURCE_SUFFIXES)] + _get_supported_file_loaders()
     factory_func = FileFinder.path_hook(*loader_details)
     setattr(factory_func, 'fryweb', True)
     sys.path_hooks.insert(0, factory_func)

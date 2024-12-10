@@ -5,7 +5,7 @@
     Command line interface.
 
     :copyright: Copyright 2023 by zenkj<juzejian@gmail.com>
-    :license: BSD, see LICENSE for details.
+    :license: MIT, see LICENSE for details.
 """
 
 

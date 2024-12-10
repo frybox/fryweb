@@ -5,7 +5,7 @@
     Main entry point for ``python -m fryweb``
 
     :copyright: Copyright 2023 by zenkj<juzejian@gmail.com>
-    :license: BSD, see LICENSE for details.
+    :license: MIT, see LICENSE for details.
 """
 
 import sys
