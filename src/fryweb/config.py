@@ -4,8 +4,10 @@ import sys
 import importlib
 
 class FryConfig():
+    def __init__(self):
+        self.app_spec = ''
 
-    def set_app(self, app_string=''):
+    def set_app_spec(self, app_spec=''):
         """
         fryweb采用flask指定模块和应用对象的方式，(fry dev/build/run)有一个可选参数（无需添加--app或-A），格式如下：
 
@@ -29,30 +31,35 @@ class FryConfig():
         - app
         - api
         """
-        fspath, _, apppath = app_string.rpartition('/')
-        pypath, _, appname = apppath.partition(':')
+        self.app_spec = app_spec
+
+    def add_app_syspaths(self):
+        fspath, _, _ = self.app_spec.rpartition('/')
         if not fspath:
             syspaths = [Path('.').resolve(), Path('src').resolve()]
         else:
             syspaths = [Path(fspath).resolve()]
         for p in reversed(syspaths):
             sys.path.insert(0, str(p))
-        print(sys.path)
+        return syspaths
+
+    def get_app_spec_string(self):
+        self.add_app_syspaths()
+        _, _, apppath = self.app_spec.rpartition('/')
+        pypath, _, appname = apppath.partition(':')
         if not pypath:
             pypaths = ['main', 'app', 'api']
         else:
             pypaths = [pypath]
-        print(sys.path)
-        print(pypaths)
         for p in pypaths:
             try:
-                print(p)
                 module = importlib.import_module(p)
+                pypath = p
                 break
             except:
                 module = None
         if not module:
-            raise RuntimeError(f"Can't import app module")
+            raise RuntimeError(f"Can't find app module")
         if not appname:
             appnames = ['app', 'api']
         else:
@@ -62,14 +69,13 @@ class FryConfig():
             try:
                 for attr in name.split('.'):
                     instance = getattr(instance, attr)
+                appname = name
                 break
             except AttributeError:
                 instance = None
-        self.loaded_app = instance
         if not instance:
             raise RuntimeError(f"Can't find app object from module {module}")
-        if hasattr(self.loaded_app, '__file__'):
-            self.app_dir = Path(self.loaded_app.__file__).parent
+        return f'{pypath}:{appname}'
 
     def item(self, name, default):
         if name in os.environ:

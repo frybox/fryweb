@@ -1005,31 +1005,6 @@ def hl_command(fryfile):
     click.echo(highlight(source, lexer, fmter))
 
 
-class FrywebGroup(FlaskGroup):
-    def __init__(self, **extra):
-        extra.pop('add_default_commands', None)
-        super().__init__(add_default_commands=False, **extra) 
-        self.add_command(dev_command)
-        self.add_command(build_command)
-        self.add_command(topy_command)
-        self.add_command(tojs_command)
-        self.add_command(tocss_command)
-        self.add_command(run_command)
-        self.add_command(hl_command)
-        self.add_command(shell_command)
-        self.add_command(routes_command)
-
-cli = FrywebGroup(
-    name="fryweb",
-    help="""\
-A general utility for Fryweb applications.
-
-An application to load must be given with the '--app' option,
-'FLASK_APP' environment variable, or with a 'wsgi.py' or 'app.py' file
-in the current directory.
-""",
-)
-
 
 def main():
     # 让python可以import .fry文件
