@@ -97,9 +97,9 @@ def html(content='div',
         components = Element('div', dict(style=dict(display='none'), children=components), True)
         body.props[children_attr_name].append(components)
     if page.hasjs:
-        # 此时必定存在js_url/index.js
+        # 此时必定存在js_url
         script = f"""
-      const {{ hydrate }} = await import("{static_url(fryconfig.js_url)}index.js");
+      const {{ hydrate }} = await import("{static_url(fryconfig.js_url)}");
       await hydrate(document.documentElement);
 """
         hydrate_script = Element('script', dict(type='module', children=[script]), True)

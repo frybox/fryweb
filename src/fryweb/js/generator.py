@@ -5,11 +5,11 @@ from fryweb.fry.grammar import grammar
 from fryweb.fry.generator import BaseGenerator
 from fryweb.fileiter import FileIter
 from fryweb.element import ref_attr_name, refall_attr_name
+from fryweb.config import fryconfig
 import re
 import os
 import subprocess
 import shutil
-import tempfile
 
 
 # generate js content for fry component
@@ -36,16 +36,26 @@ export const setup = async function () {{
 }};
 """
 
-def compose_index(src, root_dir):
-    dest = root_dir / 'index.js'
+def get_setup_name_and_path(file):
+    root_dir = fryconfig.build_root
+    f = file.relative_to(root_dir)
+    suffix_len = len(f.suffix)
+    path = f.as_posix()[:-suffix_len]
+    ppath, _, name = path.rpartition('/')
+    cname, _, fname = name.partition('@')
+    prefix = ppath.rstrip('/').replace('/', '_')
+    prefix = prefix + '_' if prefix else prefix
+    sname = f"{prefix}{fname}_{cname}"
+    spath = f'./{path}'
+    return sname, spath
+
+def compose_index(src):
+    dest = fryconfig.build_root / 'index.js'
     output = []
     names = []
     for file in src:
-        f = file.relative_to(root_dir)
-        suffix_len = len(f.suffix)
-        path = f.as_posix()[:-suffix_len]
-        name = f.stem
-        output.append(f'import {{ setup as {name} }} from "./{path}";')
+        name, path = get_setup_name_and_path(file)
+        output.append(f'import {{ setup as {name} }} from "{path}";')
         names.append(name)
     output.append(f'let setups = {{ {", ".join(names)} }};')
     output.append('import { hydrate as hydrate_with_setups } from "fryweb";')
@@ -57,7 +67,7 @@ def compose_index(src, root_dir):
 
 
 def is_componentjs(file):
-    if re.match(r'^![A-Z][a-zA-Z0-9_]*@[a-zA-Z_][a-zA-Z0-9_]+\.js$', file.name):
+    if re.match(r'^[A-Z][a-zA-Z0-9_]*@[a-zA-Z_][a-zA-Z0-9_]+\.js$', file.name):
         return True
     return False
 
@@ -77,7 +87,7 @@ class JsGenerator(BaseGenerator):
         self.relative_dir = self.curr_dir.relative_to(curr_root)
         self.js_dir = fryconfig.build_root / self.relative_dir
         self.js_dir.mkdir(parents=True, exist_ok=True)
-        for file in self.js_dir.glob(f'!*@{curr_file.stem}.js'):
+        for file in self.js_dir.glob(f'[A-Z]*@{curr_file.stem}.js'):
             file.unlink(missing_ok=True)
         self.web_components = []
         self.script = ''
@@ -94,7 +104,7 @@ class JsGenerator(BaseGenerator):
             script = c['script']
             embeds = c['embeds']
             imports = c['imports']
-            jspath = self.js_dir / f'!{name}@{curr_file.stem}.js'
+            jspath = self.js_dir / f'{name}@{curr_file.stem}.js'
             with jspath.open('w', encoding='utf-8') as f:
                 f.write(f'// fry {hash}\n')
                 f.write(compose_js(args, script, embeds, imports))
@@ -118,7 +128,7 @@ class JsGenerator(BaseGenerator):
         src = list(get_componentjs(fryconfig.build_root))
         if not src:
             return
-        entry_point = compose_index(src, fryconfig.build_root) 
+        entry_point = compose_index(src) 
         outfile = fryconfig.js_file
         this = Path(__file__).absolute().parent
         bun = this / 'bun' 
@@ -165,9 +175,8 @@ class JsGenerator(BaseGenerator):
     def visit_fry_component(self, node, children):
         cname, _fryscript, _template, _script = children
         if self.script or self.embeds or self.refs or self.refalls:
-            uuid = self.get_uuid(cname, node)
             self.web_components.append({
-                'name': uuid,
+                'name': cname,
                 'args': [*self.refs, *self.refalls, *self.args],
                 'script': self.script,
                 'embeds': self.embeds,

@@ -7,7 +7,7 @@ class FileIter():
         self.path_globs = defaultdict(set)
         self.files = set()
         for file in input_files:
-            if isinstance(file, str):
+            if isinstance(file, (str, Path)):
                 self.add_file(file)
             elif isinstance(file, (tuple, list)):
                 dir = file[0]

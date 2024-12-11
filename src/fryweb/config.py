@@ -37,12 +37,16 @@ class FryConfig():
             syspaths = [Path(fspath).resolve()]
         for p in reversed(syspaths):
             sys.path.insert(0, str(p))
+        print(sys.path)
         if not pypath:
             pypaths = ['main', 'app', 'api']
         else:
             pypaths = [pypath]
+        print(sys.path)
+        print(pypaths)
         for p in pypaths:
             try:
+                print(p)
                 module = importlib.import_module(p)
                 break
             except:
@@ -134,6 +138,10 @@ class FryConfig():
     @property
     def css_file(self):
         return self.static_root / self.css_url
+
+    @property
+    def version(self):
+        return '0.2.44'
 
 fryconfig = FryConfig()
 

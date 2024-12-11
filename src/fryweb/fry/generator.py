@@ -1,4 +1,4 @@
-from parsimonious import NodeVisitor, BadGrammar
+from parsimonious import BadGrammar
 from pathlib import Path
 import re
 import html
@@ -7,79 +7,14 @@ import time
 import shutil
 import sys
 from fryweb.fry.grammar import grammar
+from fryweb.fry.base import BaseGenerator
 from fryweb.spec import is_valid_html_attribute
 from fryweb.css.style import CSS
 from fryweb.element import children_attr_name, call_client_script_attr_name, ref_attr_name, refall_attr_name
 from fryweb.fileiter import FileIter
 from fryweb.config import fryconfig
 from fryweb.js.generator import JsGenerator
-
-def fry_files():
-    paths = set()
-    syspath = [Path(p).resolve() for p in sys.path]
-    paths.update(p.resolve() for p in syspath if p.is_dir())
-    input_files = [(str(p), '**/*.fry') for p in paths]
-    return input_files
-
-class FryGenerator:
-    def __init__(self, fryfiles=None, clean=True):
-        if not fryfiles:
-            fryfiles = fry_files()
-        self.fileiter = FileIter(fryfiles)
-        self.clean = clean
-    
-    def generate(self):
-        if (self.clean):
-            shutil.rmtree(fryconfig.build_root)
-            fryconfig.build_root.mkdir(parents=True, exist_ok=True)
-        pygenerator = PyGenerator()
-        jsgenerator = JsGenerator()
-        csscollector = CssCollector()
-        for file in self.fileiter.all_files():
-            curr_file = Path(file).resolve(struct=True)
-            pyfile = curr_file.parent / f'{file.stem}.py'
-            curr_root = None
-            for p in curr_file.parents:
-                init = p / '__init__.py'
-                if not init.exists():
-                    curr_root = p
-                    break
-            relative_dir = curr_file.parent.relative_to(curr_root)
-            attrfile = fryconfig.build_root / relative_dir / f'{file.stem}.attr'
-            with curr_file.open('rb') as f:
-                source_bytes = f.read()
-                sha1 = hashlib.sha1()
-                sha1.update(source_bytes)
-                curr_hash = sha1.hexdigest().lower()
-                if pyfile.exists():
-                    try:
-                        with pyfile.open('r', encoding='utf-8') as pyf:
-                            first_line = next(pyf).strip()
-                            result = first_line.split()
-                            if (len(result) == 3 and
-                                result[0] == '#' and
-                                result[1] == 'fry' and
-                                len(result[2]) == curr_hash):
-                                continue
-                    except:
-                        pass
-                # 1. parse
-                source = source_bytes.decode()
-                tree = grammar.parse(source)
-
-                # 2. generate python file
-                pygenerator.generate(tree, curr_hash, pyfile)
-
-                # 3. generate javascript file
-                jsgenerator.generate(tree, curr_hash, curr_root, curr_file)
-
-                # 4. collect css utilities
-                cssgenerator.collect(tree, attrfile)
-        jsgenerator.bundle()
-        cssgenerator.generate()
-                
-
-            
+from fryweb.css.generator import CssGenerator
 
 
 def quote_bracket_f_string(s):
@@ -90,36 +25,6 @@ def quote_bracket_f_string(s):
     else:
         raise BadGrammar("Can't quote html embed")
     return f'f{quote}{s}{quote}'
-
-
-class BaseGenerator(NodeVisitor):
-    def __init__(self):
-        self.client_embed_count = 0
-
-    def inc_client_embed(self):
-        count = self.client_embed_count
-        self.client_embed_count = count + 1
-        return count 
-
-    def reset_client_embed(self):
-        self.client_embed_count = 0
-
-    def get_uuid(self, cname, node):
-        sha1 = hashlib.sha1()
-        sha1.update(node.text.encode('utf-8'))
-        return f'{cname}_{sha1.hexdigest()}'.lower()
-
-    def set_curr_file(self, file):
-        self.curr_file = Path(file).absolute().resolve(strict=True)
-        self.curr_dir  = self.curr_file.parent
-        self.curr_root = None
-        for p in self.curr_file.parents:
-            init = p / '__init__.py'
-            if not init.exists():
-                self.curr_root = p
-                break
-        self.relative_dir = self.curr_dir.relative_to(self.curr_root)
-
 
 
 #client_embed_attr_name = 'data-fryembed'
@@ -366,7 +271,10 @@ def check_component_element(name, attrs):
                 raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr, not '{attr[1]}'.")
 
 class PyGenerator(BaseGenerator):
-    def generate(self, tree, hash, pyfile):
+    def generate(self, tree, hash, relative_dir, pyfile):
+        prefix = relative_dir.as_posix().rstrip('/')
+        prefix = prefix + '_' if prefix and prefix != '.' else ''
+        self.name_prefix = prefix + pyfile.stem + '_'
         self.web_component_script = False
         self.client_script_args = {}
         self.refs = set()
@@ -451,7 +359,7 @@ class PyGenerator(BaseGenerator):
         cname, fryscript, template, _jsscript = children
         _type, name, attrs = template
         if self.web_component_script:
-            uuid = self.get_uuid(cname, node)
+            uuid = self.name_prefix + cname
             args = [(k,v) for k,v in self.client_script_args.items()]
             attrs.insert(0, [call_client_attr, f'{uuid}', args])
         self.web_component_script = False
@@ -870,3 +778,90 @@ def fry_to_py(source, path):
     end = time.perf_counter()
     print(f"py generate: {end-begin}")
     return result
+
+def fry_files():
+    paths = set()
+    syspath = [Path(p).resolve() for p in sys.path]
+    paths.update(p.resolve() for p in syspath if p.is_dir())
+    input_files = [(str(p), '**/*.fry') for p in paths]
+    return input_files
+
+class FryGenerator:
+    def __init__(self, fryfiles=None, clean=True):
+        if not fryfiles:
+            fryfiles = fry_files()
+        self.fileiter = FileIter(fryfiles)
+        self.clean = clean
+    
+    def generate(self):
+        if (self.clean):
+            shutil.rmtree(fryconfig.build_root, ignore_errors=True)
+            if fryconfig.public_root.exists():
+                shutil.copytree(fryconfig.public_root, fryconfig.build_root)
+            else:
+                fryconfig.build_root.mkdir(parents=True, exist_ok=True)
+        pygenerator = PyGenerator()
+        jsgenerator = JsGenerator()
+        cssgenerator = CssGenerator()
+        for file in self.fileiter.all_files():
+            curr_file = Path(file).resolve(strict=True)
+            pyfile = curr_file.parent / f'{file.stem}.py'
+            curr_root = None
+            for p in curr_file.parents:
+                init = p / '__init__.py'
+                if not init.exists():
+                    curr_root = p
+                    break
+            relative_dir = curr_file.parent.relative_to(curr_root)
+            attrfile = fryconfig.build_root / relative_dir / f'{file.stem}.attr'
+            with curr_file.open('rb') as f:
+                source_bytes = f.read()
+            sha1 = hashlib.sha1()
+            sha1.update(f'{fryconfig.version}\n'.encode())
+            sha1.update(source_bytes)
+            curr_hash = sha1.hexdigest().lower()
+            if not self.clean and pyfile.exists():
+                try:
+                    with pyfile.open('r', encoding='utf-8') as pyf:
+                        first_line = next(pyf).strip()
+                        result = first_line.split()
+                        if (len(result) == 3 and
+                            result[0] == '#' and
+                            result[1] == 'fry' and
+                            result[2] == curr_hash):
+                            continue
+                except:
+                    pass
+            # 1. parse
+            begin = time.perf_counter()
+            source = source_bytes.decode()
+            tree = grammar.parse(source)
+            end = time.perf_counter()
+            print(f"parse: {end-begin}s")
+            begin = end
+
+            # 2. generate python file
+            pygenerator.generate(tree, curr_hash, relative_dir, pyfile)
+            end = time.perf_counter()
+            print(f"generate py: {end-begin}s")
+            begin = end
+
+            # 3. generate javascript files
+            jsgenerator.generate(tree, curr_hash, curr_root, curr_file)
+            end = time.perf_counter()
+            print(f"generate js: {end-begin}s")
+            begin = end
+
+            # 4. collect css utilities and generate attr file
+            cssgenerator.collect(tree, curr_hash, attrfile)
+            end = time.perf_counter()
+            print(f"collect css: {end-begin}s")
+            begin = end
+        begin = time.perf_counter()
+        jsgenerator.bundle()
+        end = time.perf_counter()
+        print(f"bundle js: {end-begin}s")
+        begin = end
+        cssgenerator.generate()
+        end = time.perf_counter()
+        print(f"generate css: {end-begin}s")

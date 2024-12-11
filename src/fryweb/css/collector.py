@@ -213,11 +213,42 @@ class ParserCollector(BaseCollector):
         end = time.perf_counter()
         print(f"css collect: {end-begin}")
 
-Collector = ParserCollector
+
+class FryCollector:
+    def collect_attrs(self, tree, hash, attrfile):
+        self.attrs = defaultdict(set)
+        self.classes = set()
+        visitor = CssVisitor(self.collect_kv)
+        visitor.visit(tree)
+        with attrfile.open('w', encoding='utf-8') as f:
+            f.write(f'# fry {hash}\n')
+            for k, v in self.all_attrs():
+                f.write(f'{k}={v}\n')
+
+    def collect_kv(self, k, v):
+        if not v: v = ""
+        if len(v) > 1 and v[0] in "\"'":
+            v = v[1:-1]
+        vs = v.split()
+        if not k or k == 'class':
+            self.classes.update(vs)
+        else:
+            self.attrs[k].update(vs)
+
+    def all_attrs(self):
+        for cls in self.classes:
+            yield '', cls
+        for k, vs in self.attrs.items():
+            if not vs:
+                vs.add('')
+            for v in vs:
+                yield k, v
+
+Collector = FryCollector
 
 
 if __name__ == '__main__':
-    collector = Collector()
+    collector = ParserCollector()
     collector.add_glob('test', '**/*.html')
     collector.collect_attrs()
     print("classes:")

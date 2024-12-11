@@ -20,15 +20,10 @@ import typing as t
 from itertools import chain
 from pathlib import PurePath, Path
 
-from werkzeug.serving import make_server
-from flask.cli import FlaskGroup, shell_command, routes_command, CertParamType, pass_script_info, get_debug_flag, _debug_option
-
 import click
 
-from fryweb.utils import create_css_generator, create_js_generator
-
-css_generator = None 
-js_generator = None
+from fryweb.config import fryconfig
+from fryweb.fry.generator import FryGenerator
 
 import logging
 
@@ -630,11 +625,6 @@ def run(
     if not isinstance(port, int):
         raise TypeError("port must be an integer")
 
-    global css_generator, js_generator
-    with app.app_context():
-        css_generator = create_css_generator()
-        js_generator = create_js_generator()
-
     if use_reloader:
         from fryweb.reload import event_stream, mime_type
         from flask import Response
@@ -646,7 +636,6 @@ def run(
     static_files = static_files if static_files else {}
 
     with app.app_context():
-        from fryweb.config import fryconfig
         static_files[fryconfig.static_url] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     
     if static_files:
@@ -700,18 +689,16 @@ def run(
 
 
 def generate_static(path=None):
-    if not css_generator or not js_generator:
-        return
     if not path:
         logger.info("Regenerating all js files and css files from .fry files...")
-        css_generator.generate()
-        js_generator.generate(clean=True)
+        generator = FryGenerator()
+        generator.generate()
     else:
         path = Path(path).absolute()
         if path.suffix == '.fry':
             logger.info(f"Regenerating js files and css file for {str(path)}...")
-            css_generator.generate(path)
-            js_generator.generate(clean=True)
+            generator = FryGenerator([path], clean=False)
+            generator.generate()
 
 
 def show_server_banner(debug, app_import_path):
@@ -853,6 +840,8 @@ def dev_command(
     if 'FLASK_DEBUG' not in os.environ:
         os.environ['FLASK_DEBUG'] = '1'
 
+    fryconfig.set_app()
+
     try:
         app = info.load_app()
     except Exception as e:
@@ -899,13 +888,9 @@ dev_command.params.insert(0, _debug_option)
 @pass_script_info
 def build_command(info):
     """Build js files and css style file for all .fry files."""
-    app = info.load_app()
-    with app.app_context():
-        css_generator = create_css_generator()
-        js_generator = create_js_generator()
-        logger.info("Regenerating all js files and css files from .fry files...")
-        css_generator.generate()
-        js_generator.generate(clean=True)
+    sys.path.insert(0, '.')
+    generator = FryGenerator()
+    generator.generate()
 
 
 @click.command("topy", short_help="Convert specified .fry file into .py file.")
@@ -1048,8 +1033,8 @@ in the current directory.
 
 def main():
     # 让python可以import .fry文件
-    from fryweb.fry.fryloader import install_path_hook
-    install_path_hook()
+    #from fryweb.fry.fryloader import install_path_hook
+    #install_path_hook()
     cli.main()
 
 
