@@ -149,7 +149,13 @@ class JsGenerator(BaseGenerator):
             # 暂时不用bun
             args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={outfile.parent}', str(entry_point)]
         try:
-            subprocess.run(args, env=env)
+            subprocess.run(args,
+                           env=env,
+                           timeout=100, # 100秒超时
+                           #creationflags=subprocess.DETACHED_PROCESS, # Windows上只有这个flag时，虽不受Ctrl-C影响，但会删除一个新的黑色终端窗口
+                           creationflags=subprocess.CREATE_NO_WINDOW, # Windows上让子进程不受Ctrl-C影响，不要出来烦人的“^C^C终止批处理操作吗(Y/N)?”
+                           restore_signals=False,
+                          )
         except subprocess.CalledProcessError as e:
             print(f"Subprocess failed with return code {e.returncode}")
         except Exception as e:

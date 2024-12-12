@@ -15,6 +15,7 @@ import sys
 import time
 import traceback
 import psutil
+import signal
 import typing as t
 from itertools import chain
 from pathlib import Path
@@ -171,12 +172,14 @@ class BuilderLoop:
 
             if mtime > old_time:
                 changed.add(name)
+                self.mtimes[name] = mtime
         if changed:
             logger.info(f" * Detected change in {changed!r}, building")
             generator = FryGenerator(changed, clean=False)
             generator.generate()
 
 def run_builder_loop():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     builder = BuilderLoop()
     with builder:
         builder.run()
@@ -241,10 +244,14 @@ def dev(host, port, app_spec):
         sock = config.bind_socket()
         ChangeReload(config, target=server.run, sockets=[sock]).run()
     except KeyboardInterrupt:
+        print("dev process keyboardinteger")
         pass
     finally:
         if config.uds and os.path.exists(config.uds):
             os.remove(config.uds)
+    if not server.started:
+        logger.info("bye.")
+        psutil.Process().terminate()
 
 
 @click.command()
