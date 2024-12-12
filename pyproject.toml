@@ -1,14 +1,15 @@
 [project]
 name = "fryweb"
-version = "0.2.44"
+version = "0.2.45"
 keywords = [
     "fryweb",
     "fry",
-    "django",
-    "flask",
+    "asgi",
+    "wsgi",
+    "server",
 ]
 authors = [{name="Zenk Ju", email="juzejian@gmail.com"},]
-description = "A python library to generate HTML, Javascript and CSS, based on fry file"
+description = "A asgi/wsgi server that can generate HTML, Javascript and CSS, based on fry file"
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -19,8 +20,12 @@ classifiers = [
 ]
 dependencies = [
     "parsimonious",
-    "flask",
+    "uvicorn",
+    "starlette",
     "coloraide",
+    "psutil",
+    "click",
+    "rich",
 ]
 
 [project.urls]
@@ -29,7 +34,7 @@ Homepage = "https://github.com/frybox/fryweb"
 Source = "https://github.com/frybox/fryweb"
 
 [project.scripts]
-fry = "fryweb.cmdline:main"
+fry = "fryweb.cmdline:cli"
 
 [build-system]
 requires = ["hatchling"]

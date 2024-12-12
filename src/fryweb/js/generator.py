@@ -10,6 +10,7 @@ import re
 import os
 import subprocess
 import shutil
+import traceback
 
 
 # generate js content for fry component
@@ -147,7 +148,13 @@ class JsGenerator(BaseGenerator):
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
             args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={outfile.parent}', str(entry_point)]
-        subprocess.run(args, env=env)
+        try:
+            subprocess.run(args, env=env)
+        except subprocess.CalledProcessError as e:
+            print(f"Subprocess failed with return code {e.returncode}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            traceback.print_exc()
 
     def check_js_module(self, jsmodule):
         if jsmodule[0] in "'\"":

@@ -160,6 +160,8 @@ cython_debug/
 #.idea/
 
 # Javascript
+frystatic
+
 # Logs
 logs
 npm-debug.log*

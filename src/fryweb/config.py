@@ -2,6 +2,16 @@ from pathlib import Path
 import os
 import sys
 import importlib
+from collections.abc import Iterable
+
+def is_wsgi_app(app):
+    if callable(app):
+        try:
+            response = app({}, lambda status, headers: None)
+            return isinstance(response, Iterable)
+        except:
+            pass
+    return False
 
 class FryConfig():
     def __init__(self):
@@ -40,7 +50,9 @@ class FryConfig():
         else:
             syspaths = [Path(fspath).resolve()]
         for p in reversed(syspaths):
-            sys.path.insert(0, str(p))
+            p = str(p)
+            if p not in sys.path:
+                sys.path.insert(0, p)
         return syspaths
 
     def get_app_spec_string(self):
@@ -75,7 +87,12 @@ class FryConfig():
                 instance = None
         if not instance:
             raise RuntimeError(f"Can't find app object from module {module}")
+        self._is_wsgi_app = is_wsgi_app(instance)
         return f'{pypath}:{appname}'
+
+    @property
+    def is_wsgi_app(self):
+        return getattr(self, '_is_wsgi_app', False)
 
     def item(self, name, default):
         if name in os.environ:
@@ -106,7 +123,7 @@ class FryConfig():
         """
         最终生成的静态资源目录
         """
-        return Path(self.item('FRYWEB_STATIC_ROOT', './static/')).resolve()
+        return Path(self.item('FRYWEB_STATIC_ROOT', './frystatic/')).resolve()
 
     @property
     def public_root(self):
@@ -147,7 +164,7 @@ class FryConfig():
 
     @property
     def version(self):
-        return '0.2.44'
+        return '0.2.45'
 
 fryconfig = FryConfig()
 
