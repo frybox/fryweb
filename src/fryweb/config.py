@@ -99,7 +99,7 @@ class FryConfig():
                 module = importlib.import_module(p)
                 pypath = p
                 break
-            except:
+            except Exception as e:
                 module = None
         if not module:
             raise RuntimeError(f"Can't find app module")
@@ -195,7 +195,7 @@ class FryConfig():
 
     @property
     def version(self):
-        return '0.3.0'
+        return '0.3.1'
 
 fryconfig = FryConfig()
 

@@ -112,13 +112,15 @@ def _find_stat_paths(extra_files, exclude_patterns) -> t.Iterable[str]:
 class BuilderLoop:
     def __init__(
         self,
-        should_exit,
+        should_exit_event,
+        build_finished_event,
         logger,
         extra_files = None,
         exclude_patterns = None,
         interval = 1,
     ) -> None:
-        self.should_exit = should_exit
+        self.should_exit_event = should_exit_event
+        self.build_finished_event = build_finished_event
         self.logger = logger
         self.extra_files: set[str] = {os.path.abspath(x) for x in extra_files or ()}
         self.exclude_patterns: set[str] = set(exclude_patterns or ())
@@ -129,7 +131,6 @@ class BuilderLoop:
         initial filesystem state.
         """
         self.mtimes: dict[str, float] = {}
-        self.process = psutil.Process()
         self.run_step()
         return self
 
@@ -141,7 +142,7 @@ class BuilderLoop:
         """Continually run the watch step, sleeping for the configured
         interval after each step.
         """
-        while not self.should_exit.wait(timeout=self.interval):
+        while not self.should_exit_event.wait(timeout=self.interval):
             self.run_step()
 
     def run_step(self) -> None:
@@ -152,33 +153,38 @@ class BuilderLoop:
         for name in _find_stat_paths(self.extra_files, self.exclude_patterns):
             try:
                 mtime = os.stat(name).st_mtime
-            except OSError:
+            except OSError as e:
                 continue
 
             old_time = self.mtimes.get(name)
 
             if old_time is None:
+                changed.add(name)
                 self.mtimes[name] = mtime
                 continue
 
             if mtime > old_time:
                 changed.add(name)
                 self.mtimes[name] = mtime
-        if changed:
-            self.logger.warning(f"Detected change in {changed!r}. Building...")
-            generator = FryGenerator(self.logger, changed, clean=False)
-            generator.generate()
+        try:
+            if changed:
+                self.build_finished_event.clear()
+                self.logger.warning(f"Detected change in {changed!r}. Building...")
+                generator = FryGenerator(self.logger, changed, clean=False)
+                generator.generate()
+        finally:
+            self.build_finished_event.set()
 
-def run_builder_loop(should_exit):
+def run_builder_loop(should_exit_event, build_finished_event):
     # 配置logger
     Config(app='')
     logger = logging.getLogger('uvicorn.error')
     pid = os.getpid()
     message = f"Started builder process [{pid}]"
-    color_message = f"Started builder process [{click.style(str(pid), fg="cyan", bold=True)}]"
+    color_message = f"Started builder process [{click.style(str(pid), fg='cyan', bold=True)}]"
     logger.info(message, extra={"color_message": color_message})
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    builder = BuilderLoop(should_exit, logger)
+    builder = BuilderLoop(should_exit_event, build_finished_event, logger)
     with builder:
         builder.run()
 
@@ -223,15 +229,13 @@ def build(app_spec):
 @click.option("--port", "-p", default=9000, help="The port to bind to.")
 @click.argument("app_spec", default='', required=False)
 def dev(host, port, app_spec):
-    Config(app='')
     fryconfig.set_app_spec(app_spec)
     fryconfig.add_app_syspaths()
-    generator = FryGenerator(logger)
-    generator.generate()
-
     builder_should_exit = multiprocessing.Event()
-    builder_process = multiprocessing.Process(target=run_builder_loop, args=(builder_should_exit,))
+    builder_build_finished = multiprocessing.Event()
+    builder_process = multiprocessing.Process(target=run_builder_loop, args=(builder_should_exit, builder_build_finished))
     builder_process.start()
+    builder_build_finished.wait()
 
     app_spec = fryconfig.get_app_spec_string()
     interface = 'wsgi' if fryconfig.is_wsgi_app else 'auto'
@@ -242,10 +246,8 @@ def dev(host, port, app_spec):
         reload=True,
         interface=interface,
     )
-
     server = Server(config=config)
     try:
-        #server.run()
         sock = config.bind_socket()
         ChangeReload(config, target=server.run, sockets=[sock]).run()
     except KeyboardInterrupt:
@@ -254,7 +256,7 @@ def dev(host, port, app_spec):
         if config.uds and os.path.exists(config.uds):
             os.remove(config.uds)
     message = f"Stopping builder process [{builder_process.pid}]"
-    color_message = f"Stopping builder process [{click.style(str(builder_process.pid), fg="cyan", bold=True)}]"
+    color_message = f"Stopping builder process [{click.style(str(builder_process.pid), fg='cyan', bold=True)}]"
     logger.info(message, extra={"color_message": color_message})
     builder_should_exit.set()
     builder_process.join()
