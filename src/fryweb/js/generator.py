@@ -43,7 +43,7 @@ def get_setup_name_and_path(file):
     suffix_len = len(f.suffix)
     path = f.as_posix()[:-suffix_len]
     ppath, _, name = path.rpartition('/')
-    cname, _, fname = name.partition('@')
+    fname, _, cname = name.partition('@')
     prefix = ppath.rstrip('/').replace('/', '_')
     prefix = prefix + '_' if prefix else prefix
     sname = f"{prefix}{fname}_{cname}"
@@ -68,7 +68,7 @@ def compose_index(src):
 
 
 def is_componentjs(file):
-    if re.match(r'^[A-Z][a-zA-Z0-9_]*@[a-zA-Z_][a-zA-Z0-9_]+\.js$', file.name):
+    if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*@[A-Z][a-zA-Z0-9_]*\.js$', file.name):
         return True
     return False
 
@@ -78,8 +78,9 @@ def get_componentjs(rootdir):
             yield file
 
 class JsGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self, logger):
         super().__init__()
+        self.logger = logger
         self.dependencies = set()
 
     def generate(self, tree, hash, curr_root, curr_file):
@@ -88,7 +89,7 @@ class JsGenerator(BaseGenerator):
         self.relative_dir = self.curr_dir.relative_to(curr_root)
         self.js_dir = fryconfig.build_root / self.relative_dir
         self.js_dir.mkdir(parents=True, exist_ok=True)
-        for file in self.js_dir.glob(f'[A-Z]*@{curr_file.stem}.js'):
+        for file in self.js_dir.glob(f'{curr_file.stem}@[A-Z]*.js'):
             file.unlink(missing_ok=True)
         self.web_components = []
         self.script = ''
@@ -105,7 +106,7 @@ class JsGenerator(BaseGenerator):
             script = c['script']
             embeds = c['embeds']
             imports = c['imports']
-            jspath = self.js_dir / f'{name}@{curr_file.stem}.js'
+            jspath = self.js_dir / f'{curr_file.stem}@{name}.js'
             with jspath.open('w', encoding='utf-8') as f:
                 f.write(f'// fry {hash}\n')
                 f.write(compose_js(args, script, embeds, imports))
@@ -141,7 +142,7 @@ class JsGenerator(BaseGenerator):
             # Windows上需要指定npx全路径，否则会出现FileNotFoundError
             npx = shutil.which('npx')
             if not npx:
-                print(f"Can't find npx, please install nodejs first.")
+                self.logger.error(f"Can't find npx, please install nodejs first.")
                 return
             args = [npx, 'esbuild', '--format=esm', '--bundle', '--minify', '--sourcemap', f'--outfile={outfile}', str(entry_point),]
         elif bun.is_file():
@@ -157,9 +158,9 @@ class JsGenerator(BaseGenerator):
                            restore_signals=False,
                           )
         except subprocess.CalledProcessError as e:
-            print(f"Subprocess failed with return code {e.returncode}")
+            self.logger.error(f"Subprocess failed with return code {e.returncode}")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            self.logger.error(f"An error occurred: {e}")
             traceback.print_exc()
 
     def check_js_module(self, jsmodule):

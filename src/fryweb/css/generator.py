@@ -8,7 +8,8 @@ from fryweb.config import fryconfig
 
 
 class CssGenerator():
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.collector = Collector()
 
     def collect(self, tree, hash, attrfile):

@@ -1,0 +1,53 @@
+
+from fryweb import Element, html
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+
+app = FastAPI()
+
+def Sub2(v, create, children=[]):
+    <template>
+      <div ref=(foo)>
+        <p>Sub2: {v}</p>
+        <p>Sub2: [{v}](value)</p>
+        {children}
+      </div>
+    </template>
+    <script {create}>
+      const value = 999;
+      console.log(`hydrate sub2: ${foo}, create: ${create}, g.hello = ${this.g.hello}`);
+      this.ready(() => console.log("sub2 after ready"));
+      this.ready(() => console.log(`g.hello = ${this.g.hello}`));
+      console.log(`hydrate sub2: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
+    </script>
+
+def Sub1(bar, create, children=[]):
+    <template>
+      <Sub2 v={bar} {create}>
+        {children}
+      </Sub2>
+    </template>
+    <script>
+      console.log('hydrate sub1');
+      this.ready(() => console.log("sub1 after ready"));
+      console.log(`hydrate sub1: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
+    </script>
+
+def App():
+    <template>
+      <Sub1 bar="from app" create={False}>
+        <p>App: [0](v)</p>
+      </Sub1>
+    </template>
+    <script>
+      import {signal as create_signal} from 'fryweb';
+      const v = create_signal(10);
+      console.log("hydrate app");
+      this.ready(() => console.log("app after ready"));
+      this.g.hello = 'world';
+      console.log(`hydrate app: fryapp = ${this.fryapp}, fryname = ${this.fryname}`);
+    </script>
+
+@app.get('/', response_class=HTMLResponse)
+async def index():
+    return html(App, title="Test JS", autoreload=False)

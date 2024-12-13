@@ -49,4 +49,4 @@ def App():
 
 @app.get('/')
 def index():
-    return html(App, title="Test JS", autoreload=False)
+    return html(App, title="TestJS", autoreload=False)

@@ -4,7 +4,7 @@
 
     Command line interface.
 
-    :copyright: Copyright 2023 by zenkj<juzejian@gmail.com>
+    :copyright: Copyright 2023-2024 by zenkj<juzejian@gmail.com>
     :license: MIT, see LICENSE for details.
 """
 
@@ -12,15 +12,11 @@
 import fnmatch
 import os
 import sys
-import time
-import traceback
 import psutil
 import signal
 import typing as t
 from itertools import chain
-from pathlib import Path
 import multiprocessing
-import uvicorn
 from uvicorn.main import Config as UvicornConfig, Server, ChangeReload, Multiprocess
 from starlette.staticfiles import StaticFiles
 
@@ -31,7 +27,7 @@ from fryweb.fry.generator import FryGenerator
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('uvicorn.error')
 
 # The various system prefixes where imports are found. Base values are
 # different when running in a virtualenv. All reloaders will ignore the
@@ -116,10 +112,14 @@ def _find_stat_paths(extra_files, exclude_patterns) -> t.Iterable[str]:
 class BuilderLoop:
     def __init__(
         self,
+        should_exit,
+        logger,
         extra_files = None,
         exclude_patterns = None,
         interval = 1,
     ) -> None:
+        self.should_exit = should_exit
+        self.logger = logger
         self.extra_files: set[str] = {os.path.abspath(x) for x in extra_files or ()}
         self.exclude_patterns: set[str] = set(exclude_patterns or ())
         self.interval = interval
@@ -137,21 +137,12 @@ class BuilderLoop:
         """Clean up any resources associated with the reloader."""
         pass
 
-    def parent_ok(self):
-        # psutil.Process.parent()中会处理父进程ID被重用的情况
-        # 但不会处理unix中父进程死掉后，父进程改为init(pid=1)进程的情况
-        parent = self.process.parent()
-        if not parent or parent.pid == 1:
-            return False
-        return True
-
     def run(self) -> None:
         """Continually run the watch step, sleeping for the configured
         interval after each step.
         """
-        while self.parent_ok():
+        while not self.should_exit.wait(timeout=self.interval):
             self.run_step()
-            time.sleep(self.interval)
 
     def run_step(self) -> None:
         """Run one step for watching the filesystem. Called once to set
@@ -174,13 +165,20 @@ class BuilderLoop:
                 changed.add(name)
                 self.mtimes[name] = mtime
         if changed:
-            logger.info(f" * Detected change in {changed!r}, building")
-            generator = FryGenerator(changed, clean=False)
+            self.logger.warning(f"Detected change in {changed!r}. Building...")
+            generator = FryGenerator(self.logger, changed, clean=False)
             generator.generate()
 
-def run_builder_loop():
+def run_builder_loop(should_exit):
+    # 配置logger
+    Config(app='')
+    logger = logging.getLogger('uvicorn.error')
+    pid = os.getpid()
+    message = f"Started builder process [{pid}]"
+    color_message = f"Started builder process [{click.style(str(pid), fg="cyan", bold=True)}]"
+    logger.info(message, extra={"color_message": color_message})
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    builder = BuilderLoop()
+    builder = BuilderLoop(should_exit, logger)
     with builder:
         builder.run()
 
@@ -191,8 +189,8 @@ class WithStaticFiles:
         self.staticfiles_app = StaticFiles(directory=fryconfig.static_root)
 
     async def __call__(self, scope, receive, send):
-        path = scope['path']
-        if path.startswith(fryconfig.static_url):
+        if 'path' in scope and scope['path'].startswith(fryconfig.static_url):
+            scope['root_path'] = fryconfig.static_url.rstrip('/')
             await self.staticfiles_app(scope, receive, send)
         else:
             await self.app(scope, receive, send)
@@ -201,7 +199,8 @@ class WithStaticFiles:
 class Config(UvicornConfig):
     def load(self):
         super().load()
-        self.loaded_app = WithStaticFiles(self.loaded_app)
+        if self.loaded:
+            self.loaded_app = WithStaticFiles(self.loaded_app)
 
 
 @click.group()
@@ -212,25 +211,29 @@ def cli():
 @click.command()
 @click.argument("app_spec", default='', required=False)
 def build(app_spec):
+    Config(app='')
     fryconfig.set_app_spec(app_spec)
     fryconfig.add_app_syspaths()
-    generator = FryGenerator()
+    generator = FryGenerator(logger)
     generator.generate()
 
 
 @click.command(short_help="Run a development server.")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
-@click.option("--port", "-p", default=6000, help="The port to bind to.")
+@click.option("--port", "-p", default=9000, help="The port to bind to.")
 @click.argument("app_spec", default='', required=False)
 def dev(host, port, app_spec):
+    Config(app='')
     fryconfig.set_app_spec(app_spec)
     fryconfig.add_app_syspaths()
-    generator = FryGenerator()
+    generator = FryGenerator(logger)
     generator.generate()
 
+    builder_should_exit = multiprocessing.Event()
+    builder_process = multiprocessing.Process(target=run_builder_loop, args=(builder_should_exit,))
+    builder_process.start()
+
     app_spec = fryconfig.get_app_spec_string()
-    process = multiprocessing.Process(target=run_builder_loop)
-    process.start()
     interface = 'wsgi' if fryconfig.is_wsgi_app else 'auto'
     config = Config(
         app=app_spec,
@@ -239,24 +242,29 @@ def dev(host, port, app_spec):
         reload=True,
         interface=interface,
     )
+
     server = Server(config=config)
     try:
+        #server.run()
         sock = config.bind_socket()
         ChangeReload(config, target=server.run, sockets=[sock]).run()
     except KeyboardInterrupt:
-        print("dev process keyboardinteger")
         pass
     finally:
         if config.uds and os.path.exists(config.uds):
             os.remove(config.uds)
-    if not server.started:
-        logger.info("bye.")
-        psutil.Process().terminate()
+    message = f"Stopping builder process [{builder_process.pid}]"
+    color_message = f"Stopping builder process [{click.style(str(builder_process.pid), fg="cyan", bold=True)}]"
+    logger.info(message, extra={"color_message": color_message})
+    builder_should_exit.set()
+    builder_process.join()
+    logger.info("Good Bye.")
+    psutil.Process().terminate()
 
 
-@click.command()
+@click.command(short_help="Run a production server")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
-@click.option("--port", "-p", default=6000, help="The port to bind to.")
+@click.option("--port", "-p", default=9000, help="The port to bind to.")
 @click.option("--workers", "-w", default=1, help="Number of worker processes")
 @click.argument("app_spec", default='', required=False)
 def run(host, port, workers, app_spec):

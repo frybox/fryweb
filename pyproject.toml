@@ -1,6 +1,6 @@
 [project]
 name = "fryweb"
-version = "0.2.45"
+version = "0.3.0"
 keywords = [
     "fryweb",
     "fry",
@@ -25,7 +25,6 @@ dependencies = [
     "coloraide",
     "psutil",
     "click",
-    "rich",
 ]
 
 [project.urls]

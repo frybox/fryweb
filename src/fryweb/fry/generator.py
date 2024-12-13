@@ -271,6 +271,10 @@ def check_component_element(name, attrs):
                 raise BadGrammar(f"Only ref/refall/@event of component element can have js_attr, not '{attr[1]}'.")
 
 class PyGenerator(BaseGenerator):
+    def __init__(self, logger):
+        super().__init__()
+        self.logger = logger
+
     def generate(self, tree, hash, relative_dir, pyfile):
         prefix = relative_dir.as_posix().rstrip('/')
         prefix = prefix + '_' if prefix and prefix != '.' else ''
@@ -787,23 +791,33 @@ def fry_files():
     input_files = [(str(p), '**/*.fry') for p in paths]
     return input_files
 
+def time_delta(begin, end):
+    delta = end - begin
+    if delta > 1:
+        return f"{delta:.3f}s"
+    else:
+        return f"{delta*1000:.1f}ms"
+
 class FryGenerator:
-    def __init__(self, fryfiles=None, clean=True):
+    def __init__(self, logger, fryfiles=None, clean=True):
+        self.logger = logger
         if not fryfiles:
             fryfiles = fry_files()
         self.fileiter = FileIter(fryfiles)
         self.clean = clean
     
     def generate(self):
+        self.logger.info("Fryweb build starting ...")
         if (self.clean):
+            self.logger.info(f"Clean build root {fryconfig.build_root} ...")
             shutil.rmtree(fryconfig.build_root, ignore_errors=True)
             if fryconfig.public_root.exists():
                 shutil.copytree(fryconfig.public_root, fryconfig.build_root)
             else:
                 fryconfig.build_root.mkdir(parents=True, exist_ok=True)
-        pygenerator = PyGenerator()
-        jsgenerator = JsGenerator()
-        cssgenerator = CssGenerator()
+        pygenerator = PyGenerator(self.logger)
+        jsgenerator = JsGenerator(self.logger)
+        cssgenerator = CssGenerator(self.logger)
         for file in self.fileiter.all_files():
             curr_file = Path(file).resolve(strict=True)
             pyfile = curr_file.parent / f'{file.stem}.py'
@@ -838,31 +852,32 @@ class FryGenerator:
             source = source_bytes.decode()
             tree = grammar.parse(source)
             end = time.perf_counter()
-            print(f"parse: {end-begin}s")
+            self.logger.info(f"Parse fry in {time_delta(begin, end)}")
             begin = end
 
             # 2. generate python file
             pygenerator.generate(tree, curr_hash, relative_dir, pyfile)
             end = time.perf_counter()
-            print(f"generate py: {end-begin}s")
+            self.logger.info(f"Generate py in {time_delta(begin, end)}")
             begin = end
 
             # 3. generate javascript files
             jsgenerator.generate(tree, curr_hash, curr_root, curr_file)
             end = time.perf_counter()
-            print(f"generate js: {end-begin}s")
+            self.logger.info(f"Generate js in {time_delta(begin, end)}")
             begin = end
 
             # 4. collect css utilities and generate attr file
             cssgenerator.collect(tree, curr_hash, attrfile)
             end = time.perf_counter()
-            print(f"collect css: {end-begin}s")
+            self.logger.info(f"Collect css in {time_delta(begin, end)}")
             begin = end
         begin = time.perf_counter()
         jsgenerator.bundle()
         end = time.perf_counter()
-        print(f"bundle js: {end-begin}s")
+        self.logger.info(f"Bundle js in {time_delta(begin, end)}")
         begin = end
         cssgenerator.generate()
         end = time.perf_counter()
-        print(f"generate css: {end-begin}s")
+        self.logger.info(f"Generate css in {time_delta(begin, end)}")
+        self.logger.info(f"Fryweb build finished successfully.")

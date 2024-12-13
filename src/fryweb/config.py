@@ -3,14 +3,45 @@ import os
 import sys
 import importlib
 from collections.abc import Iterable
+import inspect
 
 def is_wsgi_app(app):
-    if callable(app):
-        try:
-            response = app({}, lambda status, headers: None)
-            return isinstance(response, Iterable)
-        except:
+    # 检查对象是否可调用
+    if not callable(app):
+        return False
+
+    # 检查参数签名
+    sig = inspect.signature(app)
+    params = list(sig.parameters.keys())
+    # WSGI 应用的参数应该是 environ 和 start_response
+    if len(params) != 2: # or params[0] != 'environ' or params[1] != 'start_response':
+        return False
+
+    # 尝试调用应用，确保它不会抛出异常
+    try:
+        # 创建一个示例的 environ 对象
+        environ = {
+            'REQUEST_METHOD': 'GET',
+            'PATH_INFO': '/',
+            'wsgi.version': (1, 0),
+            'wsgi.url_scheme': 'http',
+            'wsgi.input': '',
+            'wsgi.errors': '',
+            'wsgi.multithread': False,
+            'wsgi.multiprocess': False,
+            'wsgi.run_once': False,
+        }
+        
+        # 简单的 start_response 函数
+        def start_response(status, headers):
             pass
+        
+        # 尝试调用应用
+        result = app(environ, start_response)
+        result = isinstance(result, Iterable)
+        return result
+    except:
+        pass
     return False
 
 class FryConfig():
@@ -164,7 +195,7 @@ class FryConfig():
 
     @property
     def version(self):
-        return '0.2.45'
+        return '0.3.0'
 
 fryconfig = FryConfig()
 
