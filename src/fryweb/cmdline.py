@@ -14,6 +14,7 @@ import os
 import sys
 import psutil
 import signal
+import traceback
 import typing as t
 from itertools import chain
 import multiprocessing
@@ -155,21 +156,25 @@ class BuilderLoop:
                 mtime = os.stat(name).st_mtime
             except OSError as e:
                 continue
-
             old_time = self.mtimes.get(name)
-
             if old_time is None:
                 changed.add(name)
                 self.mtimes[name] = mtime
                 continue
-
             if mtime > old_time:
                 changed.add(name)
                 self.mtimes[name] = mtime
         try:
-            if changed:
+            if not self.build_finished_event.is_set():
+                # 这是第一次编译，使用全量编译
+                self.logger.warning(f"Full building...")
+                generator = FryGenerator(self.logger)
+                generator.generate()
+            elif changed:
+                # 这是增量编译
                 self.build_finished_event.clear()
-                self.logger.warning(f"Detected change in {changed!r}. Building...")
+                self.logger.warning(f"Delected change in {changed!r}.")
+                self.logger.info("Incremental building...")
                 generator = FryGenerator(self.logger, changed, clean=False)
                 generator.generate()
         finally:
@@ -237,16 +242,24 @@ def dev(host, port, app_spec):
     builder_process.start()
     builder_build_finished.wait()
 
-    app_spec = fryconfig.get_app_spec_string()
-    interface = 'wsgi' if fryconfig.is_wsgi_app else 'auto'
-    config = Config(
-        app=app_spec,
-        host=host,
-        port=port,
-        reload=True,
-        interface=interface,
-    )
-    server = Server(config=config)
+    try:
+        app_spec = fryconfig.get_app_spec_string()
+        interface = 'wsgi' if fryconfig.is_wsgi_app else 'auto'
+        config = Config(
+            app=app_spec,
+            host=host,
+            port=port,
+            reload=True,
+            interface=interface,
+        )
+        server = Server(config=config)
+    except:
+        traceback.print_exc()
+        builder_should_exit.set()
+        builder_process.join()
+        logger.info("Good Bye.")
+        psutil.Process().terminate()
+
     try:
         sock = config.bind_socket()
         ChangeReload(config, target=server.run, sockets=[sock]).run()

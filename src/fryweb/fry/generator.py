@@ -298,6 +298,9 @@ class PyGenerator(BaseGenerator):
             os.replace(pytfile, pyfile)
         self.replace_pairs.clear()
 
+    def compile_count(self):
+        return len(self.replace_pairs)
+
 
     def generic_visit(self, node, children):
         return children or node
@@ -830,6 +833,7 @@ class FryGenerator:
         cssgenerator = CssGenerator(self.logger)
         for file in self.fileiter.all_files():
             curr_file = Path(file).resolve(strict=True)
+            self.logger.info(f"Compile {curr_file} ...")
             pyfile = curr_file.parent / f'{file.stem}.py'
             curr_root = None
             for p in curr_file.parents:
@@ -854,6 +858,7 @@ class FryGenerator:
                             result[0] == '#' and
                             result[1] == 'fry' and
                             result[2] == curr_hash):
+                            self.logger.info("  No change, skip.")
                             continue
                 except:
                     pass
@@ -862,39 +867,41 @@ class FryGenerator:
             source = source_bytes.decode()
             tree = grammar.parse(source)
             end = time.perf_counter()
-            self.logger.info(f"Parse fry in {time_delta(begin, end)}")
+            self.logger.info(f"  Parse fry in {time_delta(begin, end)}")
             begin = end
 
             # 2. generate python file
             pygenerator.generate(tree, curr_hash, relative_dir, pyfile)
             end = time.perf_counter()
-            self.logger.info(f"Generate py in {time_delta(begin, end)}")
+            self.logger.info(f"  Generate py in {time_delta(begin, end)}")
             begin = end
 
             # 3. generate javascript files
             jsgenerator.generate(tree, curr_hash, curr_root, curr_file)
             end = time.perf_counter()
-            self.logger.info(f"Generate js in {time_delta(begin, end)}")
+            self.logger.info(f"  Generate js in {time_delta(begin, end)}")
             begin = end
 
             # 4. collect css utilities and generate attr file
             cssgenerator.collect(tree, curr_hash, attrfile)
             end = time.perf_counter()
-            self.logger.info(f"Collect css in {time_delta(begin, end)}")
+            self.logger.info(f"  Collect css in {time_delta(begin, end)}")
             begin = end
-        begin = time.perf_counter()
-        jsgenerator.bundle()
-        end = time.perf_counter()
-        self.logger.info(f"Bundle js in {time_delta(begin, end)}")
-        begin = end
 
-        cssgenerator.generate()
-        end = time.perf_counter()
-        self.logger.info(f"Generate css in {time_delta(begin, end)}")
-        begin = end
+        if pygenerator.compile_count() > 0:
+            begin = time.perf_counter()
+            jsgenerator.bundle()
+            end = time.perf_counter()
+            self.logger.info(f"Bundle index.js in {time_delta(begin, end)}")
+            begin = end
 
-        pygenerator.replace()
-        end = time.perf_counter()
-        self.logger.info(f"Replace py in {time_delta(begin, end)}")
+            cssgenerator.generate()
+            end = time.perf_counter()
+            self.logger.info(f"Generate styles.css in {time_delta(begin, end)}")
+            begin = end
+
+            pygenerator.replace()
+            end = time.perf_counter()
+            self.logger.info(f"Rename all py in {time_delta(begin, end)}")
 
         self.logger.info(f"Fryweb build finished successfully.")
