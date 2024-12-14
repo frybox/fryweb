@@ -279,7 +279,7 @@ class PyGenerator(BaseGenerator):
 
     def generate(self, tree, hash, relative_dir, pyfile):
         prefix = relative_dir.as_posix().rstrip('/')
-        prefix = prefix + '_' if prefix and prefix != '.' else ''
+        prefix = prefix.replace('/', '_') + '_' if prefix and prefix != '.' else ''
         self.name_prefix = prefix + pyfile.stem + '_'
         self.web_component_script = False
         self.client_script_args = {}
