@@ -8,6 +8,7 @@ from fryweb.element import ref_attr_name, refall_attr_name
 from fryweb.config import fryconfig
 import re
 import os
+import sys
 import subprocess
 import shutil
 import traceback
@@ -150,13 +151,14 @@ class JsGenerator(BaseGenerator):
             # 暂时不用bun
             args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={outfile.parent}', str(entry_point)]
         try:
-            subprocess.run(args,
-                           env=env,
-                           timeout=100, # 100秒超时
-                           #creationflags=subprocess.DETACHED_PROCESS, # Windows上只有这个flag时，虽不受Ctrl-C影响，但会删除一个新的黑色终端窗口
-                           creationflags=subprocess.CREATE_NO_WINDOW, # Windows上让子进程不受Ctrl-C影响，不要出来烦人的“^C^C终止批处理操作吗(Y/N)?”
-                           restore_signals=False,
-                          )
+            kwargs = dict(env=env, timeout=100) # 100秒超时
+            if sys.platform == 'win32':
+                #subprocess.DETACHED_PROCESS, # Windows上只有这个flag时，虽不受Ctrl-C影响，但会闪出一个新的黑色终端窗口
+                #subprocess.CREATE_NO_WINDOW, # Windows上让子进程不受Ctrl-C影响，不要出来烦人的“^C^C终止批处理操作吗(Y/N)?”
+                kwargs.update(creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                kwargs.update(restore_signals=False)
+            subprocess.run(args, **kwargs)
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Subprocess failed with return code {e.returncode}")
         except Exception as e:

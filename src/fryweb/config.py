@@ -195,7 +195,7 @@ class FryConfig():
 
     @property
     def version(self):
-        return '0.3.1'
+        return '0.3.2'
 
 fryconfig = FryConfig()
 
