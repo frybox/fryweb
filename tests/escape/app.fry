@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from fryweb import Element, html
+
+app = FastAPI()
+
+@app.get('/')
+async def index():
+    return html(App, autoreload=False)
+
+def App():
+    data = '<script>这是脚本</script>'
+    <template>
+      <div>
+        <div>
+          [这是一个<strong>text嵌入</strong>](textEmbed)
+        </div>
+        <div>
+          ![这是一个<strong>html嵌入</strong>](htmlEmbed)
+        </div>
+        <div>
+          <p>hello world</p>
+        </div>
+      </div>
+    </template>
+    <script {data}>
+        const textEmbed = 'hello <em>textEmbed</em>';
+        
+        const htmlEmbed = `hello <em>htmlEmbed${data}</em>`;
+    </script>

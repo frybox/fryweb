@@ -2,6 +2,7 @@ from fryweb.element import Element, component_id_attr_name, component_name_attr_
 from fryweb.utils import static_url
 from fryweb.config import fryconfig
 from importlib import import_module
+from html import escape
 import json
 
 class Page(object):
@@ -90,7 +91,7 @@ def html(content='div',
             content['setup'] = c['setup']
             content['refs'] = c['refs']
             content['args'] = c['args']
-        scriptprops[children_attr_name] = [json.dumps(content)]
+        scriptprops[children_attr_name] = [escape(json.dumps(content))]
         comp = Element('script', scriptprops, True)
         components.append(comp)
     if components:
