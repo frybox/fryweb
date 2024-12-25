@@ -1,9 +1,10 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from fryweb import Element, html
 
 app = FastAPI()
 
-@app.get('/')
+@app.get('/', response_class=HTMLResponse)
 async def index():
     return html(App, autoreload=False)
 
@@ -23,7 +24,7 @@ def App():
       </div>
     </template>
     <script {data}>
-        const textEmbed = 'hello <em>textEmbed</em>';
+        const textEmbed = `hello <em>textEmbed</em>${data}`;
         
-        const htmlEmbed = `hello <em>htmlEmbed${data}</em>`;
+        const htmlEmbed = `hello <em>htmlEmbed</em>${data}`;
     </script>

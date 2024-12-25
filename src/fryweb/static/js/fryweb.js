@@ -353,6 +353,11 @@ async function hydrate(domContainer, setups, rootArgs) {
     }
 
     // 2. 遍历domContainer DOM树，找到树上所有组件，然后根据组件静态信息创建组件
+    function parseArgs(text) {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return JSON.parse(textarea.value);
+    }
 
     function collect(element) {
         if (element.tagName === 'SCRIPT') {
@@ -372,7 +377,7 @@ async function hydrate(domContainer, setups, rootArgs) {
                         throw `unknown component id ${cid}`;
                     }
                     const script = scripts[cid];
-                    const {setup, args, refs} = JSON.parse(script.textContent);
+                    const {setup, args, refs} = parseArgs(script.textContent);
                     const {fryname: name} = script.dataset;
                     if (complist.length === 0 && args) {
                         // 将水合时动态传入的参数rootArgs给到本次水合的根组件
