@@ -145,7 +145,7 @@ class JsGenerator(BaseGenerator):
             if not npx:
                 self.logger.error(f"Can't find npx, please install nodejs first.")
                 return
-            args = [npx, 'esbuild', '--format=esm', '--bundle', '--minify', '--sourcemap', f'--outfile={outfile}', str(entry_point),]
+            args = [npx, '-y', 'esbuild', '--format=esm', '--bundle', '--minify', '--sourcemap', f'--outfile={outfile}', str(entry_point),]
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
