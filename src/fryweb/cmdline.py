@@ -210,7 +210,7 @@ class WithStaticFiles:
 class Config(UvicornConfig):
     def load(self):
         super().load()
-        if self.loaded and fryconfig.static_root.exists():
+        if self.loaded and fryconfig.static_root.is_dir():
             self.loaded_app = WithStaticFiles(self.loaded_app)
 
 
