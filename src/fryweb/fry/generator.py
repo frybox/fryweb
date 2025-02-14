@@ -890,7 +890,9 @@ class FryGenerator:
 
         if pygenerator.compile_count() > 0:
             begin = time.perf_counter()
-            jsgenerator.bundle()
+            result = jsgenerator.bundle()
+            if not result:
+                raise RuntimeError("Bundle failed.")
             end = time.perf_counter()
             self.logger.info(f"Bundle index.js in {time_delta(begin, end)}")
             begin = end

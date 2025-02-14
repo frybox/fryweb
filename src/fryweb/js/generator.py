@@ -145,25 +145,48 @@ class JsGenerator(BaseGenerator):
             if not npx:
                 self.logger.error(f"Can't find npx, please install nodejs first.")
                 return
-            args = [npx, '-y', 'esbuild', '--format=esm', '--bundle', '--minify', '--sourcemap', f'--outfile={outfile}', str(entry_point),]
+            args = [npx, '-y', 'esbuild', '--format=esm', '--bundle', '--minify', '--sourcemap', f'--outfile={outfile}',]
+            inject_path = fryconfig.public_root / 'inject'
+            for file in inject_path.glob('*.js'):
+                args.append(f'--inject:{file}')
+            inject_file = fryconfig.public_root / 'inject.js'
+            if inject_file.exists():
+                args.append(f'--inject:{inject_file}')
+            args.append(str(entry_point))
         elif bun.is_file():
             # bun的问题：对于动态import的js，只修改地址，没有打包
             # 暂时不用bun
             args = [str(bun), 'build', '--external', 'fryweb', '--splitting', f'--outdir={outfile.parent}', str(entry_point)]
         try:
-            kwargs = dict(env=env, timeout=100) # 100秒超时
+            kwargs = dict(env=env, timeout=100, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # 100秒超时
             if sys.platform == 'win32':
                 #subprocess.DETACHED_PROCESS, # Windows上只有这个flag时，虽不受Ctrl-C影响，但会闪出一个新的黑色终端窗口
                 #subprocess.CREATE_NO_WINDOW, # Windows上让子进程不受Ctrl-C影响，不要出来烦人的“^C^C终止批处理操作吗(Y/N)?”
                 kwargs.update(creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 kwargs.update(restore_signals=False)
-            subprocess.run(args, **kwargs)
+            self.logger.info("Bundle javascript ...")
+            self.logger.info(args)
+            process = subprocess.run(args, **kwargs)
+            stdout = process.stdout.decode()
+            stderr = process.stderr.decode()
+            if stdout:
+                self.logger.info(stdout)
+            if stderr:
+                if process.returncode != 0:
+                    self.logger.error(f"Bundler return code {process.returncode}")
+                    self.logger.error(stderr)
+                    return False
+                else:
+                    self.logger.info(stderr)
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Subprocess failed with return code {e.returncode}")
+            return False
         except Exception as e:
             self.logger.error(f"An error occurred: {e}")
             traceback.print_exc()
+            return False
+        return True
 
     def check_js_module(self, jsmodule):
         if jsmodule[0] in "'\"":
