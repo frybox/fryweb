@@ -801,7 +801,7 @@ def fry_files():
     paths = set()
     syspath = [Path(p).resolve() for p in sys.path]
     paths.update(p.resolve() for p in syspath if p.is_dir())
-    input_files = [(str(p), '**/*.fry') for p in paths]
+    input_files = [(str(p), '**/*.fw') for p in paths]
     return input_files
 
 def time_delta(begin, end):

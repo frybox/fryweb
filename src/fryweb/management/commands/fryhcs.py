@@ -8,8 +8,8 @@ class Command(LabelCommand):
     help = "Runs fryweb commands"
     missing_args_message = """
 Command argument is missing, please add one of the following:
-  build - to compile .fry into production css and js
-  topy - to compile .fry into .py file
+  build - to compile .fw into production css and js
+  topy - to compile .fw into .py file
 Usage example:
   python manage.py fryweb build
   python manage.py fryweb topy FYFILE

@@ -93,7 +93,7 @@ def _find_stat_paths(extra_files, exclude_patterns) -> t.Iterable[str]:
             has_py = False
 
             for name in files:
-                if name.endswith('.fry'):
+                if name.endswith('.fw'):
                     has_py = True
                     paths.add(os.path.join(root, name))
                 elif name.endswith((".py", ".pyc")):
@@ -348,10 +348,10 @@ cli.add_command(jsadd)
 if __name__ == '__main__':
     cli()
 
-# @click.command("topy", short_help="Convert specified .fry file into .py file.")
+# @click.command("topy", short_help="Convert specified .fw file into .py file.")
 # @click.argument("fryfile")
 # def topy_command(fryfile):
-#     """Convert specified .fry file into .py file."""
+#     """Convert specified .fw file into .py file."""
 #     from fryweb.fry.generator import fry_to_py
 #     path = Path(fryfile)
 #     if not path.is_file():
@@ -375,11 +375,11 @@ if __name__ == '__main__':
 #         click.echo(source)
 # 
 # 
-# @click.command("tojs", short_help="Convert specified .fry file into .js file(s).")
+# @click.command("tojs", short_help="Convert specified .fw file into .js file(s).")
 # @click.argument("fryfile")
 # @click.argument("jsdir")
 # def tojs_command(fryfile, jsdir):
-#     """Convert specified .fry file into .js file(s)."""
+#     """Convert specified .fw file into .js file(s)."""
 #     from fryweb.js.generator import JSGenerator
 #     path = Path(fryfile)
 #     if not path.is_file():
@@ -393,7 +393,7 @@ if __name__ == '__main__':
 #         print(f"{count} js files from '{fryfile}' are generated into directory '{jsdir}'")
 # 
 # 
-# @click.command("tocss", short_help="Convert specified .fry file into style.css file.")
+# @click.command("tocss", short_help="Convert specified .fw file into style.css file.")
 # @click.option("-p", "--plugin", multiple=True, help="Specify a plugin to be loaded")
 # @click.argument("fryfile")
 # @click.argument("cssfile")

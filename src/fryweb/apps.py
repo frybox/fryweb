@@ -9,6 +9,6 @@ class FrywebConfig(AppConfig):
         # 注册信号处理函数
         from . import signals
 
-        # 让python可以import .fry文件
+        # 让python可以import .fw文件
         from .fry.fryloader import install_path_hook
         install_path_hook()

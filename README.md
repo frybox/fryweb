@@ -1,18 +1,18 @@
 # Fryweb
-A Python library to generate HTML, Javascript and CSS, based on .fry file.
+A Python library to generate HTML, Javascript and CSS, based on .fw file.
 
 Fry is jsx in python, it's the core of this project.
 
 Fryweb is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
 ## Features
-* Support fry extension to normal python file, similar to jsx, write html tags in python file.
-* Provide a fry loader for python import machanism, load and execute .fry files directly by CPython.
+* Support .fw extension to normal python file, similar to jsx, write html tags in python file.
+* Provide a fw loader for python import machanism, load and execute .fw files directly by CPython.
 * Provide a utility-first css framework, similar to TailwindCSS, support attributify mode similar to WindiCSS.
 * Support wsgi/asgi application.
-* Provide pygments lexer for fry.
+* Provide pygments lexer for .fw.
 * Provide a development server which supports server/browser auto reloading when file saved.
-* Provide a command line tool `fry`, build css/js, highlight and run fry file and run development server. 
+* Provide a command line tool `fryweb`, build css/js, highlight and run .fw file and run development server. 
 * Support plugin machanism, anyone can extends with her/his own custom css utilities.
 
 All features are implemented in pure Python, no node.js ecosystem is required.
@@ -26,7 +26,7 @@ $ pip install fryweb
 ## Usage
 
 ### 1. Basic
-create app.fry file:
+create app.fw file:
 
 ```python
 from fryweb import html, Element
@@ -46,10 +46,10 @@ def index():
     return html(App, "Hello")
 ```
 
-in the same directory as app.fry, run command:
+in the same directory as app.fw, run command:
 
 ```bash
-$ fry topy app.fry
+$ fryweb topy app.fw
 ```
 
 check the generated python content:
@@ -71,7 +71,7 @@ def index():
 
 To generate CSS file `static/css/styles.css`, run command:
 ```bash
-$ fry tocss app.fry
+$ fryweb tocss app.fw
 ```
 
 Generated CSS:
@@ -100,16 +100,16 @@ Generated CSS:
 To serve this app, run command:
 
 ```bash
-$ fry dev 
+$ fryweb dev 
 ```
 
 Open browser, access `http://127.0.0.1:5000` to browse the page.
 
-Change the app.fry file, save, check the browser auto reloading.
+Change the app.fw file, save, check the browser auto reloading.
 
 `fryweb.render` can be used to render component directly.
 
-Create components.fry and input following code:
+Create components.fw and input following code:
 
 ```python
 from fryweb import Element
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
 Run command to see the generated html fragment:
 ```bash
-$ fry run component.fry
+$ fryweb run component.fw
 ```
 
 
@@ -388,7 +388,7 @@ if __name__ == '__main__':
     print(html(RefApp))
 ```
 
-## Command Line Tool `fry`
+## Command Line Tool `fryweb`
 
 ## Configuration
 
@@ -416,7 +416,7 @@ But this name is too difficult to remember, so it's named fryweb.
 
 By coincidence, this project is created by the father of one boy(**F**ang**R**ui) and one girl(**F**ang**Y**i)
 
-### 2. Why is the file format named to be .fry
+### 2. Why is the file format named to be .fw
 Originally, the file format is named .pyx, just similar to famous React jsx. But .pyx is already
 used in Cython, so it has to be renamed.
 
@@ -424,7 +424,7 @@ First it's renamed to be .fy, easy to write. Unfortunately, .fy is also used by 
 language called fancy. But from [rubygems][1] and [github][2], there's no activity for ten years
 on this project, and the last version is 0.10.0.
 
-At last, it's named to be .fry.
+At last, it's named to be .fw.
 
 [1]: https://rubygems.org/gems/fancy
 [2]: https://github.com/bakkdoor/fancy
@@ -445,5 +445,5 @@ many configuration files.
 
 Yes, npm registy is a great frontend ecosystem, pypi is a great backend ecosystem. I need them,
 but I only need the great libraries in these two great ecosystems, not soooo many different tools.
-so one command `fry` is enough, it can be used to generate html, css, javascript, and handle
+so one command `fryweb` is enough, it can be used to generate html, css, javascript, and handle
 the downloading of javascript libraries from npm registry (soon).
