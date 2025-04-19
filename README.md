@@ -1,7 +1,7 @@
 # Fryweb
-A Python library to generate HTML, Javascript and CSS, based on .fw file.
+A Python library for generating HTML, JavaScript, and CSS from extended Python files.
 
-Fry is jsx in python, it's the core of this project.
+.fw file is jsx in python, it's the core of this project.
 
 Fryweb is heavily inspired by React JSX, TailwindCSS, WindiCSS in JS ecosystem.
 
