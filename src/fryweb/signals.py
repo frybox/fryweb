@@ -72,8 +72,8 @@ def template_changed(sender, file_path, **kwargs):
         # vim编辑临时文件，不触发服务端reload
         return True
 
-    # 当有fry/pyx文件发生变化时，更新css/js文件
-    if file_path.suffix in ('.fry', '.pyx'):
+    # 当有.fw文件发生变化时，更新css/js文件
+    if file_path.suffix in ('.fw', ):
         logger.info("generate css for %s...", file_path)
         incremental_generation_count += 1
         if incremental_generation_count >= 10:

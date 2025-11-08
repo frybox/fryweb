@@ -3,7 +3,7 @@ name = "fryweb"
 version = "0.3.10"
 keywords = [
     "fryweb",
-    "fry",
+    "fw",
     "asgi",
     "wsgi",
     "server",
@@ -33,7 +33,7 @@ Homepage = "https://github.com/frybox/fryweb"
 Source = "https://github.com/frybox/fryweb"
 
 [project.scripts]
-fry = "fryweb.cmdline:cli"
+fryweb = "fryweb.cmdline:cli"
 
 [build-system]
 requires = ["hatchling"]

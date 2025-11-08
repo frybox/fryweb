@@ -286,10 +286,10 @@ class FStringLexer(PythonLexer):
 
 
 class FryLexer(Lexer):
-    name = 'Fry'
-    aliases = ['fry']
-    filenames = ['*.fry']
-    mimetypes = ['text/fry']
+    name = 'Fryweb'
+    aliases = ['fryweb']
+    filenames = ['*.fw']
+    mimetypes = ['text/fryweb']
 
     pylexer = PythonLexer()
     fslexer = FStringLexer()
