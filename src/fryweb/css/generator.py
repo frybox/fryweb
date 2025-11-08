@@ -26,10 +26,10 @@ class CssGenerator():
                     yield k, v
 
     def generate(self):
-        fryconfig.css_file.parent.mkdir(parents=True, exist_ok=True)
+        outputfile = fryconfig.build_root / 'styles.css'
         preflight = os.path.join(os.path.dirname(__file__), 'preflight.css')
         preflight = Path(preflight)
-        with fryconfig.css_file.open('w', encoding='utf-8') as f:
+        with outputfile.open('w', encoding='utf-8') as f:
             with preflight.open('r', encoding='utf-8') as pf:
                 f.write(pf.read())
             f.write(theme_color_styles())

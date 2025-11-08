@@ -141,11 +141,11 @@ class FryConfig():
 
     @property
     def js_url(self):
-        return self.item('FRYWEB_JS_URL', 'js/index.js')
+        return self.item('FRYWEB_JS_URL', 'index.js')
 
     @property
     def css_url(self):
-        return self.item('FRYWEB_CSS_URL', 'css/styles.css')
+        return self.item('FRYWEB_CSS_URL', 'index.css')
 
     @property
     def check_reload_url(self):
@@ -201,7 +201,7 @@ class FryConfig():
 
     @property
     def version(self):
-        return '0.3.9'
+        return '0.3.10'
 
 fryconfig = FryConfig()
 

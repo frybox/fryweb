@@ -54,6 +54,9 @@ def get_setup_name_and_path(file):
 def compose_index(src):
     dest = fryconfig.build_root / 'index.js'
     output = []
+    cssfile = fryconfig.build_root / 'styles.css'
+    if cssfile.exists():
+        output.append(f'import "./styles.css";')
     names = []
     for file in src:
         name, path = get_setup_name_and_path(file)

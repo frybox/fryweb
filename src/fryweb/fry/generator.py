@@ -890,16 +890,17 @@ class FryGenerator:
 
         if pygenerator.compile_count() > 0:
             begin = time.perf_counter()
+            cssgenerator.generate()
+            end = time.perf_counter()
+            self.logger.info(f"Generate styles.css in {time_delta(begin, end)}")
+            begin = end
+
+            # js bundle时会将上面生成的styles.css文件也bundle出来，存到index.css中
             result = jsgenerator.bundle()
             if not result:
                 raise RuntimeError("Bundle failed.")
             end = time.perf_counter()
             self.logger.info(f"Bundle index.js in {time_delta(begin, end)}")
-            begin = end
-
-            cssgenerator.generate()
-            end = time.perf_counter()
-            self.logger.info(f"Generate styles.css in {time_delta(begin, end)}")
             begin = end
 
             pygenerator.replace()
