@@ -5,11 +5,14 @@ app = Flask(__name__)
 
 def App():
     initial_count = 20
+    html_text = '<p>hello</p>'
     <template>
        <body bg-hex-f5f5f5>
          <h1 ref=(header) text-cyan-500 hover:text-cyan-600 text-center mt-100px>
-           Hello Fryweb!
+           Hello Fryweb!!!
          </h1>
+	 <p>value is {initial_count}</p>
+	 {html_text}
          <p text-indigo-600 text-center mt-9 title="hello {initial_count}">
            Count:
            <span text-red-600>[{initial_count}](count)</span>
@@ -52,4 +55,4 @@ def Body():
 
 @app.get('/')
 def index():
-    return html(App, "Hello")
+    return html(App, title="Hello")

@@ -719,7 +719,7 @@ class PyGenerator(BaseGenerator):
         return f'"{html.escape(value)}"'
 
     def visit_no_embed_char(self, node, children):
-        return node.text
+        return f'"{node.text}"'
 
     # 脚本元素的元素名为script，代表了一个组件对应的js脚本，一个组件最多有一个脚本元素。
     # 脚本元素的属性作为js参数列表传给脚本代码，并且脚本代码需要在编译期生成，属性名需要在编译期可见，
